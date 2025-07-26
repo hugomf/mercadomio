@@ -146,8 +146,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
             try {
               parsedProducts.add(Product.fromJson(productJson));
             } catch (e) {
-              // Log individual product parsing error but continue with others
-              print('Failed to parse product: $e');
+              // Skip individual product parsing errors but continue with others
+              continue;
             }
           }
 
