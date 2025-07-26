@@ -6,18 +6,29 @@ import 'dart:convert';
 class Product {
   final String id;
   final String name;
-  final double price;
+  final String description;
+  final String type;
+  final String category;
+  final double basePrice;
+  final String sku;
   final String imageUrl;
 
   Product({
     required this.id,
     required this.name,
-    required this.price,
+    required this.description,
+    required this.type,
+    required this.category,
+    required this.basePrice,
+    required this.sku,
     required this.imageUrl,
   });
 
+  // Convenience getter for price (using basePrice)
+  double get price => basePrice;
+
   factory Product.fromJson(Map<String, dynamic> json) {
-    
+
     double parsePrice(dynamic price) {
       if (price == null) return 0.0;
       if (price is double) return price;
@@ -35,8 +46,12 @@ class Product {
     return Product(
       id: parseString(json['id'], 'unknown'),
       name: parseString(json['name'], 'Unnamed Product'),
-      price: parsePrice(json['price']),
-      imageUrl: parseString(json['imageUrl'], ''),
+      description: parseString(json['description'], ''),
+      type: parseString(json['type'], 'physical'),
+      category: parseString(json['category'], 'general'),
+      basePrice: parsePrice(json['basePrice']),
+      sku: parseString(json['sku'], ''),
+      imageUrl: parseString(json['imageUrl'], 'https://via.placeholder.com/150'),
     );
   }
 }
@@ -85,15 +100,15 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     try {
       await dotenv.load();
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
-      final response = await http.get(
-        Uri.parse('$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage')
-      );
-      
+      final url = '$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage';
+
+      final response = await http.get(Uri.parse(url));
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
-        final List<dynamic> productsData = responseData['data'];
-        final int totalItems = responseData['meta']['totalItems'];
-        
+        final List<dynamic> productsData = responseData['data'] ?? [];
+        final int totalItems = responseData['meta']?['totalItems'] ?? productsData.length;
+
         setState(() {
           if (loadMore) {
             products.addAll(productsData.map((json) => Product.fromJson(json)));
@@ -162,9 +177,39 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         final product = products[index];
         return Card(
           child: ListTile(
-            leading: Image.network(product.imageUrl),
+            leading: product.imageUrl.isNotEmpty
+              ? Image.network(
+                  product.imageUrl,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.image_not_supported, size: 50);
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                )
+              : const Icon(Icons.shopping_bag, size: 50),
             title: Text(product.name),
-            subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('\$${product.price.toStringAsFixed(2)}'),
+                if (product.description.isNotEmpty)
+                  Text(
+                    product.description,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.add_shopping_cart),
               onPressed: () async {
