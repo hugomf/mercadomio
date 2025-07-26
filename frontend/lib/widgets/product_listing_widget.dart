@@ -11,7 +11,11 @@ class Product {
   final String category;
   final double basePrice;
   final String sku;
+  final String barcode;
   final String imageUrl;
+  final List<dynamic> variants;
+  final Map<String, dynamic> customAttributes;
+  final Map<String, String> identifiers;
 
   Product({
     required this.id,
@@ -21,7 +25,11 @@ class Product {
     required this.category,
     required this.basePrice,
     required this.sku,
+    required this.barcode,
     required this.imageUrl,
+    required this.variants,
+    required this.customAttributes,
+    required this.identifiers,
   });
 
   // Convenience getter for price (using basePrice)
@@ -43,6 +51,19 @@ class Product {
       return value.toString();
     }
 
+    Map<String, String> parseStringMap(dynamic value) {
+      if (value == null) return {};
+      if (value is! Map) return {};
+
+      final Map<String, String> result = {};
+      value.forEach((key, val) {
+        if (key != null && val != null) {
+          result[key.toString()] = val.toString();
+        }
+      });
+      return result;
+    }
+
     return Product(
       id: parseString(json['id'], 'unknown'),
       name: parseString(json['name'], 'Unnamed Product'),
@@ -51,7 +72,11 @@ class Product {
       category: parseString(json['category'], 'general'),
       basePrice: parsePrice(json['basePrice']),
       sku: parseString(json['sku'], ''),
+      barcode: parseString(json['barcode'], ''),
       imageUrl: parseString(json['imageUrl'], 'https://via.placeholder.com/150'),
+      variants: List<dynamic>.from(json['variants'] ?? []),
+      customAttributes: Map<String, dynamic>.from(json['customAttributes'] ?? {}),
+      identifiers: parseStringMap(json['identifiers']),
     );
   }
 }
@@ -102,22 +127,60 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
       final url = '$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage';
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timed out');
+        },
+      );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        final List<dynamic> productsData = responseData['data'] ?? [];
-        final int totalItems = responseData['meta']?['totalItems'] ?? productsData.length;
+        try {
+          final Map<String, dynamic> responseData = json.decode(response.body);
+          final List<dynamic> productsData = responseData['data'] ?? [];
+          final int totalItems = responseData['meta']?['totalItems'] ?? productsData.length;
 
-        setState(() {
-          if (loadMore) {
-            products.addAll(productsData.map((json) => Product.fromJson(json)));
-          } else {
-            products = productsData.map((json) => Product.fromJson(json)).toList();
+          // Parse products with individual error handling
+          final List<Product> parsedProducts = [];
+          for (final productJson in productsData) {
+            try {
+              parsedProducts.add(Product.fromJson(productJson));
+            } catch (e) {
+              // Log individual product parsing error but continue with others
+              print('Failed to parse product: $e');
+            }
           }
-          hasMore = products.length < totalItems;
+
+          setState(() {
+            if (loadMore) {
+              products.addAll(parsedProducts);
+            } else {
+              products = parsedProducts;
+            }
+            hasMore = products.length < totalItems;
+            isLoading = false;
+          });
+        } catch (e) {
+          // JSON parsing error
+          setState(() {
+            isLoading = false;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to parse response: $e')),
+            );
+          }
+        }
+      } else {
+        // Handle non-200 status codes
+        setState(() {
           isLoading = false;
         });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Server error: ${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -133,8 +196,9 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
   void _loadMoreProducts() {
     if (hasMore && !isLoading) {
+      final nextPage = currentPage + 1;
       setState(() {
-        currentPage++;
+        currentPage = nextPage;
         isLoading = true;
       });
       _fetchProducts(loadMore: true);
@@ -152,8 +216,29 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (isLoading && products.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (products.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No products found',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Try adjusting your search or check back later',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
     }
 
     return NotificationListener<ScrollNotification>(
