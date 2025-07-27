@@ -98,6 +98,20 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   bool isLoading = true;
   int currentPage = 1;
   bool hasMore = true;
+
+  // Helper function to get proxied image URL
+  String getProxiedImageUrl(String originalUrl) {
+    if (originalUrl.isEmpty) return originalUrl;
+
+    // If it's a Natura image, use our proxy
+    if (originalUrl.contains('production.na01.natura.com')) {
+      final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+      return '$apiUrl/api/image-proxy?url=${Uri.encodeComponent(originalUrl)}';
+    }
+
+    // For other images, use original URL
+    return originalUrl;
+  }
   final int itemsPerPage = 10;
 
   // Search state
@@ -346,15 +360,21 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           child: ListTile(
             leading: product.imageUrl.isNotEmpty
               ? Image.network(
-                  product.imageUrl,
+                  getProxiedImageUrl(product.imageUrl),
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.image_not_supported, size: 50);
+                    print('🖼️ Image load error for ${product.name}: $error');
+                    print('🔗 Image URL: ${product.imageUrl}');
+                    return const Icon(Icons.image_not_supported, size: 50, color: Colors.red);
                   },
                   loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
+                    if (loadingProgress == null) {
+                      print('✅ Image loaded successfully for ${product.name}');
+                      return child;
+                    }
+                    print('⏳ Loading image for ${product.name}...');
                     return const SizedBox(
                       width: 50,
                       height: 50,

@@ -1,52 +1,66 @@
 #!/usr/bin/env bash
 # natura-scraper.sh – fetch Natura MX products -> products.json
-# macOS: needs curl + jq (brew install jq)
+# macOS-friendly (no GNU grep, no mapfile)
 
 set -euo pipefail
 
 BASE_URL="https://www.natura.com.mx"
-TMP_DIR="$(mktemp -d)"
+TMP_DIR="$(mktemp -d /tmp/natura-scraper.XXXXXX)"
 OUT_FILE="products.json"
+trap 'rm -rf "$TMP_DIR"' EXIT
 
-# 1. Collect the PLP (category) links from the home page
-echo "[*] Discovering category pages …"
-mapfile -t CATEGORIES < <(
-  curl -sL "$BASE_URL" \
-  | grep -oE 'href="([^"]+/c/[^"]+)"' \
-  | cut -d'"' -f2 \
-  | sort -u
+# ------------------------------------------------------------
+# 1. Main PLP URLs (hard-coded)
+# ------------------------------------------------------------
+CATEGORIES=(
+  /c/perfumeria
+  /c/cosmetica
+  /c/cuidado-personal
+  /c/cuidado-capilar
+  /c/hombre
 )
 
 echo "[+] Found ${#CATEGORIES[@]} category pages"
 
-# 2. For every category page, grab the JSON-LD product blocks
+# ------------------------------------------------------------
+# 2. Scrape products
+# ------------------------------------------------------------
 echo "[*] Scraping products …"
 : > "$TMP_DIR/products_raw.jsonl"
 
 for cat in "${CATEGORIES[@]}"; do
-  # Fetch the listing page
-  html=$(curl -sL "${BASE_URL}${cat}")
+    echo "   scraping $cat …" >&2
+    html=$(curl -sL "${BASE_URL}${cat}")
 
-  # Extract each <script type="application/ld+json"> that contains "@type":"Product"
-  jq -c '.[] | select(.["@type"]=="Product")' \
-     <<< "$(echo "$html" | pup 'script[type="application/ld+json"] text{}' 2>/dev/null || true)" \
-  >> "$TMP_DIR/products_raw.jsonl" || true
+    # Extract every <script type="application/ld+json">…</script>
+    # Works with BSD grep + perl
+    perl -0777 -nE '
+        while (/<script\s+type="application\/ld\+json"\s*>(.*?)<\/script>/igs) {
+            say $1 =~ s/\R//gr;
+        }
+    ' <<< "$html" \
+    | while IFS= read -r json; do
+          jq -c 'select(.["@type"]=="Product")' <<< "$json" 2>/dev/null || true
+      done \
+    >> "$TMP_DIR/products_raw.jsonl"
 done
 
-# 3. Build a clean JSON array with the fields we care about
+# ------------------------------------------------------------
+# 3. Build clean JSON
+# ------------------------------------------------------------
 echo "[*] Normalising data …"
 jq -s '
   map({
-      sku:      (.sku // .mpn),
-      name:     .name,
-      brand:    (.brand // .manufacturer // "Natura"),
-      category: (.category // "Otros"),
+      sku:         (.sku // .mpn),
+      name:        .name,
+      brand:       (.brand // .manufacturer // "Natura"),
+      category:    (.category // "Otros"),
       description: (.description // ""),
-      price:    (.offers.price // .offers.lowPrice // ""),
-      currency: (.offers.priceCurrency // ""),
-      imageURL: (.image // ""),
-      url:      (.url // "")
+      price:       (.offers.price // .offers.lowPrice // ""),
+      currency:    (.offers.priceCurrency // ""),
+      imageURL:    (.image // ""),
+      url:         (.url // "")
   })
 ' "$TMP_DIR/products_raw.jsonl" > "$OUT_FILE"
 
-echo "[+] Done -> $(wc -l < "$OUT_FILE") products written to $OUT_FILE"
+echo "[+] Done -> $(jq length "$OUT_FILE") products written to $OUT_FILE"
