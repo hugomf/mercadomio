@@ -100,6 +100,11 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   bool hasMore = true;
   final int itemsPerPage = 10;
 
+  // Search state
+  bool isSearchMode = false;
+  String currentSearchQuery = '';
+  int searchTotalItems = 0;
+
   @override
   void initState() {
     super.initState();
@@ -113,10 +118,32 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     }
   }
 
+  void searchProducts(String query) {
+    if (query.isEmpty) {
+      // Clear search and return to normal mode
+      refreshProducts();
+      return;
+    }
+
+    setState(() {
+      currentSearchQuery = query;
+      isSearchMode = true;
+      currentPage = 1;
+      isLoading = true;
+      products = [];
+      hasMore = true;
+    });
+    _fetchProducts();
+  }
+
+  // Keep this method for backward compatibility but mark as deprecated
+  @Deprecated('Use searchProducts() instead for better pagination support')
   void updateProducts(List<Product> filteredProducts) {
     if (mounted) {
       setState(() {
         products = filteredProducts;
+        isSearchMode = false;
+        hasMore = false; // Disable pagination for direct updates
       });
     }
   }
@@ -125,7 +152,14 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     try {
       await dotenv.load();
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
-      final url = '$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage';
+
+      // Build URL based on search mode
+      final String url;
+      if (isSearchMode && currentSearchQuery.isNotEmpty) {
+        url = '$apiUrl/api/products?q=${Uri.encodeComponent(currentSearchQuery)}&page=$currentPage&limit=$itemsPerPage';
+      } else {
+        url = '$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage';
+      }
 
       final response = await http.get(Uri.parse(url)).timeout(
         const Duration(seconds: 30),
@@ -210,6 +244,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       currentPage = 1;
       isLoading = true;
       products = [];
+      isSearchMode = false;
+      currentSearchQuery = '';
     });
     _fetchProducts();
   }
@@ -221,34 +257,80 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     }
 
     if (products.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No products found',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+            Icon(
+              isSearchMode ? Icons.search_off : Icons.shopping_bag_outlined,
+              size: 64,
+              color: Colors.grey
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 16),
             Text(
-              'Try adjusting your search or check back later',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              isSearchMode
+                ? 'No products found for "$currentSearchQuery"'
+                : 'No products available',
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
             ),
+            const SizedBox(height: 8),
+            Text(
+              isSearchMode
+                ? 'Try a different search term or browse all products'
+                : 'Check back later for new products',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            if (isSearchMode) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => refreshProducts(),
+                child: const Text('Browse All Products'),
+              ),
+            ],
           ],
         ),
       );
     }
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent && hasMore) {
-          _loadMoreProducts();
-        }
-        return false;
-      },
-      child: ListView.builder(
+    return Column(
+      children: [
+        // Search indicator
+        if (isSearchMode)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.blue.shade50,
+            child: Row(
+              children: [
+                const Icon(Icons.search, size: 16, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Searching for "$currentSearchQuery"',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.blue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => refreshProducts(),
+                  child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+        // Product list
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent && hasMore) {
+                _loadMoreProducts();
+              }
+              return false;
+            },
+            child: ListView.builder(
         itemCount: products.length + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == products.length) {
@@ -332,7 +414,10 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           ),
         );
       },
-      ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
