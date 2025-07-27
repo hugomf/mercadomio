@@ -9,9 +9,15 @@ BEARER_TOKEN="Bearer Ry16ldMKZYJbHEwN/YEvqXwMCOJtjhICbpKYlPAm+7kP9veQT+4CdhmhaBK
 TENANT_ID="mexico-natura-web"
 API_KEY="3e28babd-85e9-4557-bfdd-450edf372306"
 
-echo "🌿 Natura Real API Scraper"
+echo "🌿 Natura Real API Scraper with Local Image Download"
 echo "📡 Backend API: $API_URL"
 echo "🔗 Natura API: $NATURA_API_BASE"
+echo ""
+
+# Setup local image directory
+IMAGES_DIR="./frontend/assets/images/products"
+mkdir -p "$IMAGES_DIR"
+echo "📁 Images will be saved to: $IMAGES_DIR"
 echo ""
 
 # Categories to scrape from Natura API
@@ -42,6 +48,61 @@ fetch_natura_products() {
         -H "Accept: application/json" \
         -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
         "$url" 2>/dev/null
+}
+
+# Function to download image and return local URL
+download_image() {
+    local image_url="$1"
+    local product_id_natura="$2"
+    local product_id="$3"
+
+    if [ -z "$image_url" ] || [ "$image_url" = "null" ]; then
+        echo ""
+        return 1
+    fi
+
+    # Generate filename from product ID and original extension
+    local extension="${image_url##*.}"
+    extension="${extension%%\?*}"  # Remove query parameters
+    if [[ ! "$extension" =~ ^(jpg|jpeg|png|gif|webp)$ ]]; then
+        extension="jpg"  # Default to jpg
+    fi
+
+    local filename="${product_id_natura}_${product_id}.${extension}"
+    local local_path="$IMAGES_DIR/$filename"
+    local local_url="/assets/images/products/$filename"
+
+    echo "📥 Downloading image: $filename" >&2
+
+    # Download with proper headers
+    if curl -s -L --max-time 15 \
+        -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" \
+        -H "Accept: image/webp,image/apng,image/*,*/*;q=0.8" \
+        -H "Referer: https://www.natura.com.mx/" \
+        -o "$local_path" \
+        "$image_url" 2>/dev/null; then
+
+        # Check if file was downloaded and has reasonable size
+        if [ -f "$local_path" ] && [ -s "$local_path" ]; then
+            local file_size=$(wc -c < "$local_path")
+            if [ "$file_size" -gt 1000 ]; then  # At least 1KB
+                echo "   ✅ Downloaded: $file_size bytes" >&2
+                echo "$local_url"
+                return 0
+            else
+                echo "   ❌ File too small: $file_size bytes" >&2
+                rm -f "$local_path"
+            fi
+        else
+            echo "   ❌ Download failed or empty file" >&2
+        fi
+    else
+        echo "   ❌ Curl failed" >&2
+    fi
+
+    # Return empty string if download failed
+    echo ""
+    return 1
 }
 
 # Function to map Natura category to our category
@@ -90,10 +151,17 @@ create_product() {
     local rating=$(echo "$natura_product" | jq -r '.rating // 0')
     local line=$(echo "$natura_product" | jq -r '.line // ""')
     local natura_category=$(echo "$natura_product" | jq -r '.categoryId // ""')
-    local image_url=$(echo "$natura_product" | jq -r '.images.medium[0].absURL // ""')
-    
+    local original_image_url=$(echo "$natura_product" | jq -r '.images.medium[0].absURL // ""')
+
     # Map to our category system
     local category=$(map_category "$natura_category")
+
+    # Download image locally and get local URL
+    local image_url=$(download_image "$original_image_url" "$product_id_natura" "$product_id")
+    if [ -z "$image_url" ]; then
+        echo "⚠️  No image downloaded for: $name" >&2
+        image_url=""  # Will use placeholder or no image
+    fi
     
     # Clean and validate data
     name=$(echo "$name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/"/\\"/g')

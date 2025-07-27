@@ -99,35 +99,23 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   int currentPage = 1;
   bool hasMore = true;
 
-  // Helper function to get working image URL
-  String getWorkingImageUrl(String originalUrl, String productName, String category) {
-    if (originalUrl.isEmpty) return _getCategoryPlaceholder(category);
+  // Helper function to get working image URL (local or remote)
+  String getWorkingImageUrl(String originalUrl) {
+    if (originalUrl.isEmpty) return 'https://via.placeholder.com/150';
 
-    // For now, use category-specific placeholders since proxy isn't working
-    // TODO: Fix proxy and use original Natura images
-    return _getCategoryPlaceholder(category);
-  }
-
-  // Get category-specific placeholder images that work reliably
-  String _getCategoryPlaceholder(String category) {
-    switch (category.toLowerCase()) {
-      case 'perfumería':
-        return 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'cuidado del cabello':
-        return 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'maquillaje':
-        return 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'cuidado personal':
-        return 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'cuidado facial':
-        return 'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'protección solar':
-        return 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=400&fit=crop&auto=format&q=80';
-      case 'hogar':
-        return 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=400&fit=crop&auto=format&q=80';
-      default:
-        return 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&fit=crop&auto=format&q=80';
+    // If it's a local asset URL, convert to full backend URL
+    if (originalUrl.startsWith('/assets/')) {
+      final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+      return '$apiUrl$originalUrl';
     }
+
+    // If it's already a full URL, use it directly
+    if (originalUrl.startsWith('http')) {
+      return originalUrl;
+    }
+
+    // Fallback to placeholder
+    return 'https://via.placeholder.com/150';
   }
   final int itemsPerPage = 10;
 
@@ -377,28 +365,14 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           child: ListTile(
             leading: product.imageUrl.isNotEmpty
               ? Image.network(
-                  getWorkingImageUrl(product.imageUrl, product.name, product.category),
+                  getWorkingImageUrl(product.imageUrl),
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     print('🖼️ Image load error for ${product.name}: $error');
                     print('🔗 Image URL: ${product.imageUrl}');
-                    print('🔗 Working URL: ${getWorkingImageUrl(product.imageUrl, product.name, product.category)}');
-
-                    // Show a more informative error widget
-                    return Container(
-                      width: 50,
-                      height: 50,
-                      color: Colors.grey.shade200,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.broken_image, size: 20, color: Colors.red.shade400),
-                          Text('No img', style: TextStyle(fontSize: 8, color: Colors.red.shade400)),
-                        ],
-                      ),
-                    );
+                    return const Icon(Icons.image_not_supported, size: 50, color: Colors.red);
                   },
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {
