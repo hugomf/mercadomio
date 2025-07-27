@@ -171,30 +171,61 @@ extract_product_data() {
     # Extract description
     description=$(grep -oE '<meta name="description" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
     
-    # Extract image using multiple strategies
+    # Extract image using multiple strategies (redirect debug output to stderr)
     image_url=""
 
-    # Strategy 1: Look for main product images
-    image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -E "(product|main|hero|imagen|foto)" | head -1 | sed 's/src="//; s/".*//')
+    echo "🔍 Searching for images in page..." >&2
 
-    # Strategy 2: Look for data-src (lazy loading)
-    if [ -z "$image_url" ]; then
-        image_url=$(grep -oE 'data-src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/data-src="//; s/".*//')
+    # Strategy 1: Look for Natura-specific image URLs (production.na01.natura.com)
+    local natura_images=$(grep -oE '(src|data-src)="[^"]*production\.na01\.natura\.com[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | sed 's/.*="//; s/".*//')
+    if [ -n "$natura_images" ]; then
+        echo "   ✅ Found Natura production images" >&2
+        image_url=$(echo "$natura_images" | head -1)
     fi
 
-    # Strategy 3: Look for og:image meta tag
+    # Strategy 2: Look for any production.na01.natura.com images
     if [ -z "$image_url" ]; then
-        image_url=$(grep -oE 'property="og:image" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
+        local any_natura=$(grep -oE '"[^"]*production\.na01\.natura\.com[^"]*"' "$temp_file" | sed 's/"//g')
+        if [ -n "$any_natura" ]; then
+            echo "   ✅ Found Natura domain images" >&2
+            image_url=$(echo "$any_natura" | head -1)
+        fi
     fi
 
-    # Strategy 4: Look for srcset
+    # Strategy 3: Look for main product images
     if [ -z "$image_url" ]; then
-        image_url=$(grep -oE 'srcset="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/srcset="//; s/".*//' | cut -d',' -f1 | sed 's/ [0-9]*w$//')
+        local main_images=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -E "(product|main|hero|imagen|foto)" | sed 's/src="//; s/".*//')
+        if [ -n "$main_images" ]; then
+            echo "   ✅ Found main product images" >&2
+            image_url=$(echo "$main_images" | head -1)
+        fi
     fi
 
-    # Strategy 5: Any image that's not an icon
+    # Strategy 4: Look for data-src (lazy loading)
     if [ -z "$image_url" ]; then
-        image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -v "icon\|logo\|thumb\|small\|mini" | head -1 | sed 's/src="//; s/".*//')
+        local lazy_images=$(grep -oE 'data-src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | sed 's/data-src="//; s/".*//')
+        if [ -n "$lazy_images" ]; then
+            echo "   ✅ Found lazy-loaded images" >&2
+            image_url=$(echo "$lazy_images" | head -1)
+        fi
+    fi
+
+    # Strategy 5: Look for og:image meta tag
+    if [ -z "$image_url" ]; then
+        local og_images=$(grep -oE 'property="og:image" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
+        if [ -n "$og_images" ]; then
+            echo "   ✅ Found Open Graph images" >&2
+            image_url=$(echo "$og_images" | head -1)
+        fi
+    fi
+
+    # Strategy 6: Any image that's not an icon
+    if [ -z "$image_url" ]; then
+        local any_images=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -v "icon\|logo\|thumb\|small\|mini" | sed 's/src="//; s/".*//')
+        if [ -n "$any_images" ]; then
+            echo "   ✅ Found other images" >&2
+            image_url=$(echo "$any_images" | head -1)
+        fi
     fi
 
     # Convert relative URLs to absolute
@@ -203,6 +234,12 @@ extract_product_data() {
     elif [[ "$image_url" =~ ^/ ]]; then
         image_url="$NATURA_BASE_URL$image_url"
     fi
+
+    if [ -n "$image_url" ]; then
+        echo "✅ Selected image: $image_url" >&2
+    else
+        echo "❌ No images found on this page" >&2
+    fi
     
     # Clean data
     name=$(echo "$name" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | head -c 100)
@@ -210,12 +247,16 @@ extract_product_data() {
     
     rm -f "$temp_file"
     
-    # Validate
-    if [ -n "$name" ] && [ -n "$price" ] && [ "$price" != "0" ]; then
+    # Validate and clean data
+    name=$(echo "$name" | tr -d '\n\r' | sed 's/[^a-zA-Z0-9 áéíóúñÁÉÍÓÚÑ.,()-]//g')
+    description=$(echo "$description" | tr -d '\n\r' | sed 's/[^a-zA-Z0-9 áéíóúñÁÉÍÓÚÑ.,()-]//g')
+
+    if [ -n "$name" ] && [ -n "$price" ] && [ "$price" != "0" ] && [[ "$price" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
         echo "$name|$price|$description|$image_url"
         return 0
     fi
-    
+
+    echo "❌ Invalid product data extracted" >&2
     return 1
 }
 
@@ -280,21 +321,25 @@ create_product() {
     local product_id="$5"
     local is_scraped="$6"
     
-    # Determine category
-    local category="Belleza"
-    if [[ "$name" =~ [Kk]aiak|[Ll]una|[Ee]ssencial|[Ff]ragran|[Pp]erfum|Eau ]]; then
+    # Determine category - be more specific with patterns
+    local category="Cuidado Personal"  # Default category
+    if [[ "$name" =~ [Kk]aiak|[Ll]una|[Ee]ssencial|[Ff]ragran|[Pp]erfum|[Ee]au.*[Dd]e.*[Tt]oilette|[Ee]au.*[Dd]e.*[Pp]arfum ]]; then
         category="Perfumería"
-    elif [[ "$name" =~ [Mm]aquillaje|[Bb]ase|[Ll]abial|[Rr]ímel|Una|Faces ]]; then
+    elif [[ "$name" =~ [Mm]aquillaje|[Bb]ase|[Ll]abial|[Rr]ímel|[Ss]ombras|[Rr]ubor|Una|Faces ]]; then
         category="Maquillaje"
-    elif [[ "$name" =~ [Cc]abello|[Ss]hampoo|[Aa]condicionador|Plant ]]; then
+    elif [[ "$name" =~ [Cc]abello|[Ss]hampoo|[Aa]condicionador|[Mm]ascarilla.*[Cc]apilar|Plant ]]; then
         category="Cuidado del Cabello"
-    elif [[ "$name" =~ [Tt]ododia|[Ee]kos|[Cc]rema|[Cc]orporal ]]; then
+    elif [[ "$name" =~ [Tt]ododia|[Ee]kos.*[Mm]aracuyá|[Ee]kos.*[Aa]ndiroba|[Ee]kos.*[Bb]uriti|[Cc]rema.*[Cc]orporal|[Aa]ceite.*[Cc]orporal ]]; then
         category="Cuidado Personal"
-    elif [[ "$name" =~ [Cc]hronos|[Ff]acial|[Ss]erum ]]; then
+    elif [[ "$name" =~ [Cc]hronos|[Ff]acial|[Ss]erum|[Cc]ontorno.*[Oo]jos ]]; then
         category="Cuidado Facial"
-    elif [[ "$name" =~ [Cc]asa|[Jj]abón|[Ss]uavizante|[Aa]mbientador ]]; then
+    elif [[ "$name" =~ [Cc]asa|[Jj]abón.*[Rr]opa|[Ss]uavizante|[Aa]mbientador ]]; then
         category="Hogar"
+    elif [[ "$name" =~ [Pp]rotector.*[Ss]olar|[Ff]otoequilíbrio|FPS ]]; then
+        category="Protección Solar"
     fi
+
+    echo "🏷️  Detected category: $category for product: $name"
     
     local sku="NAT-KNOWN-$(printf "%04d" "$product_id")"
     local barcode="789$(printf "%010d" $((RANDOM % 9999999999)))"
@@ -359,22 +404,30 @@ create_product() {
 EOF
 )
 
+    echo "📤 Sending JSON payload:"
+    echo "$json_payload" | jq '.' 2>/dev/null || echo "$json_payload"
+    echo ""
+
     local response=$(curl -s -w "%{http_code}" -X POST \
         -H "Content-Type: application/json" \
         -d "$json_payload" \
         "$API_URL/api/products" 2>/dev/null)
-    
+
     local http_code="${response: -3}"
-    
+    local response_body="${response%???}"
+
     if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
         if [ "$is_scraped" = "true" ]; then
             echo "✅ Scraped: $name (\$${price} MXN)"
         else
             echo "🔄 Generated: $name (\$${price} MXN)"
         fi
+        echo "🖼️  Image URL: $image_url"
         return 0
     else
         echo "❌ API Error (HTTP $http_code): $name"
+        echo "📄 Error response: $response_body"
+        echo "💡 Check if backend is running and accepts the JSON format"
         return 1
     fi
 }
