@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
+import '../services/error_handler.dart';
+import 'error_state_widget.dart';
 
 class Product {
   final String id;
@@ -98,25 +101,9 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   bool isLoading = true;
   int currentPage = 1;
   bool hasMore = true;
+  AppError? _error;
+  bool _isRetrying = false;
 
-  // Helper function to get working image URL (local or remote)
-  String getWorkingImageUrl(String originalUrl) {
-    if (originalUrl.isEmpty) return 'https://via.placeholder.com/150';
-
-    // If it's a local asset URL, convert to full backend URL
-    if (originalUrl.startsWith('/assets/')) {
-      final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
-      return '$apiUrl$originalUrl';
-    }
-
-    // If it's already a full URL, use it directly
-    if (originalUrl.startsWith('http')) {
-      return originalUrl;
-    }
-
-    // Fallback to placeholder
-    return 'https://via.placeholder.com/150';
-  }
   final int itemsPerPage = 10;
 
   // Search state
@@ -151,6 +138,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       isLoading = true;
       products = [];
       hasMore = true;
+      _error = null;
     });
     _fetchProducts();
   }
@@ -168,6 +156,13 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   Future<void> _fetchProducts({bool loadMore = false}) async {
+    if (!loadMore) {
+      setState(() {
+        _error = null;
+        isLoading = true;
+      });
+    }
+
     try {
       await dotenv.load();
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
@@ -180,11 +175,14 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         url = '$apiUrl/api/products?page=$currentPage&limit=$itemsPerPage';
       }
 
-      final response = await http.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('Request timed out');
+      final response = await ErrorHandler.executeWithRetry(
+        () async {
+          return await http.get(Uri.parse(url)).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw Exception('Request timeout'),
+          );
         },
+        config: const RetryConfig(maxRetries: 2, initialDelay: Duration(seconds: 1)),
       );
 
       if (response.statusCode == 200) {
@@ -204,45 +202,51 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
             }
           }
 
-          setState(() {
-            if (loadMore) {
-              products.addAll(parsedProducts);
-            } else {
-              products = parsedProducts;
-            }
-            hasMore = products.length < totalItems;
-            isLoading = false;
-          });
-        } catch (e) {
-          // JSON parsing error
-          setState(() {
-            isLoading = false;
-          });
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to parse response: $e')),
-            );
+            setState(() {
+              if (loadMore) {
+                products.addAll(parsedProducts);
+              } else {
+                products = parsedProducts;
+              }
+              hasMore = products.length < totalItems;
+              isLoading = false;
+              _error = null;
+              _isRetrying = false;
+            });
+          }
+        } catch (e) {
+          if (mounted) {
+            setState(() {
+              _error = AppError(
+                type: ErrorType.parsing,
+                message: 'Failed to parse product data',
+                originalError: e,
+              );
+              isLoading = false;
+              _isRetrying = false;
+            });
           }
         }
       } else {
-        // Handle non-200 status codes
-        setState(() {
-          isLoading = false;
-        });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Server error: ${response.statusCode}')),
-          );
+          setState(() {
+            _error = AppError(
+              type: ErrorType.server,
+              message: 'Server returned status ${response.statusCode}',
+            );
+            isLoading = false;
+            _isRetrying = false;
+          });
         }
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load products: $e')),
-        );
+        setState(() {
+          _error = ErrorHandler.createError(e);
+          isLoading = false;
+          _isRetrying = false;
+        });
       }
     }
   }
@@ -265,12 +269,30 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       products = [];
       isSearchMode = false;
       currentSearchQuery = '';
+      _error = null;
+      _isRetrying = false;
     });
     _fetchProducts();
   }
 
+  Future<void> _retryFetch() async {
+    setState(() {
+      _isRetrying = true;
+      isLoading = true;
+    });
+    await _fetchProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_error != null && products.isEmpty) {
+      return ErrorStateWidget(
+        error: _error!,
+        onRetry: _retryFetch,
+        isRetrying: _isRetrying,
+      );
+    }
+
     if (isLoading && products.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -365,21 +387,21 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           child: ListTile(
             leading: product.imageUrl.isNotEmpty
               ? Image.network(
-                  getWorkingImageUrl(product.imageUrl),
+                  product.imageUrl,
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
-                    print('🖼️ Image load error for ${product.name}: $error');
-                    print('🔗 Image URL: ${product.imageUrl}');
+                    // print('🖼️ Image load error for ${product.name}: $error');
+                    // print('🔗 Image URL: ${product.imageUrl}');
                     return const Icon(Icons.image_not_supported, size: 50, color: Colors.red);
                   },
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {
-                      print('✅ Image loaded successfully for ${product.name}');
+                      // print('✅ Image loaded successfully for ${product.name}');
                       return child;
                     }
-                    print('⏳ Loading image for ${product.name}...');
+                    // print('⏳ Loading image for ${product.name}...');
                     return const SizedBox(
                       width: 50,
                       height: 50,

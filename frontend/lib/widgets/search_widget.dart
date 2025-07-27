@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 class SearchWidget extends StatefulWidget {
   final Function(String) onSearch;
 
-  const SearchWidget({Key? key, required this.onSearch}) : super(key: key);
+  const SearchWidget({super.key, required this.onSearch});
 
   @override
-  _SearchWidgetState createState() => _SearchWidgetState();
+  State<SearchWidget> createState() => _SearchWidgetState();
 }
 
 class _SearchWidgetState extends State<SearchWidget> {

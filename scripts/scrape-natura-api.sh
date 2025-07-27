@@ -15,20 +15,26 @@ echo "🔗 Natura API: $NATURA_API_BASE"
 echo ""
 
 # Setup local image directory
-IMAGES_DIR="./frontend/assets/images/products"
+IMAGES_DIR="../frontend/web/assets/images/products"
 mkdir -p "$IMAGES_DIR"
 echo "📁 Images will be saved to: $IMAGES_DIR"
 echo ""
 
 # Categories to scrape from Natura API
 categories=(
-    "cabello"           # Hair care
+    "promociones"
     "perfumeria"        # Perfumes
+    "cuidados-diarios"
+    "cabello"           # Hair care
+    "rostro"            # Rostro    
     "maquillaje"        # Makeup
-    "cuidado-corporal"  # Body care
-    "cuidado-facial"    # Facial care
-    "proteccion-solar"  # Sun protection
-    "hogar"            # Home
+    "hombre"
+    "infantil"
+    "regalos"
+    "repuestos"
+    "marcas"
+    # "cuidado-corporal"  # Body care
+    # "proteccion-solar"  # Sun protection
 )
 
 # Function to fetch products from Natura API
@@ -154,7 +160,9 @@ create_product() {
     local original_image_url=$(echo "$natura_product" | jq -r '.images.medium[0].absURL // ""')
 
     # Map to our category system
-    local category=$(map_category "$natura_category")
+    # local category=$(map_category "$natura_category")
+
+    local category=$natura_category
 
     # Download image locally and get local URL
     local image_url=$(download_image "$original_image_url" "$product_id_natura" "$product_id")
