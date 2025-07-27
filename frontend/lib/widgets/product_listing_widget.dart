@@ -20,6 +20,18 @@ class Product {
   final Map<String, dynamic> customAttributes;
   final Map<String, String> identifiers;
 
+  // Helper method to get absolute image URL based on platform
+  String getAbsoluteImageUrl(String baseApiUrl) {
+    if (imageUrl.isEmpty) return 'https://via.placeholder.com/150x150/4CAF50/FFFFFF?text=Natura';
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl; // Already absolute
+    }
+
+    // Use dedicated image server on port 8081 with original filenames
+    final imageServer = baseApiUrl.replaceAll(':8080', ':8081');
+    return '$imageServer$imageUrl';
+  }
+
   Product({
     required this.id,
     required this.name,
@@ -165,7 +177,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
     try {
       await dotenv.load();
-      final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+      final apiUrl = dotenv.env['API_URL'] ?? 'http://192.168.64.73:8080';
 
       // Build URL based on search mode
       final String url;
@@ -189,7 +201,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         try {
           final Map<String, dynamic> responseData = json.decode(response.body);
           final List<dynamic> productsData = responseData['data'] ?? [];
-          final int totalItems = responseData['meta']?['totalItems'] ?? productsData.length;
+          final int totalItems = responseData['total'] ?? productsData.length;
+          print('📄 Backend response: total=${responseData['total']}, data length=${productsData.length}, calculated totalItems=$totalItems');
 
           // Parse products with individual error handling
           final List<Product> parsedProducts = [];
@@ -206,10 +219,13 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
             setState(() {
               if (loadMore) {
                 products.addAll(parsedProducts);
+                print('📄 Added ${parsedProducts.length} products, total now: ${products.length}');
               } else {
                 products = parsedProducts;
+                print('📄 Loaded ${parsedProducts.length} products for page $currentPage');
               }
               hasMore = products.length < totalItems;
+              print('📄 Pagination status: ${products.length}/$totalItems products, hasMore=$hasMore');
               isLoading = false;
               _error = null;
               _isRetrying = false;
@@ -252,14 +268,24 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   void _loadMoreProducts() {
+    print('📄 _loadMoreProducts called: hasMore=$hasMore, isLoading=$isLoading, currentPage=$currentPage');
     if (hasMore && !isLoading) {
       final nextPage = currentPage + 1;
+      print('📄 Loading page $nextPage, current products: ${products.length}');
       setState(() {
         currentPage = nextPage;
         isLoading = true;
       });
       _fetchProducts(loadMore: true);
+    } else {
+      print('📄 Load more skipped: hasMore=$hasMore, isLoading=$isLoading');
     }
+  }
+
+  // Helper method to get API URL
+  Future<String> _getApiUrl() async {
+    await dotenv.load();
+    return dotenv.env['API_URL'] ?? 'http://192.168.64.73:8080';
   }
 
   void refreshProducts() {
@@ -366,7 +392,10 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         Expanded(
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent && hasMore) {
+              // More flexible scroll detection - trigger when near bottom
+              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200 &&
+                  hasMore && !isLoading) {
+                print('🔄 Triggering load more: pixels=${scrollInfo.metrics.pixels}, max=${scrollInfo.metrics.maxScrollExtent}');
                 _loadMoreProducts();
               }
               return false;
@@ -386,8 +415,19 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         return Card(
           child: ListTile(
             leading: product.imageUrl.isNotEmpty
-              ? Image.network(
-                  product.imageUrl,
+              ? FutureBuilder<String>(
+                  future: _getApiUrl(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final absoluteImageUrl = product.getAbsoluteImageUrl(snapshot.data!);
+                    return Image.network(
+                      absoluteImageUrl,
                   width: 50,
                   height: 50,
                   fit: BoxFit.cover,
@@ -406,6 +446,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                       width: 50,
                       height: 50,
                       child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
                     );
                   },
                 )
@@ -429,7 +471,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
               onPressed: () async {
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 try {
-                  final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+                  final apiUrl = dotenv.env['API_URL'] ?? 'http://192.168.64.73:8080';
                   final response = await http.post(
                     Uri.parse('$apiUrl/api/cart'),
                     body: json.encode({
