@@ -1,30 +1,55 @@
-# Product Generation Scripts
+# Product Management Scripts
 
-This directory contains scripts to populate your database with realistic test products for testing pagination and search functionality.
+This directory contains scripts to manage products in your database for testing pagination and search functionality.
 
 ## 🚀 Quick Start
 
-### Option 1: Node.js Script (Recommended)
+### Generate Products
+
+#### Option 1: Node.js Script (Recommended)
 ```bash
 # Make sure your backend is running on localhost:8080
 cd scripts
 node generate-products.js
 ```
 
-### Option 2: Bash Script
+#### Option 2: Bash Script
 ```bash
 # Make sure your backend is running on localhost:8080
 cd scripts
 ./generate-products.sh
 ```
 
-### Option 3: Custom API URL
+#### Option 3: Custom API URL
 ```bash
 # If your backend is running on a different URL
 API_URL=http://192.168.64.73:8080 node generate-products.js
 # or
 API_URL=http://192.168.64.73:8080 ./generate-products.sh
 ```
+
+### Clear All Products
+
+#### Option 1: Node.js Script (Recommended)
+```bash
+cd scripts
+node clear-products.js
+```
+
+#### Option 2: Bash Script
+```bash
+cd scripts
+./clear-products.sh
+```
+
+#### Option 3: Custom API URL
+```bash
+API_URL=http://192.168.64.73:8080 node clear-products.js
+# or
+API_URL=http://192.168.64.73:8080 ./clear-products.sh
+```
+
+**⚠️ Warning**: The clear scripts will delete ALL products from your database. You'll be prompted to confirm before deletion.
 
 ## 📊 What Gets Generated
 
@@ -105,6 +130,45 @@ curl "http://localhost:8080/api/products?category=Electronics&page=1&limit=10"
 
 # Test price filtering
 curl "http://localhost:8080/api/products?minPrice=100&maxPrice=500&page=1&limit=10"
+```
+
+## 🧹 Cleanup Scripts
+
+The cleanup scripts provide a safe way to remove all products from your database:
+
+### Features
+- **Safety confirmation**: Prompts before deletion to prevent accidents
+- **Batch processing**: Deletes products in batches for better performance
+- **Progress tracking**: Shows real-time deletion progress
+- **Error handling**: Continues deletion even if some products fail
+- **Connection testing**: Verifies API connectivity before starting
+- **Detailed reporting**: Shows success/failure statistics
+
+### Sample Output
+```
+🧹 Product Cleanup Tool
+📡 API URL: http://192.168.64.73:8080
+
+🔍 Checking API connection...
+✅ API connection successful
+
+📋 Fetching all products...
+📦 Fetched page 1: 100 products
+📦 Fetched page 2: 100 products
+...
+📊 Found 5000 products in database
+
+⚠️  This will DELETE ALL PRODUCTS from your database.
+Are you sure you want to continue? (yes/no): yes
+
+🚀 Starting deletion process...
+✅ Deleted 50/5000 products...
+✅ Deleted 100/5000 products...
+...
+🎉 Cleanup completed!
+✅ Successfully deleted: 4987 products
+❌ Failed to delete: 13 products
+📊 Success rate: 99.7%
 ```
 
 ## 🔧 Customization
