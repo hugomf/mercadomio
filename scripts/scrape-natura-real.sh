@@ -86,19 +86,35 @@ make_request() {
 extract_product_urls() {
     local category_url="$1"
     local temp_file="$TEMP_DIR/category_page.html"
-    
-    echo "🔍 Extracting product URLs from: $category_url"
-    
+
     if make_request "$category_url" "$temp_file"; then
         # Extract product URLs using multiple patterns
-        grep -oE 'href="[^"]*/(producto|product)/[^"]*"' "$temp_file" | \
-        sed 's/href="//g' | \
-        sed 's/"//g' | \
-        sed "s|^/|$NATURA_BASE_URL/|g" | \
-        grep -E "(producto|product)" | \
-        head -20
+        {
+            # Pattern 1: Standard href="/producto/..."
+            grep -oE 'href="[^"]*/(producto|product)/[^"]*"' "$temp_file" | sed 's/href="//g; s/"//g'
+
+            # Pattern 2: href="/p/..."
+            grep -oE 'href="[^"]*/p/[^"]*"' "$temp_file" | sed 's/href="//g; s/"//g'
+
+            # Pattern 3: data-href attributes
+            grep -oE 'data-href="[^"]*/(producto|product)/[^"]*"' "$temp_file" | sed 's/data-href="//g; s/"//g'
+
+            # Pattern 4: JavaScript URLs
+            grep -oE "'/[^']*/(producto|product)/[^']*'" "$temp_file" | sed "s/'//g"
+
+            # Pattern 5: More generic product links
+            grep -oE 'href="[^"]*"' "$temp_file" | sed 's/href="//g; s/"//g' | grep -E "/(producto|product|p)/" | grep -v "#"
+
+        } | while read -r url; do
+            # Convert relative URLs to absolute and validate
+            if [[ "$url" =~ ^/ ]]; then
+                echo "$NATURA_BASE_URL$url"
+            elif [[ "$url" =~ ^https?:// ]]; then
+                echo "$url"
+            fi
+        done | sort -u | head -20
     else
-        echo "❌ Failed to fetch category page: $category_url"
+        echo "❌ Failed to fetch category page: $category_url" >&2
         return 1
     fi
 }
@@ -286,7 +302,9 @@ scrape_natura_products() {
         local urls=$(extract_product_urls "$category_url")
         if [ -n "$urls" ]; then
             while IFS= read -r url; do
-                all_product_urls+=("$url")
+                if [ -n "$url" ] && [[ "$url" =~ ^https?:// ]]; then
+                    all_product_urls+=("$url")
+                fi
             done <<< "$urls"
         fi
         sleep 1 # Be respectful to the server
