@@ -103,7 +103,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   String getProxiedImageUrl(String originalUrl) {
     if (originalUrl.isEmpty) return originalUrl;
 
-    // If it's a Natura image, use our proxy
+    // Use proxy for Natura images to avoid CORS issues
     if (originalUrl.contains('production.na01.natura.com')) {
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
       return '$apiUrl/api/image-proxy?url=${Uri.encodeComponent(originalUrl)}';
@@ -367,7 +367,21 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                   errorBuilder: (context, error, stackTrace) {
                     print('🖼️ Image load error for ${product.name}: $error');
                     print('🔗 Image URL: ${product.imageUrl}');
-                    return const Icon(Icons.image_not_supported, size: 50, color: Colors.red);
+                    print('🔗 Proxied URL: ${getProxiedImageUrl(product.imageUrl)}');
+
+                    // Show a more informative error widget
+                    return Container(
+                      width: 50,
+                      height: 50,
+                      color: Colors.grey.shade200,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.broken_image, size: 20, color: Colors.red.shade400),
+                          Text('No img', style: TextStyle(fontSize: 8, color: Colors.red.shade400)),
+                        ],
+                      ),
+                    );
                   },
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {
