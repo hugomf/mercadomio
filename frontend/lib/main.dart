@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:frontend/widgets/product_search_view.dart';
 import 'package:frontend/widgets/error_boundary_widget.dart';
-import 'package:frontend/test_connection.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
