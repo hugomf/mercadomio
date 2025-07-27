@@ -150,8 +150,28 @@ extract_product_data() {
             description=$(grep -oE '<p[^>]*class="[^"]*description[^"]*"[^>]*>[^<]*</p>' "$temp_file" | sed 's/<[^>]*>//g' | head -1)
         fi
         
-        # Extract main image URL
-        image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/src="//g' | sed 's/"//g')
+        # Extract main image URL using multiple strategies
+        image_url=""
+
+        # Strategy 1: Look for product images with specific patterns
+        image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -E "(product|imagen|foto)" | head -1 | sed 's/src="//g' | sed 's/"//g')
+
+        # Strategy 2: Look for data-src attributes (lazy loading)
+        if [ -z "$image_url" ]; then
+            image_url=$(grep -oE 'data-src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/data-src="//g' | sed 's/"//g')
+        fi
+
+        # Strategy 3: Look for any image with reasonable size
+        if [ -z "$image_url" ]; then
+            image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -v "icon\|logo\|thumb" | head -1 | sed 's/src="//g' | sed 's/"//g')
+        fi
+
+        # Strategy 4: Look for srcset attributes
+        if [ -z "$image_url" ]; then
+            image_url=$(grep -oE 'srcset="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/srcset="//g' | sed 's/"//g' | cut -d',' -f1 | sed 's/ [0-9]*w$//')
+        fi
+
+        # Convert relative URLs to absolute
         if [[ "$image_url" =~ ^// ]]; then
             image_url="https:$image_url"
         elif [[ "$image_url" =~ ^/ ]]; then
@@ -185,17 +205,42 @@ extract_product_data() {
 download_image() {
     local image_url="$1"
     local product_id="$2"
-    
+
     if [ -n "$image_url" ] && [[ "$image_url" =~ ^https?:// ]]; then
-        local image_extension="${image_url##*.}"
-        local image_file="$IMAGES_DIR/natura_${product_id}.${image_extension}"
-        
-        if curl -s -L -o "$image_file" "$image_url"; then
-            echo "$image_file"
-            return 0
+        # Clean URL (remove query parameters for extension detection)
+        local clean_url=$(echo "$image_url" | cut -d'?' -f1)
+        local image_extension="${clean_url##*.}"
+
+        # Default to jpg if no extension found
+        if [[ ! "$image_extension" =~ ^(jpg|jpeg|png|webp|gif)$ ]]; then
+            image_extension="jpg"
         fi
+
+        local image_file="$IMAGES_DIR/natura_${product_id}.${image_extension}"
+
+        echo "🖼️  Downloading image: $image_url"
+
+        if curl -s -L --max-time 30 \
+            -H "User-Agent: $USER_AGENT" \
+            -H "Referer: $NATURA_BASE_URL" \
+            -o "$image_file" "$image_url"; then
+
+            # Verify the file was downloaded and has content
+            if [ -s "$image_file" ]; then
+                echo "✅ Image saved: $image_file"
+                echo "$image_file"
+                return 0
+            else
+                echo "❌ Downloaded file is empty"
+                rm -f "$image_file"
+            fi
+        else
+            echo "❌ Failed to download image"
+        fi
+    else
+        echo "❌ Invalid image URL: $image_url"
     fi
-    
+
     return 1
 }
 
@@ -281,14 +326,14 @@ scrape_natura_products() {
     
     # Natura category URLs (you may need to update these based on current site structure)
     local category_urls=(
-        "$NATURA_BASE_URL/perfumeria"
-        "$NATURA_BASE_URL/cuidado-personal"
-        "$NATURA_BASE_URL/maquillaje"
-        "$NATURA_BASE_URL/cabello"
-        "$NATURA_BASE_URL/proteccion-solar"
-        "$NATURA_BASE_URL/cuidado-facial"
-        "$NATURA_BASE_URL/cuidado-corporal"
-        "$NATURA_BASE_URL/hogar"
+        "$NATURA_BASE_URL/c/perfumeria"
+        "$NATURA_BASE_URL/c/cuidado-personal"
+        "$NATURA_BASE_URL/c/maquillaje"
+        "$NATURA_BASE_URL/c/cabello"
+        "$NATURA_BASE_URL/c/proteccion-solar"
+        "$NATURA_BASE_URL/c/cuidado-facial"
+        "$NATURA_BASE_URL/c/cuidado-corporal"
+        "$NATURA_BASE_URL/c/hogar"
     )
     
     local all_product_urls=()

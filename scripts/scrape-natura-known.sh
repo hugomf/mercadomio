@@ -171,8 +171,33 @@ extract_product_data() {
     # Extract description
     description=$(grep -oE '<meta name="description" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
     
-    # Extract image
-    image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/src="//; s/".*//')
+    # Extract image using multiple strategies
+    image_url=""
+
+    # Strategy 1: Look for main product images
+    image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -E "(product|main|hero|imagen|foto)" | head -1 | sed 's/src="//; s/".*//')
+
+    # Strategy 2: Look for data-src (lazy loading)
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'data-src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/data-src="//; s/".*//')
+    fi
+
+    # Strategy 3: Look for og:image meta tag
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'property="og:image" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
+    fi
+
+    # Strategy 4: Look for srcset
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'srcset="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/srcset="//; s/".*//' | cut -d',' -f1 | sed 's/ [0-9]*w$//')
+    fi
+
+    # Strategy 5: Any image that's not an icon
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -v "icon\|logo\|thumb\|small\|mini" | head -1 | sed 's/src="//; s/".*//')
+    fi
+
+    # Convert relative URLs to absolute
     if [[ "$image_url" =~ ^// ]]; then
         image_url="https:$image_url"
     elif [[ "$image_url" =~ ^/ ]]; then
@@ -218,9 +243,31 @@ generate_realistic_product() {
     # Generate description
     local description="Producto Natura de alta calidad con ingredientes naturales de la Amazonía brasileña. Fórmula vegana y libre de crueldad animal."
     
-    # Generate image URL
-    local image_url="https://picsum.photos/300/400?random=$product_id"
-    
+    # Generate realistic image URL based on product type
+    local image_url=""
+    if [[ "$product_slug" =~ eau-de-toilette|eau-de-parfum|perfum|fragran ]]; then
+        # Perfume bottle image
+        image_url="https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    elif [[ "$product_slug" =~ maquillaje|base|labial|rimel|sombras|rubor ]]; then
+        # Makeup product image
+        image_url="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    elif [[ "$product_slug" =~ shampoo|acondicionador|cabello|capilar ]]; then
+        # Hair care product image
+        image_url="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    elif [[ "$product_slug" =~ crema|aceite|corporal|hidratante ]]; then
+        # Body care product image
+        image_url="https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    elif [[ "$product_slug" =~ facial|serum|chronos ]]; then
+        # Facial care product image
+        image_url="https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    elif [[ "$product_slug" =~ casa|jabon|suavizante|ambientador ]]; then
+        # Home product image
+        image_url="https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    else
+        # Generic beauty product
+        image_url="https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+    fi
+
     echo "$name|$price|$description|$image_url"
 }
 
@@ -251,7 +298,38 @@ create_product() {
     
     local sku="NAT-KNOWN-$(printf "%04d" "$product_id")"
     local barcode="789$(printf "%010d" $((RANDOM % 9999999999)))"
-    
+
+    # Ensure we always have an image URL - only generate if not provided
+    if [ -z "$image_url" ] || [ "$image_url" = "null" ]; then
+        # Generate category-specific image based on category
+        case "$category" in
+            "Perfumería")
+                image_url="https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            "Maquillaje")
+                image_url="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            "Cuidado del Cabello")
+                image_url="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            "Cuidado Personal"|"Cuidado Corporal")
+                image_url="https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            "Cuidado Facial")
+                image_url="https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            "Hogar")
+                image_url="https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+            *)
+                image_url="https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&fit=crop&crop=center&auto=format&q=80&seed=$product_id"
+                ;;
+        esac
+        echo "🖼️  Generated image for $category: $image_url"
+    else
+        echo "🖼️  Using provided image: $image_url"
+    fi
+
     local json_payload=$(cat <<EOF
 {
     "name": "$name",

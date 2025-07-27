@@ -169,8 +169,28 @@ extract_product_data() {
         description="Producto Natura de alta calidad con ingredientes naturales."
     fi
     
-    # Extract image URL
-    image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/src="//; s/".*//')
+    # Extract image URL using multiple strategies
+    image_url=""
+
+    # Strategy 1: Look for main product images
+    image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -E "(product|main|hero|imagen)" | head -1 | sed 's/src="//; s/".*//')
+
+    # Strategy 2: Look for data-src (lazy loading)
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'data-src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | head -1 | sed 's/data-src="//; s/".*//')
+    fi
+
+    # Strategy 3: Look for og:image meta tag
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'property="og:image" content="[^"]*"' "$temp_file" | sed 's/.*content="//; s/".*//')
+    fi
+
+    # Strategy 4: Any reasonable sized image
+    if [ -z "$image_url" ]; then
+        image_url=$(grep -oE 'src="[^"]*\.(jpg|jpeg|png|webp)[^"]*"' "$temp_file" | grep -v "icon\|logo\|thumb\|small" | head -1 | sed 's/src="//; s/".*//')
+    fi
+
+    # Convert relative URLs to absolute
     if [[ "$image_url" =~ ^// ]]; then
         image_url="https:$image_url"
     elif [[ "$image_url" =~ ^/ ]]; then
