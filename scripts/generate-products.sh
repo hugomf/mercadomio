@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-API_URL="${API_URL:-http://192.168.64.73:8080}"
+API_URL="${API_URL:-http://192.168.1.216:8080}"
 TOTAL_PRODUCTS=5000
 
 echo "🚀 Starting to generate $TOTAL_PRODUCTS products..."
