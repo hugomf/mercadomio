@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-API_URL="${API_URL:-http://192.168.64.73:8080}"
+API_URL="${API_URL:-http://192.168.1.216:8080}"
 
 echo "🧹 Product Cleanup Tool"
 echo "📡 API URL: $API_URL"
@@ -35,60 +35,67 @@ check_api() {
 
 # Function to get all product IDs
 get_all_products() {
-    echo "📋 Fetching all products..."
+    >&2 echo "📋 Fetching all products..."
     local all_products=()
     local page=1
-    local has_more=true
-    
-    while [ "$has_more" = true ]; do
+
+    # Get the total count first
+    response=$(curl -s "$API_URL/api/products?page=1&limit=1" 2>/dev/null)
+
+    if ! echo "$response" | jq -e . > /dev/null 2>&1; then
+        >&2 echo "❌ Invalid JSON response"
+        >&2 echo "Raw response: $response"
+        return 1
+    fi
+
+    total=$(echo "$response" | jq -r '.total // 0')
+
+    if [ "$total" -eq 0 ]; then
+        # Output nothing to stdout
+        return 0
+    fi
+
+    >&2 echo "📊 Found $total total products"
+
+    # Calculate pages needed
+    local pages_needed=$(( (total + 99) / 100 ))
+
+    for page in $(seq 1 $pages_needed); do
         response=$(curl -s "$API_URL/api/products?page=$page&limit=100" 2>/dev/null)
-        
+
         if [ $? -ne 0 ]; then
-            echo "❌ Error fetching page $page"
-            break
+            >&2 echo "❌ Error fetching page $page"
+            continue
         fi
-        
-        # Extract products from response
-        products=$(echo "$response" | jq -r '.data[]?.id // empty' 2>/dev/null)
-        
-        if [ -z "$products" ]; then
-            has_more=false
-        else
-            # Count products in this page
-            product_count=$(echo "$products" | wc -l)
-            echo "📦 Fetched page $page: $product_count products"
-            
-            # Add to all products
-            all_products+=($products)
-            
-            # Check if there are more pages
-            total_pages=$(echo "$response" | jq -r '.meta.totalPages // 1' 2>/dev/null)
-            if [ "$page" -ge "$total_pages" ]; then
-                has_more=false
-            fi
-            
-            ((page++))
+
+        # Extract product IDs from data array
+        products=$(echo "$response" | jq -r '.data[]?._id // .data[]?.id // empty' 2>/dev/null)
+
+        if [ -n "$products" ]; then
+            while IFS= read -r product_id; do
+                if [ -n "$product_id" ]; then
+                    all_products+=("$product_id")
+                fi
+            done <<< "$products"
+            >&2 echo "📦 Fetched page $page: $(echo "$products" | wc -l) products"
         fi
     done
-    
-    echo "${all_products[@]}"
+
+    # Output only the product IDs to stdout
+    printf '%s\n' "${all_products[@]}"
 }
 
 # Function to confirm deletion
 confirm_deletion() {
     echo ""
     echo "⚠️  This will DELETE ALL PRODUCTS from your database."
-    echo -n "Are you sure you want to continue? (yes/no): "
-    read -r answer
+    read -p "re you sure you want to continue? (y/N):" -n 1 -r
+    echo
     
-    case "$answer" in
-        [Yy]|[Yy][Ee][Ss])
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 0
+    fi
+
 }
 
 # Function to delete products
@@ -98,12 +105,23 @@ delete_products() {
     local success_count=0
     local error_count=0
     
+    if [ $total -eq 0 ]; then
+        echo "✨ No products to delete"
+        return 0
+    fi
+    
     echo "🗑️  Starting to delete $total products..."
     echo ""
     
     for i in "${!products[@]}"; do
-        local product_id="${products[$i]}"
-        local current=$((i + 1))
+        product_id="${products[$i]}"
+        current=$((i + 1))
+        
+        # Validate product ID format
+        if [[ ! "$product_id" =~ ^[a-fA-F0-9]{24}$ ]] && [[ ! "$product_id" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "⚠️  Skipping invalid ID: $product_id"
+            continue
+        fi
         
         # Delete product
         response=$(curl -s -w "%{http_code}" -X DELETE \
@@ -113,39 +131,22 @@ delete_products() {
         
         if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
             ((success_count++))
+            echo "✅ Deleted: $product_id ($success_count/$total)"
         else
             ((error_count++))
-            if [ $error_count -le 10 ]; then
-                echo "❌ Error deleting product $product_id (HTTP $http_code)"
-            fi
+            echo "❌ Failed: $product_id (HTTP $http_code)"
         fi
         
-        # Progress indicator
-        if [ $((success_count % 50)) -eq 0 ] || [ $current -eq $total ]; then
-            echo "✅ Deleted $success_count/$total products..."
-        fi
-        
-        # Small delay to be nice to the server
-        sleep 0.02
+        sleep 0.1  # Small delay
     done
     
     echo ""
     echo "🎉 Cleanup completed!"
     echo "✅ Successfully deleted: $success_count products"
-    echo "❌ Failed to delete: $error_count products"
     
     if [ $total -gt 0 ]; then
         success_rate=$(echo "scale=1; $success_count * 100 / $total" | bc -l 2>/dev/null || echo "N/A")
         echo "📊 Success rate: ${success_rate}%"
-    fi
-    
-    if [ $error_count -gt 0 ]; then
-        echo ""
-        echo "💡 Some products may have failed to delete due to:"
-        echo "   - Network timeouts"
-        echo "   - Products being referenced by other entities"
-        echo "   - Database constraints"
-        echo "   - API rate limiting"
     fi
 }
 
@@ -155,10 +156,11 @@ main() {
     if ! check_api; then
         exit 1
     fi
+
     
-    # Get all products
-    echo ""
-    products=($(get_all_products))
+    # Convert to array safely
+    IFS=$'\n' read -rd '' -a products < <(get_all_products && printf '\0')
+    products=($(printf "%s\n" "${products[@]}" | grep -v '^$'))
     
     if [ ${#products[@]} -eq 0 ]; then
         echo "✨ No products found in database. Nothing to delete!"
@@ -167,6 +169,12 @@ main() {
     
     echo ""
     echo "📊 Found ${#products[@]} products in database"
+    
+    # Show first few IDs for verification
+    if [ ${#products[@]} -gt 0 ]; then
+        echo "🔍 Sample product IDs:"
+        printf '%s\n' "${products[@]:0:3}" | sed 's/^/   /'
+    fi
     
     # Confirm deletion
     if ! confirm_deletion; then

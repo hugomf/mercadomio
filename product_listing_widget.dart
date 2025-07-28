@@ -186,7 +186,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
     try {
       await dotenv.load();
-      final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+      final apiUrl = dotenv.env['API_URL'] ?? 'http://192.168.1.216:8080';
 
       // Build URL based on search mode
       final String url;
@@ -294,7 +294,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   // Helper method to get API URL
   Future<String> _getApiUrl() async {
     await dotenv.load();
-    return dotenv.env['API_URL'] ?? 'http://localhost:8080';
+    return dotenv.env['API_URL'] ?? 'http://192.168.1.216:8080';
   }
 
   void refreshProducts() {
@@ -480,7 +480,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
               onPressed: () async {
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 try {
-                  final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
+                  final apiUrl = dotenv.env['API_URL'] ?? 'http://192.168.1.216:8080';
                   final response = await http.post(
                     Uri.parse('$apiUrl/api/cart'),
                     body: json.encode({

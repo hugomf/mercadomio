@@ -56,7 +56,7 @@ services:
       - ADMIN_EMAIL=admin@mercadomio.mx
       - ADMIN_PASSWORD=admin123
       - CORS_ENABLED=true
-      - CORS_ORIGIN="*"
+      - CORS_ORIGIN="*
       - CORS_CREDENTIALS=true
       - CORS_METHODS=GET,POST,PATCH,DELETE
       - CORS_ALLOWED_HEADERS=Content-Type,Authorization
