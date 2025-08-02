@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/cart_controller.dart';
 import '../services/cart_service.dart';
+import '../main.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -78,7 +79,15 @@ class CartScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
-                  onPressed: () => Get.back(),
+                  onPressed: () {
+                    // Navigate to products by going to main screen
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
                   icon: const Icon(Icons.shopping_bag),
                   label: const Text('Continue Shopping'),
                 ),
@@ -109,7 +118,7 @@ class CartScreen extends StatelessWidget {
   Widget _buildCartItem(CartItem item, CartController cartController) {
     final product = item.product;
     final displayName = product?.name ?? 'Product';
-    final displayPrice = product?.price ?? 0.0;
+    final displayPrice = product?.basePrice ?? 0.0;
     final displayImage = product?.imageUrl ?? '';
     final itemTotal = displayPrice * item.quantity;
 
