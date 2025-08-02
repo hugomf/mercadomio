@@ -314,6 +314,28 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     
     return Column(
       children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search products...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            ),
+            onSubmitted: (query) {
+              if (query.trim().isNotEmpty) {
+                searchProducts(query.trim());
+              } else {
+                _fetchProducts();
+              }
+            },
+          ),
+        ),
+        
         // Category filter chips
         Obx(() => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
