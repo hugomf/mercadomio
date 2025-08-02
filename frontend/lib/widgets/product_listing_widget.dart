@@ -107,18 +107,25 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         final newProducts = data.map((json) => Product.fromJson(json)).toList();
         final responseTotal = decoded['total'] ?? newProducts.length;
         
-        // Update counts appropriately
-        if (categoryService.selectedCategories.isEmpty && searchQuery.isEmpty) {
+        // Update counts appropriately - always use filtered count when search is active
+        final hasActiveFilters = categoryService.selectedCategories.isNotEmpty || searchQuery.isNotEmpty;
+        
+        if (searchQuery.isNotEmpty) {
+          // When search is active, always treat as filtered
+          _filteredProducts.value = responseTotal;
+          // Ensure we have the total count for display
+          if (!loadMore) {
+            await _fetchTotalCount();
+          }
+        } else if (categoryService.selectedCategories.isNotEmpty) {
+          // When only category filters are active
+          _filteredProducts.value = responseTotal;
+          if (!loadMore) {
+            await _fetchTotalCount();
+          }
+        } else {
           // When no filters, this is the total
           _totalProducts.value = responseTotal;
-        } else {
-          // When filters are applied, this is the filtered count
-          _filteredProducts.value = responseTotal;
-        }
-        
-        // Always fetch the actual total count when filters are applied
-        if ((categoryService.selectedCategories.isNotEmpty || searchQuery.isNotEmpty) && !loadMore) {
-          await _fetchTotalCount();
         }
         
         if (loadMore) {
@@ -187,10 +194,10 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         _products.value = filteredProducts;
         _products.refresh();
         
-        // Update filtered count from response
+        // Update filtered count from response - always use filtered count for search
         _filteredProducts.value = decoded['total'] ?? filteredProducts.length;
         
-        // Ensure we have the total count
+        // Ensure we have the total count for display
         await _fetchTotalCount();
       } else {
         _errorMessage.value = 'Search failed (${response.statusCode})';
@@ -362,31 +369,59 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
             children: [
               // Search bar
               Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search products...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            _fetchProducts();
-                          },
-                        )
-                      : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  ),
-                  onSubmitted: (query) {
-                    if (query.trim().isNotEmpty) {
-                      searchProducts(query.trim());
-                    } else {
-                      _fetchProducts();
-                    }
+                child: StatefulBuilder(
+                  builder: (context, setState) {
+                    return TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search products...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[400],
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _debounceTimer?.cancel();
+                                // Reset filtered count to 0 when clearing search
+                                _filteredProducts.value = 0;
+                                _fetchProducts();
+                                setState(() {});
+                              },
+                              splashRadius: 18,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                            )
+                          : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      onSubmitted: (query) {
+                        _debounceTimer?.cancel();
+                        if (query.trim().isNotEmpty) {
+                          searchProducts(query.trim());
+                        } else {
+                          _fetchProducts();
+                        }
+                      },
+                    );
                   },
                 ),
               ),
@@ -437,7 +472,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: _viewMode.value == 'card' ? Colors.deepPurple.withOpacity(0.15) : Colors.transparent,
+                      color: _viewMode.value == 'card' ? Colors.deepPurple.withValues(alpha: 0.15) : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -452,7 +487,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: _viewMode.value == 'list' ? Colors.deepPurple.withOpacity(0.15) : Colors.transparent,
+                      color: _viewMode.value == 'list' ? Colors.deepPurple.withValues(alpha: 0.15) : Colors.transparent,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -502,14 +537,14 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         // Product count
         Obx(() {
           final categoryService = Get.find<CategoryService>();
-          final filteredCount = categoryService.selectedCategories.isEmpty 
-            ? _totalProducts.value 
-            : _filteredProducts.value;
+          final searchQuery = _searchController.text.trim();
+          
+          final hasActiveFilters = categoryService.selectedCategories.isNotEmpty || searchQuery.isNotEmpty;
           final totalCount = _totalProducts.value;
           
-          final countText = categoryService.selectedCategories.isEmpty
-            ? '$totalCount products'
-            : '$filteredCount filtered products (of $totalCount)';
+          final countText = hasActiveFilters
+            ? '${_filteredProducts.value} filtered products (of $totalCount)'
+            : '$totalCount';
           
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
