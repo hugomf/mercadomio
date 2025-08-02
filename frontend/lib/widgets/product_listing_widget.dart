@@ -391,19 +391,34 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
               Obx(() => Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.grid_view,
-                      color: _viewMode.value == 'card' ? Colors.deepPurple : Colors.grey,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _viewMode.value == 'card' ? Colors.deepPurple.withOpacity(0.15) : Colors.transparent,
+                      shape: BoxShape.circle,
                     ),
-                    onPressed: () => _viewMode.value = 'card',
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.grid_view,
+                        color: _viewMode.value == 'card' ? Colors.deepPurple : Colors.grey,
+                      ),
+                      onPressed: () => _viewMode.value = 'card',
+                      splashRadius: 20,
+                    ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.list,
-                      color: _viewMode.value == 'list' ? Colors.deepPurple : Colors.grey,
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: _viewMode.value == 'list' ? Colors.deepPurple.withOpacity(0.15) : Colors.transparent,
+                      shape: BoxShape.circle,
                     ),
-                    onPressed: () => _viewMode.value = 'list',
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.list,
+                        color: _viewMode.value == 'list' ? Colors.deepPurple : Colors.grey,
+                      ),
+                      onPressed: () => _viewMode.value = 'list',
+                      splashRadius: 20,
+                    ),
                   ),
                 ],
               )),
