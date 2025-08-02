@@ -13,6 +13,16 @@ Authorization: Bearer {API_KEY}
 
 ### Products
 - `GET /products` - List all products
+  - **Query Parameters:**
+    - `page` (optional): Page number (default: 1)
+    - `limit` (optional): Items per page (default: 20)
+    - `q` (optional): Search query
+    - `category` (optional): Category filter (comma-separated)
+    - `minPrice` (optional): Minimum price filter
+    - `maxPrice` (optional): Maximum price filter
+    - `type` (optional): Product type filter
+    - `sort` (optional): Sort field - `name`, `basePrice`, `createdAt`, `updatedAt` (default: `name`)
+    - `order` (optional): Sort order - `asc`, `desc` (default: `asc`)
 - `GET /products/:id` - Get product details
 - `POST /products` - Create new product (admin only)
 - `PUT /products/:id` - Update product (admin only)
@@ -40,5 +50,20 @@ Authorization: Bearer {API_KEY}
 ```javascript
 // Get product list
 fetch('https://api.mercadomio.mx/v1/products')
+  .then(response => response.json())
+  .then(products => console.log(products));
+
+// Get products sorted by price ascending
+fetch('https://api.mercadomio.mx/v1/products?sort=basePrice&order=asc')
+  .then(response => response.json())
+  .then(products => console.log(products));
+
+// Get products sorted by newest first
+fetch('https://api.mercadomio.mx/v1/products?sort=createdAt&order=desc')
+  .then(response => response.json())
+  .then(products => console.log(products));
+
+// Get products with search and sorting
+fetch('https://api.mercadomio.mx/v1/products?q=shirt&category=Electronics&sort=basePrice&order=desc')
   .then(response => response.json())
   .then(products => console.log(products));

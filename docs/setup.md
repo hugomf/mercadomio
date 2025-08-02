@@ -37,6 +37,14 @@ docker-compose up --build
 - Frontend code: /frontend
 - Docs: /docs
 
+## 6. Testing Features
+- **Product Sorting**: Use the sort button (↕️) next to the search bar to test price and date sorting
+- **API Testing**: Use curl commands to test sorting endpoints:
+  ```bash
+  curl "http://localhost:8080/api/products?sort=basePrice&order=asc"
+  curl "http://localhost:8080/api/products?sort=createdAt&order=desc"
+  ```
+
 ## 6. Stopping Services
 ```
 docker-compose down
