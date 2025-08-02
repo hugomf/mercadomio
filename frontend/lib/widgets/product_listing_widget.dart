@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -25,11 +26,20 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   int _currentPage = 1;
   final int _itemsPerPage = 20;
   bool _hasMore = true;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _initData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _initData() async {
@@ -62,10 +72,24 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       
       final apiUrl = await configService.getApiUrl();
       
-      // Build the URL with proper category filtering using category names
-      final uri = categoryService.selectedCategories.isEmpty
-        ? Uri.parse('$apiUrl/api/products?page=$_currentPage&limit=$_itemsPerPage')
-        : Uri.parse('$apiUrl/api/products?page=$_currentPage&limit=$_itemsPerPage&category=${Uri.encodeComponent(categoryService.selectedCategoryNames.join(','))}');
+      // Build query parameters
+      final queryParams = <String, String>{
+        'page': _currentPage.toString(),
+        'limit': _itemsPerPage.toString(),
+      };
+      
+      // Add search query if search field has text
+      final searchQuery = _searchController.text.trim();
+      if (searchQuery.isNotEmpty) {
+        queryParams['q'] = searchQuery;
+      }
+      
+      // Add category filter if categories are selected
+      if (categoryService.selectedCategories.isNotEmpty) {
+        queryParams['category'] = categoryService.selectedCategoryNames.join(',');
+      }
+      
+      final uri = Uri.parse('$apiUrl/api/products').replace(queryParameters: queryParams);
       
       final response = await http.get(uri);
       
@@ -80,16 +104,16 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         final responseTotal = decoded['total'] ?? newProducts.length;
         
         // Update counts appropriately
-        if (categoryService.selectedCategories.isEmpty) {
-          // When no categories selected, this is the total
+        if (categoryService.selectedCategories.isEmpty && searchQuery.isEmpty) {
+          // When no filters, this is the total
           _totalProducts.value = responseTotal;
         } else {
-          // When categories are selected, this is the filtered count
+          // When filters are applied, this is the filtered count
           _filteredProducts.value = responseTotal;
         }
         
-        // Always fetch the actual total count when categories are selected
-        if (categoryService.selectedCategories.isNotEmpty && !loadMore) {
+        // Always fetch the actual total count when filters are applied
+        if ((categoryService.selectedCategories.isNotEmpty || searchQuery.isNotEmpty) && !loadMore) {
           await _fetchTotalCount();
         }
         
@@ -131,31 +155,44 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   Future<void> searchProducts(String query) async {
     try {
       _isLoading.value = true;
+      _errorMessage.value = '';
       final configService = Get.find<ConfigService>();
       final categoryService = Get.find<CategoryService>();
       final apiUrl = await configService.getApiUrl();
       
-      // Build search URL with category filtering using names
-      final uri = categoryService.selectedCategoryNames.isEmpty
-        ? Uri.parse('$apiUrl/api/products/search?q=$query')
-        : Uri.parse('$apiUrl/api/products/search?q=$query&category=${Uri.encodeComponent(categoryService.selectedCategoryNames.join(','))}');
+      // Build search URL with both query and category parameters
+      final queryParams = <String, String>{};
+      queryParams['q'] = query;
+      
+      if (categoryService.selectedCategories.isNotEmpty) {
+        queryParams['category'] = categoryService.selectedCategoryNames.join(',');
+      }
+      
+      final uri = Uri.parse('$apiUrl/api/products').replace(queryParameters: queryParams);
       
       final response = await http.get(uri);
       
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        if (decoded is! Map<String, dynamic>) {
+          throw FormatException('Expected object but got ${decoded.runtimeType}');
+        }
+        
+        final List<dynamic> data = decoded['data'] ?? [];
         final filteredProducts = data.map((json) => Product.fromJson(json)).toList();
         _products.value = filteredProducts;
         _products.refresh();
         
-        // Update filtered count for search results
-        _filteredProducts.value = filteredProducts.length;
+        // Update filtered count from response
+        _filteredProducts.value = decoded['total'] ?? filteredProducts.length;
         
         // Ensure we have the total count
         await _fetchTotalCount();
+      } else {
+        _errorMessage.value = 'Search failed (${response.statusCode})';
       }
     } catch (e) {
-      Get.snackbar('Error', 'Search failed: ${e.toString()}');
+      _errorMessage.value = 'Search failed: ${e.toString()}';
     } finally {
       _isLoading.value = false;
     }
@@ -314,25 +351,63 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     
     return Column(
       children: [
-        // Search bar
+        // Search bar and view mode toggle
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search products...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
+          child: Row(
+            children: [
+              // Search bar
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search products...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _fetchProducts();
+                          },
+                        )
+                      : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                  onSubmitted: (query) {
+                    if (query.trim().isNotEmpty) {
+                      searchProducts(query.trim());
+                    } else {
+                      _fetchProducts();
+                    }
+                  },
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
-            ),
-            onSubmitted: (query) {
-              if (query.trim().isNotEmpty) {
-                searchProducts(query.trim());
-              } else {
-                _fetchProducts();
-              }
-            },
+              const SizedBox(width: 8.0),
+              // View mode toggle
+              Obx(() => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.grid_view,
+                      color: _viewMode.value == 'card' ? Colors.deepPurple : Colors.grey,
+                    ),
+                    onPressed: () => _viewMode.value = 'card',
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.list,
+                      color: _viewMode.value == 'list' ? Colors.deepPurple : Colors.grey,
+                    ),
+                    onPressed: () => _viewMode.value = 'list',
+                  ),
+                ],
+              )),
+            ],
           ),
         ),
         
@@ -364,30 +439,6 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
             ],
           ),
         )),
-
-        // View mode toggle
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Obx(() => Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.grid_view,
-                  color: _viewMode.value == 'card' ? Colors.deepPurple : Colors.grey,
-                ),
-                onPressed: () => _viewMode.value = 'card',
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.list,
-                  color: _viewMode.value == 'list' ? Colors.deepPurple : Colors.grey,
-                ),
-                onPressed: () => _viewMode.value = 'list',
-              ),
-            ],
-          )),
-        ),
 
         // Product count
         Obx(() {
