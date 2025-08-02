@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 
 enum ErrorType {
   network,
-  timeout,
-  server,
+  config,
   parsing,
+  server,
   unknown,
+  timeout,
 }
 
 class AppError {
@@ -34,6 +35,8 @@ class AppError {
         return 'Data format error. Please contact support.';
       case ErrorType.unknown:
         return 'Something went wrong. Please try again.';
+      case ErrorType.config:
+        return 'Configuration error. Please check your settings.';
     }
   }
 }
@@ -104,7 +107,16 @@ class ErrorHandler {
       );
     }
 
-    if (error.toString().contains('FormatException') || 
+    if (error.toString().contains('Environment') ||
+        error.toString().contains('dotenv')) {
+      return AppError(
+        type: ErrorType.config,
+        message: 'Configuration error',
+        originalError: error,
+      );
+    }
+
+    if (error.toString().contains('FormatException') ||
         error.toString().contains('JSON')) {
       return AppError(
         type: ErrorType.parsing,
