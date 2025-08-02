@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import '../widgets/product_listing_widget.dart';
+import '../models/product.dart';
 
 class CartItem {
   final String productId;

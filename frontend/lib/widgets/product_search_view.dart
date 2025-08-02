@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'product_listing_widget.dart';
+import 'product_listing_widget.dart' show ProductListingWidget, ProductListingWidgetState;
 import 'search_widget.dart';
 
 class ProductSearchView extends StatefulWidget {

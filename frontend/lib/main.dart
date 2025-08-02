@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'services/cart_controller.dart';
 import 'widgets/product_listing_widget.dart';
+import 'widgets/category_widget.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
 
@@ -90,22 +91,76 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text(
-            'Our Products',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Expanded(
-          child: ProductListingWidget(),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 600) {
+          // Desktop/tablet layout
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 250,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Categories',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const CategoryWidget(),
+                    ],
+                  ),
+                ),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        'Our Products',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      child: ProductListingWidget(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        } else {
+          // Mobile layout
+          return Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Our Products',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: ProductListingWidget(),
+              ),
+            ],
+          );
+        }
+      },
     );
   }
 }
