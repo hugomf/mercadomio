@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/cirruslabs/flutter:3.24.3 AS build
+FROM ghcr.io/cirruslabs/flutter:3.32.8 AS build
 WORKDIR /app
 COPY . .
 RUN flutter build web

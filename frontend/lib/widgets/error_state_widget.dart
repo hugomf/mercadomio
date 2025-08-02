@@ -86,6 +86,8 @@ class ErrorStateWidget extends StatelessWidget {
         return Icons.broken_image;
       case ErrorType.unknown:
         return Icons.error_outline;
+      case ErrorType.config:
+        return Icons.settings;
     }
   }
 
@@ -101,6 +103,8 @@ class ErrorStateWidget extends StatelessWidget {
         return 'Data Error';
       case ErrorType.unknown:
         return 'Something Went Wrong';
+      case ErrorType.config:
+        return 'Configuration Error';
     }
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 
 class ImageService {
   static const String _baseUrl = 'http://localhost:8080';

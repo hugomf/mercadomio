@@ -13,7 +13,7 @@ import 'package:frontend/main.dart';
 void main() {
   testWidgets('App renders without crashing', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+    await tester.pumpWidget(const MyApp());
 
     // Verify our main widgets exist
     expect(find.text('Pluggable Widgets'), findsOneWidget);
