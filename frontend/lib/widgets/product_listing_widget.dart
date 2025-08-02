@@ -28,6 +28,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   bool _hasMore = true;
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
+  final RxString _sortBy = 'name'.obs;
+  final RxBool _sortAscending = true.obs;
 
   @override
   void initState() {
@@ -76,6 +78,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       final queryParams = <String, String>{
         'page': _currentPage.toString(),
         'limit': _itemsPerPage.toString(),
+        'sort': _sortBy.value,
+        'order': _sortAscending.value ? 'asc' : 'desc',
       };
       
       // Add search query if search field has text
@@ -351,7 +355,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     
     return Column(
       children: [
-        // Search bar and view mode toggle
+        // Search bar and controls
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
@@ -384,6 +388,46 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                       _fetchProducts();
                     }
                   },
+                ),
+              ),
+              const SizedBox(width: 8.0),
+              // Sorting button
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.sort, size: 20),
+                  tooltip: 'Sort products',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 120),
+                  onSelected: (value) {
+                    final parts = value.split('_');
+                    _sortBy.value = parts[0];
+                    _sortAscending.value = parts[1] == 'asc';
+                    _fetchProducts();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'basePrice_asc',
+                      child: Text('Price ↑', style: TextStyle(fontSize: 13)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'basePrice_desc',
+                      child: Text('Price ↓', style: TextStyle(fontSize: 13)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'createdAt_desc',
+                      child: Text('Newest', style: TextStyle(fontSize: 13)),
+                    ),
+                    const PopupMenuItem(
+                      value: 'createdAt_asc',
+                      child: Text('Oldest', style: TextStyle(fontSize: 13)),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8.0),
