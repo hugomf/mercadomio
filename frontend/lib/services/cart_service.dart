@@ -83,7 +83,7 @@ class Cart {
   double get total {
     return items.fold(0.0, (sum, item) {
       if (item.product != null) {
-        return sum + (item.product!.price * item.quantity);
+        return sum + (item.product!.basePrice * item.quantity);
       }
       return sum;
     });

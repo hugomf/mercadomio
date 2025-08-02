@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'services/cart_controller.dart';
+import 'services/config_service.dart';
+import 'services/category_service.dart';
 import 'widgets/product_listing_widget.dart';
-import 'widgets/category_widget.dart';
+import 'screens/admin_screen.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
 
@@ -19,12 +21,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Mercado Mío',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: const MainScreen(),
+      getPages: [
+        GetPage(
+          name: '/admin',
+          page: () => const AdminScreen(),
+        ),
+      ],
     );
   }
 }
@@ -41,6 +50,8 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     Get.put(CartController());
+    Get.put(ConfigService());
+    Get.put(CategoryService());
   }
 
   int _selectedIndex = 0;
@@ -60,7 +71,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mercado Mío'),
+        title: const Text('Tianguis Botis'),
         actions: const [
           CartIcon(),
           SizedBox(width: 8),
@@ -98,27 +109,6 @@ class HomeScreen extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 250,
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                          'Categories',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const CategoryWidget(),
-                    ],
-                  ),
-                ),
-              ),
-              const VerticalDivider(width: 1),
               Expanded(
                 child: Column(
                   children: [
