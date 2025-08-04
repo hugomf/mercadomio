@@ -41,8 +41,6 @@ class Product {
           : null,
       );
     } catch (e) {
-      print('Error parsing product: $e');
-      print('JSON data: $json');
       rethrow;
     }
   }

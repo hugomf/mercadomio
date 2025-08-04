@@ -1,4 +1,4 @@
-package com.example.frontend
+package com.aztekcoders.mercadomio
 
 import io.flutter.embedding.android.FlutterActivity
 
