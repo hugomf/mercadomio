@@ -1,0 +1,18 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["email", "passwordHash"],
+    "properties": {
+      "email": { "bsonType": "string" },
+      "passwordHash": { "bsonType": "string" },
+      "name": { "bsonType": "string" },
+      "orderHistory": {
+        "bsonType": "array",
+        "items": { "bsonType": "objectId" }
+      },
+      "rebateCredits": { "bsonType": "double" },
+      "type": { "enum": ["individual", "wholesale"] },
+      "customAttributes": { "bsonType": "object" }
+    }
+  }
+} 

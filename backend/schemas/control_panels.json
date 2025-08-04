@@ -1,0 +1,12 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["fragmentId", "settings"],
+    "properties": {
+      "fragmentId": { "bsonType": "objectId" },
+      "settings": { "bsonType": "object" },
+      "createdAt": { "bsonType": "date" },
+      "updatedAt": { "bsonType": "date" }
+    }
+  }
+} 
