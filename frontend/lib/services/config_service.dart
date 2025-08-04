@@ -6,10 +6,8 @@ class ConfigService extends GetxService {
     try {
       await dotenv.load(fileName: '.env');
       final apiUrl = dotenv.env['API_URL'] ?? 'http://localhost:8080';
-      print('Using API URL: $apiUrl');
       return apiUrl;
     } catch (e) {
-      print('Error loading .env file: $e');
       return 'http://localhost:8080';
     }
   }

@@ -1,10 +1,14 @@
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../models/product.dart';
+import './category_events.dart';
 import 'dart:convert';
 import '../models/category.dart' as models;
 
 class CategoryService extends GetxController {
+  static const String allCategoriesId = 'ALL_CATEGORIES';
+  static const String allCategoriesName = 'All';
   final RxList<models.Category> categories = <models.Category>[].obs;
   final RxList<String> selectedCategories = <String>[].obs;
   final RxList<String> selectedCategoryNames = <String>[].obs;
@@ -98,12 +102,17 @@ class CategoryService extends GetxController {
           .toList();
         
         categories.assignAll(loadedCategories);
+        
+        // Select "All" by default if nothing is selected
+        if (selectedCategories.isEmpty) {
+          addSelectedCategory(allCategoriesId, allCategoriesName);
+        }
+        
         return loadedCategories;
       } else {
         throw Exception('Failed to load categories');
       }
     } catch (e) {
-      print('[ERROR] Failed to load categories: $e');
       Get.snackbar('Error', 'Failed to load categories');
       rethrow;
     }
@@ -115,14 +124,52 @@ class CategoryService extends GetxController {
   }
 
   void addSelectedCategory(String id, String name) {
-    if (!selectedCategories.contains(id)) {
-      selectedCategories.add(id);
-      selectedCategoryNames.add(name);
-      // Backward compatibility
+    if (id == allCategoriesId) {
+      // Selecting "All" clears other selections
+      selectedCategories
+        ..clear()
+        ..add(id);
+      selectedCategoryNames
+        ..clear()
+        ..add(name);
       selectedCategoryName.value = name;
       selectedCategoryId.value = id;
-      update();
+    } else {
+      // Selecting a regular category
+      if (selectedCategories.contains(allCategoriesId)) {
+        // Clear "All" if it was selected
+        selectedCategories.remove(allCategoriesId);
+        selectedCategoryNames.remove(allCategoriesName);
+      }
+      // Toggle selection
+      if (selectedCategories.contains(id)) {
+        selectedCategories.remove(id);
+        selectedCategoryNames.remove(name);
+      } else {
+        selectedCategories.add(id);
+        selectedCategoryNames.add(name);
+      }
+      // Update single selection for backward compatibility
+      if (selectedCategories.isNotEmpty) {
+        selectedCategoryName.value = name;
+        selectedCategoryId.value = id;
+      } else {
+        selectedCategoryName.value = '';
+        selectedCategoryId.value = '';
+      }
     }
+    _publishSelectionEvent();
+    update();
+  }
+
+  void _publishSelectionEvent() {
+    CategoryEventBus.publish(
+      CategorySelectionEvent(
+        selectedIds: selectedCategories.toList(),
+        selectedNames: selectedCategoryNames.toList(),
+        isAllSelected: isAllSelected(),
+      ),
+    );
   }
 
   void removeSelectedCategory(String id) {
@@ -138,12 +185,69 @@ class CategoryService extends GetxController {
   }
 
   void clearSelectedCategories() {
-    selectedCategories.clear();
-    selectedCategoryNames.clear();
+    selectedCategories
+      ..clear()
+      ..add(allCategoriesId);
+    selectedCategoryNames
+      ..clear()
+      ..add(allCategoriesName);
     // Backward compatibility
-    selectedCategoryName.value = '';
-    selectedCategoryId.value = '';
+    selectedCategoryName.value = allCategoriesName;
+    selectedCategoryId.value = allCategoriesId;
     update();
+  }
+
+  bool isAllSelected() {
+    return selectedCategories.contains(allCategoriesId);
+  }
+
+  String? getCategoryFilterQuery() {
+    if (selectedCategories.isEmpty || isAllSelected()) {
+      return null;
+    }
+    return selectedCategoryNames.join(',');
+  }
+
+  Future<Map<String, dynamic>> getFilteredProducts({
+    required String apiUrl,
+    int page = 1,
+    int limit = 20,
+    String? searchQuery,
+    String sortBy = 'name',
+    bool sortAscending = true,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'sort': sortBy,
+        'order': sortAscending ? 'asc' : 'desc',
+      };
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        queryParams['q'] = searchQuery;
+      }
+
+      if (!isAllSelected() && selectedCategories.isNotEmpty) {
+        queryParams['category'] = selectedCategoryNames.join(',');
+      }
+
+      final uri = Uri.parse('$apiUrl/api/products').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List<dynamic> data = decoded['data'] ?? [];
+        return {
+          'products': data.map((json) => Product.fromJson(json)).toList(),
+          'total': decoded['total'] ?? 0
+        };
+      }
+      throw Exception('Failed to load products');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load products');
+      rethrow;
+    }
   }
 
   @override

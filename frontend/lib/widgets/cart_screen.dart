@@ -123,18 +123,19 @@ class CartScreen extends StatelessWidget {
     final itemTotal = displayPrice * item.quantity;
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Product Image
             Container(
-              width: 60,
-              height: 60,
+              width: 45,
+              height: 45,
               decoration: BoxDecoration(
                 color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(4),
                 image: displayImage.isNotEmpty
                     ? DecorationImage(
                         image: NetworkImage(displayImage),
@@ -143,85 +144,126 @@ class CartScreen extends StatelessWidget {
                     : null,
               ),
               child: displayImage.isEmpty
-                  ? const Icon(Icons.shopping_bag, color: Colors.grey)
+                  ? const Icon(Icons.shopping_bag, color: Colors.grey, size: 20)
                   : null,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             
             // Product Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     displayName,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 1),
                   Text(
                     '\$${displayPrice.toStringAsFixed(2)}',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 11,
                       color: Colors.grey,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 6),
             
-            // Quantity Controls
-            Row(
+            // Ultra-compact controls
+            Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: () {
-                    if (item.quantity > 1) {
-                      cartController.updateQuantity(
-                        productId: item.productId,
-                        variantId: item.variantId,
-                        quantity: item.quantity - 1,
-                      );
-                    }
-                  },
+                // Quantity controls
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        if (item.quantity > 1) {
+                          cartController.updateQuantity(
+                            productId: item.productId,
+                            variantId: item.variantId,
+                            quantity: item.quantity - 1,
+                          );
+                        }
+                      },
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.remove, size: 16, color: Colors.black54),
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      alignment: Alignment.center,
+                      child: Text(
+                        item.quantity.toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        cartController.updateQuantity(
+                          productId: item.productId,
+                          variantId: item.variantId,
+                          quantity: item.quantity + 1,
+                        );
+                      },
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.add, size: 16, color: Colors.black54),
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  item.quantity.toString(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: () {
-                    cartController.updateQuantity(
-                      productId: item.productId,
-                      variantId: item.variantId,
-                      quantity: item.quantity + 1,
-                    );
-                  },
+                const SizedBox(height: 4),
+                // Price and remove
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '\$${itemTotal.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () => _showRemoveItemDialog(item, cartController),
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-            
-            // Item Total
-            Text(
-              '\$${itemTotal.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-            // Remove Button
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () => _showRemoveItemDialog(item, cartController),
             ),
           ],
         ),
