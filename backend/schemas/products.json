@@ -1,0 +1,38 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["name", "type", "category", "basePrice", "sku"],
+    "properties": {
+      "name": { "bsonType": "string" },
+      "description": { "bsonType": "string" },
+      "type": { "enum": ["physical", "service", "subscription"] },
+      "category": { "bsonType": "string" },
+      "basePrice": { "bsonType": "double" },
+      "sku": { "bsonType": "string" },
+      "barcode": { "bsonType": "string" },
+      "variants": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "object",
+          "required": ["variantId", "attributes", "sku"],
+          "properties": {
+            "variantId": { "bsonType": "string" },
+            "attributes": { "bsonType": "object" },
+            "priceAdjustment": { "bsonType": "double" },
+            "sku": { "bsonType": "string" },
+            "barcode": { "bsonType": "string" },
+            "stock": { "bsonType": "int" }
+          }
+        }
+      },
+      "customAttributes": { "bsonType": "object" },
+      "identifiers": {
+        "bsonType": "object",
+        "properties": {
+          "isbn": { "bsonType": "string" },
+          "custom": { "bsonType": "string" }
+        }
+      }
+    }
+  }
+} 

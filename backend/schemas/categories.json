@@ -1,0 +1,20 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["name", "slug"],
+    "properties": {
+      "name": { "bsonType": "string" },
+      "slug": { "bsonType": "string" },
+      "description": { "bsonType": "string" },
+      "parentId": { "bsonType": "objectId" },
+      "children": {
+        "bsonType": "array",
+        "items": { "bsonType": "objectId" }
+      },
+      "imageUrl": { "bsonType": "string" },
+      "isActive": { "bsonType": "bool" },
+      "createdAt": { "bsonType": "date" },
+      "updatedAt": { "bsonType": "date" }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["userId", "items", "total", "status"],
+    "properties": {
+      "userId": { "bsonType": "objectId" },
+      "items": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "object",
+          "required": ["productId", "quantity", "price"],
+          "properties": {
+            "productId": { "bsonType": "objectId" },
+            "variantId": { "bsonType": "string" },
+            "quantity": { "bsonType": "int" },
+            "price": { "bsonType": "double" },
+            "rebate": { "bsonType": "double" }
+          }
+        }
+      },
+      "total": { "bsonType": "double" },
+      "status": { "enum": ["pending", "paid", "shipped", "completed", "cancelled"] },
+      "paymentInfo": { "bsonType": "object" },
+      "createdAt": { "bsonType": "date" },
+      "updatedAt": { "bsonType": "date" }
+    }
+  }
+} 
