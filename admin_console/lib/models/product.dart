@@ -5,7 +5,7 @@ class Product {
   final double price;
   final int stockQuantity;
   final List<String> categoryIds;
-  final List<String> imageUrls;
+  final String imageUrl;
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -17,7 +17,7 @@ class Product {
     required this.price,
     required this.stockQuantity,
     required this.categoryIds,
-    required this.imageUrls,
+    required this.imageUrl,
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
@@ -25,16 +25,16 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
       description: json['description'],
-      price: (json['price'] as num).toDouble(),
-      stockQuantity: json['stockQuantity'],
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      stockQuantity: json['stockQuantity'] ?? 0,
       categoryIds: List<String>.from(json['categoryIds'] ?? []),
-      imageUrls: List<String>.from(json['imageUrls'] ?? []),
+      imageUrl: json['imageUrl'] ?? '',
       isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -45,7 +45,7 @@ class Product {
     'price': price,
     'stockQuantity': stockQuantity,
     'categoryIds': categoryIds,
-    'imageUrls': imageUrls,
+    'imageUrl': imageUrl,
     'isActive': isActive,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
@@ -58,7 +58,7 @@ class Product {
     double? price,
     int? stockQuantity,
     List<String>? categoryIds,
-    List<String>? imageUrls,
+    String? imageUrl,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -70,7 +70,7 @@ class Product {
       price: price ?? this.price,
       stockQuantity: stockQuantity ?? this.stockQuantity,
       categoryIds: categoryIds ?? this.categoryIds,
-      imageUrls: imageUrls ?? this.imageUrls,
+      imageUrl: imageUrl ?? this.imageUrl,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

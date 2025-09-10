@@ -22,10 +22,20 @@ class ApiService {
 
   // Error handling
   void _handleError(dynamic error) {
-    // ignore: avoid_print
-    print('API Error: $error');
+    if (ConfigService.enableDebugLogging) {
+      // ignore: avoid_print
+      print('API Error: $error');
+    }
     // You can add more sophisticated error handling here
     throw Exception('Failed to communicate with server');
+  }
+
+  // Debug logging
+  void _logDebug(String message) {
+    if (ConfigService.enableDebugLogging) {
+      // ignore: avoid_print
+      print('API Debug: $message');
+    }
   }
 
   // Product API methods
@@ -37,8 +47,30 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Product.fromJson(json)).toList();
+        final dynamic data = json.decode(response.body);
+        _logDebug('Products API Response: ${response.body}');
+        
+        // Handle different response formats
+        if (data is List) {
+          return data.map((json) => Product.fromJson(json)).toList();
+        } else if (data is Map<String, dynamic> && data.containsKey('data')) {
+          // Handle { "data": [...] } format
+          final dynamic productsData = data['data'];
+          if (productsData == null) {
+            return []; // Handle null data case
+          } else if (productsData is List) {
+            return productsData.map((json) => Product.fromJson(json)).toList();
+          } else {
+            throw Exception('Unexpected data format: $productsData');
+          }
+        } else if (data is Map<String, dynamic> && data.containsKey('products')) {
+          // Handle { "products": [...] } format
+          final List<dynamic> productsData = data['products'];
+          return productsData.map((json) => Product.fromJson(json)).toList();
+        } else {
+          _logDebug('Unexpected API response format: ${response.body}');
+          throw Exception('Unexpected API response format');
+        }
       } else {
         throw Exception('Failed to load products: ${response.statusCode}');
       }
@@ -129,8 +161,28 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Category.fromJson(json)).toList();
+        final dynamic data = json.decode(response.body);
+        
+        // Handle different response formats
+        if (data is List) {
+          return data.map((json) => Category.fromJson(json)).toList();
+        } else if (data is Map<String, dynamic> && data.containsKey('data')) {
+          // Handle { "data": [...] } format
+          final dynamic categoriesData = data['data'];
+          if (categoriesData == null) {
+            return []; // Handle null data case
+          } else if (categoriesData is List) {
+            return categoriesData.map((json) => Category.fromJson(json)).toList();
+          } else {
+            throw Exception('Unexpected data format: $categoriesData');
+          }
+        } else if (data is Map<String, dynamic> && data.containsKey('categories')) {
+          // Handle { "categories": [...] } format
+          final List<dynamic> categoriesData = data['categories'];
+          return categoriesData.map((json) => Category.fromJson(json)).toList();
+        } else {
+          throw Exception('Unexpected API response format: ${response.body}');
+        }
       } else {
         throw Exception('Failed to load categories: ${response.statusCode}');
       }
@@ -221,8 +273,26 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Product.fromJson(json)).toList();
+        final dynamic data = json.decode(response.body);
+        
+        // Handle different response formats
+        if (data is List) {
+          return data.map((json) => Product.fromJson(json)).toList();
+        } else if (data is Map<String, dynamic> && data.containsKey('data')) {
+          // Handle { "data": [...] } format
+          final List<dynamic> productsData = data['data'];
+          return productsData.map((json) => Product.fromJson(json)).toList();
+        } else if (data is Map<String, dynamic> && data.containsKey('products')) {
+          // Handle { "products": [...] } format
+          final List<dynamic> productsData = data['products'];
+          return productsData.map((json) => Product.fromJson(json)).toList();
+        } else if (data is Map<String, dynamic> && data.containsKey('results')) {
+          // Handle { "results": [...] } format
+          final List<dynamic> productsData = data['results'];
+          return productsData.map((json) => Product.fromJson(json)).toList();
+        } else {
+          throw Exception('Unexpected API response format: ${response.body}');
+        }
       } else {
         throw Exception('Failed to search products: ${response.statusCode}');
       }

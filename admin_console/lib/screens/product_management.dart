@@ -116,7 +116,25 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        leading: const Icon(Icons.shopping_bag, size: 40),
+        leading: product.imageUrl.isNotEmpty
+            ? Image.network(
+                product.imageUrl,
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.shopping_bag, size: 40);
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  );
+                },
+              )
+            : const Icon(Icons.shopping_bag, size: 40),
         title: Text(
           product.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -167,6 +185,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final descriptionController = TextEditingController();
     final priceController = TextEditingController();
     final stockController = TextEditingController(text: '0');
+    final imageUrlController = TextEditingController();
     final selectedCategories = <String>{};
 
     showDialog(
@@ -237,6 +256,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
+                    TextFormField(
+                      controller: imageUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Image URL',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     const Text('Categories:'),
                     ..._categories.map((category) {
                       return CheckboxListTile(
@@ -272,7 +299,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       price: double.parse(priceController.text),
                       stockQuantity: int.parse(stockController.text),
                       categoryIds: selectedCategories.toList(),
-                      imageUrls: [],
+                      imageUrl: imageUrlController.text,
                       isActive: true,
                       createdAt: DateTime.now(),
                       updatedAt: DateTime.now(),
@@ -296,6 +323,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
     final descriptionController = TextEditingController(text: product.description);
     final priceController = TextEditingController(text: product.price.toString());
     final stockController = TextEditingController(text: product.stockQuantity.toString());
+    final imageUrlController = TextEditingController(text: product.imageUrl);
     final selectedCategories = Set<String>.from(product.categoryIds);
 
     showDialog(
@@ -366,6 +394,14 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
+                    TextFormField(
+                      controller: imageUrlController,
+                      decoration: const InputDecoration(
+                        labelText: 'Image URL',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     const Text('Categories:'),
                     ..._categories.map((category) {
                       return CheckboxListTile(
@@ -401,7 +437,7 @@ class _ProductManagementScreenState extends State<ProductManagementScreen> {
                       price: double.parse(priceController.text),
                       stockQuantity: int.parse(stockController.text),
                       categoryIds: selectedCategories.toList(),
-                      imageUrls: product.imageUrls,
+                      imageUrl: product.imageUrl,
                       isActive: product.isActive,
                       createdAt: product.createdAt,
                       updatedAt: DateTime.now(),
