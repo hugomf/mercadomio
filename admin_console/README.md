@@ -1,16 +1,56 @@
-# admin_console
+# Admin Console
 
-A new Flutter project.
+Modern administrative interface for MercadoMio with responsive design and accessibility features.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Collapsible Navigation**:
+  - Quick Actions section (⚡)
+  - Admin Section (⚙️) with subsections:
+    - Catalog Management (📋)
+    - Product Management (🛍️)
+    - Inventory (📦)
+    - User Management (👥)
+    - Settings (⚙️)
 
-A few resources to get you started if this is your first Flutter project:
+- **Responsive Design**:
+  - Adapts to mobile, tablet and desktop screens
+  - Hamburger menu toggle (☰) for small screens
+  - Collapsible to icons-only mode
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Theme Support**:
+  - Light/dark mode toggle
+  - System preference detection
+  - Smooth theme transitions
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Accessibility**:
+  - Keyboard navigation
+  - ARIA labels
+  - Focus management
+  - Proper contrast ratios
+
+## Technical Details
+
+### Widget Structure
+
+- `NavigationDrawer`: Main collapsible navigation component
+- `AdminConsoleHome`: Scaffold with responsive layout
+- Theme configuration in `main.dart`
+
+### Data Binding
+
+Aligns with backend models:
+- Product management
+- Inventory tracking
+- User management (pending API integration)
+
+## Usage
+
+1. Toggle navigation collapse with the header button
+2. Switch themes using the theme toggle in app bar
+3. Navigate between sections using keyboard or mouse
+
+## Requirements
+
+- Flutter 3.0+
+- Material 3 design system
