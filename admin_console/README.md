@@ -54,3 +54,36 @@ Aligns with backend models:
 
 - Flutter 3.0+
 - Material 3 design system
+
+## Environment Configuration
+
+The app uses environment variables for configuration. Create a `.env` file in the root directory based on the `.env.example` template:
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit the configuration
+nano .env  # or use your preferred editor
+```
+
+### Available Environment Variables:
+
+- `API_BASE_URL`: Backend API endpoint (default: http://localhost:8080/api)
+- `APP_ENV`: Application environment (development, staging, production)
+- `ENABLE_ANALYTICS`: Enable analytics tracking (true/false)
+- `ENABLE_DEBUG_LOGGING`: Enable debug logging (true/false)
+
+### Configuration Service
+
+Access environment variables through the [`ConfigService`](lib/services/config_service.dart:1):
+
+```dart
+String apiUrl = ConfigService.apiBaseUrl;
+bool isDevelopment = ConfigService.isDevelopment;
+bool analyticsEnabled = ConfigService.enableAnalytics;
+```
+
+### Git Ignore
+
+The `.env` file is excluded from version control to protect sensitive configuration. The `.env.example` file serves as a template for required environment variables.

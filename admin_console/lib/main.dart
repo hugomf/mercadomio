@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 import 'package:admin_console/widgets/navigation_drawer.dart' as custom;
 import 'package:admin_console/screens/catalog_management.dart';
 import 'package:admin_console/screens/category_management.dart';
+import 'package:admin_console/screens/product_management.dart';
+import 'package:admin_console/services/product_provider.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: '.env');
   runApp(const AdminConsoleApp());
 }
 
@@ -12,28 +17,34 @@ class AdminConsoleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Admin Console',
-      routes: {
-        '/catalog': (context) => const CatalogManagementScreen(),
-        '/categories': (context) => const CategoryManagementScreen(),
-      },
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ProductProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Admin Console',
+        routes: {
+          '/catalog': (context) => const CatalogManagementScreen(),
+          '/categories': (context) => const CategoryManagementScreen(),
+          '/products': (context) => const ProductManagementScreen(),
+        },
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        themeMode: ThemeMode.system,
+        home: const AdminConsoleHome(),
       ),
-      themeMode: ThemeMode.system,
-      home: const AdminConsoleHome(),
     );
   }
 }

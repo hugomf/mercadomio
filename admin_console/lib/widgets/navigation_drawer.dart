@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:admin_console/screens/catalog_management.dart';
+import 'package:admin_console/screens/product_management.dart';
 
 class NavigationDrawer extends StatefulWidget {
   const NavigationDrawer({super.key});
@@ -146,7 +147,12 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.shopping_bag,
           label: 'Product Management',
           onTap: () {
-            // TODO: Implement product management navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProductManagementScreen(),
+              ),
+            );
           },
         ),
         _buildMenuItem(
