@@ -215,16 +215,42 @@ func (s *productService) AddCategoryFilter(ctx context.Context, params *SearchPa
 		return nil
 	}
 
-	// Get all category names
-	var categoryNames []string
+	// Perform hierarchical filtering - include all child categories
+	var allCategoryIDs []primitive.ObjectID
+
 	for _, id := range categoryIDs {
-		category, err := s.categoryService.GetCategoryByID(ctx, id)
+		// Add the requested category ID
+		allCategoryIDs = append(allCategoryIDs, id)
+
+		// Get all child categories recursively
+		childIDs, err := s.getAllChildCategoryIDs(ctx, id)
 		if err != nil {
 			return err
 		}
-		categoryNames = append(categoryNames, category.Name)
+		allCategoryIDs = append(allCategoryIDs, childIDs...)
 	}
 
-	params.Categories = categoryNames
+	params.CategoryIDs = allCategoryIDs
 	return nil
+}
+
+func (s *productService) getAllChildCategoryIDs(ctx context.Context, parentID primitive.ObjectID) ([]primitive.ObjectID, error) {
+	var result []primitive.ObjectID
+
+	children, err := s.categoryService.GetChildCategories(ctx, parentID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, child := range children {
+		result = append(result, child.ID)
+		// Recursively get children of children
+		grandchildren, err := s.getAllChildCategoryIDs(ctx, child.ID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, grandchildren...)
+	}
+
+	return result, nil
 }

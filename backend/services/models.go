@@ -69,7 +69,8 @@ type Product struct {
 // SearchParams represents search parameters
 type SearchParams struct {
 	Query             string
-	Categories        []string
+	Categories        []string             // Category names (for search interface)
+	CategoryIDs       []primitive.ObjectID // Category ObjectIDs (for MongoDB queries)
 	MinPrice          float64
 	MaxPrice          float64
 	Type              string // "physical", "service", or "subscription"
