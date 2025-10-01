@@ -31,6 +31,20 @@ docs: update API documentation
 - Include clear description of changes
 - Keep changes focused on a single feature/bugfix
 
+# Development Workflow Guidelines
+
+## Before Checking In Code
+*   Conduct a self-review of your code for quality and standards.
+*   Ensure all new functionality is covered by tests.
+*   Execute the full test suite and verify all tests pass.
+*   Address any compiler or static analysis warnings.
+
+## Before Issuing a New Release
+*   Confirm all "Check-In" activities are complete for the release scope.
+*   Update the CHANGELOG.md with a summary of all changes.
+
+> **Note:** Frequent, incremental check-ins are encouraged for ongoing work. A formal Release should be created only when a cohesive piece of functionality is complete. The CHANGELOG for that release must comprehensively document the full set of changes.
+
 ## Reporting Issues
 Include:
 - Expected behavior
