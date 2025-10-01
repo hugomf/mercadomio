@@ -87,6 +87,25 @@ func ValidationErrorResponse(c *fiber.Ctx, message, details string) error {
 	return ErrorResponse(c, fiber.StatusUnprocessableEntity, "VALIDATION_ERROR", message, details)
 }
 
+// Authorization Error Helpers
+
+// UnauthorizedResponse sends a 401 unauthorized error
+func Unauthorized(c *fiber.Ctx, message string) error {
+	return ErrorResponse(c, fiber.StatusUnauthorized, "UNAUTHORIZED", message, "")
+}
+
+// Forbidden sends a 403 forbidden error
+func Forbidden(c *fiber.Ctx, message string) error {
+	return ErrorResponse(c, fiber.StatusForbidden, "FORBIDDEN", message, "")
+}
+
+// Not Found Error Helpers
+
+// NotFoundResponse sends a 404 not found error
+func NotFoundResponse(c *fiber.Ctx, message string) error {
+	return ErrorResponse(c, fiber.StatusNotFound, "NOT_FOUND", message, "")
+}
+
 // Paginated Response Helper
 
 // PaginatedData represents paginated response data
