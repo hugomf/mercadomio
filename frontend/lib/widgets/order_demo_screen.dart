@@ -143,6 +143,26 @@ class _OrderDemoScreenState extends State<OrderDemoScreen> {
                   Colors.green,
                   _showApiIntegrationInfo,
                 ),
+                const SizedBox(height: 12),
+
+                _buildDemoButton(
+                  context,
+                  '💳 Payment Integration',
+                  'Stripe payment processing with simulation support',
+                  Icons.payment,
+                  Colors.purple,
+                  _showPaymentIntegrationInfo,
+                ),
+                const SizedBox(height: 12),
+
+                _buildDemoButton(
+                  context,
+                  'Complete E-commerce Flow',
+                  'From cart → order → payment processing',
+                  Icons.shopping_cart_checkout,
+                  Colors.indigo,
+                  _showCompleteFlowDemo,
+                ),
               ],
             ),
           ),
@@ -316,6 +336,68 @@ class _OrderDemoScreenState extends State<OrderDemoScreen> {
             SizedBox(height: 16),
             Text(
               'All APIs tested and production-ready! 🎯',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentIntegrationInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('💳 Stripe Payment Integration'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('• PaymentIntent creation for orders', style: TextStyle(fontSize: 14)),
+            Text('• Payment confirmation & status updates', style: TextStyle(fontSize: 14)),
+            Text('• Webhook handling for payment events', style: TextStyle(fontSize: 14)),
+            Text('• Simulation mode for testing', style: TextStyle(fontSize: 14)),
+            Text('• Secure card data handling', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 16),
+            Text(
+              'Production-ready payment processing! 💰',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompleteFlowDemo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🛍️ Complete E-commerce Flow'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('🔍 Browse Products → 🛒 Add to Cart', style: TextStyle(fontSize: 14)),
+            Text('📦 View Cart → 💳 Checkout Process', style: TextStyle(fontSize: 14)),
+            Text('📋 Create Order → 💰 Payment Processing', style: TextStyle(fontSize: 14)),
+            Text('📊 Order Tracking → 📦 Delivery Status', style: TextStyle(fontSize: 14)),
+            Text('📱 Mobile notifications & updates', style: TextStyle(fontSize: 14)),
+            SizedBox(height: 16),
+            Text(
+              'End-to-end customer experience! 🌟',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
