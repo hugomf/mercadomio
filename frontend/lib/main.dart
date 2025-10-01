@@ -10,6 +10,7 @@ import 'widgets/product_listing_widget.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
 import 'widgets/auth_guard.dart';
+import 'widgets/order_demo_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const CartScreen(),
+    const OrderDemoScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -196,6 +198,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart),
             label: 'Cart',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Orders',
           ),
         ],
         currentIndex: _selectedIndex,
