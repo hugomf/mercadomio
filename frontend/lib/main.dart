@@ -5,9 +5,11 @@ import 'package:responsive_framework/responsive_framework.dart';
 import 'services/cart_controller.dart';
 import 'services/config_service.dart';
 import 'services/category_service.dart';
+import 'services/auth_service.dart';
 import 'widgets/product_listing_widget.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
+import 'widgets/auth_guard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +38,7 @@ class MyApp extends StatelessWidget {
           const Breakpoint(start: 1921, end: double.infinity, name: '4K'),
         ],
       ),
-      home: const MainScreen(),
+      home: const AuthGuard(child: MainScreen()),
       getPages: [
       ],
     );
@@ -57,6 +59,7 @@ class _MainScreenState extends State<MainScreen> {
     Get.put(CartController());
     Get.put(ConfigService());
     Get.put(CategoryService());
+    Get.put(AuthService());
   }
 
   int _selectedIndex = 0;
@@ -123,9 +126,64 @@ class _MainScreenState extends State<MainScreen> {
             bottom: Radius.circular(12),
           ),
         ),
-        actions: const [
-          CartIcon(),
-          SizedBox(width: 12),
+        actions: [
+          const CartIcon(),
+          const SizedBox(width: 8),
+          // User profile/logout
+          AuthOptional(
+            authenticatedChild: PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'logout') {
+                  Get.find<AuthService>().logout();
+                } else if (value == 'profile') {
+                  // TODO: Show profile dialog
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'profile',
+                  child: Row(
+                    children: [
+                      Icon(Icons.person, size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Profile'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 18),
+                      const SizedBox(width: 8),
+                      const Text('Logout'),
+                    ],
+                  ),
+                ),
+              ],
+              child: Obx(() {
+                final user = Get.find<AuthService>().currentUser;
+                return Row(
+                  children: [
+                    Text(
+                      user?.name.split(' ').first ?? 'User',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.account_circle),
+                  ],
+                );
+              }),
+            ),
+            unauthenticatedChild: TextButton(
+              onPressed: () => Get.offAll(() => const AuthGuard(child: SizedBox())),
+              child: const Text(
+                'Login',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
         ],
       ),
       body: _screens[_selectedIndex],

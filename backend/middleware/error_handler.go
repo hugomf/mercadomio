@@ -39,17 +39,31 @@ func ErrorHandler() fiber.ErrorHandler {
 	}
 }
 
-// BadRequest creates a 400 error
+// ErrorResponse sends an error response with custom status code (backward compatibility)
+func ErrorResponseLegacy(c *fiber.Ctx, status int, code, message, details string) error {
+	return c.Status(status).JSON(APIError{
+		Code:    status,
+		Message: message,
+		Details: details,
+	})
+}
+
+// These functions are kept for backward compatibility with new signature
+
+// Old function signatures for backward compatibility (return *fiber.Error)
+// These will be handled by Fiber's error handler
+
+// BadRequest creates a 400 error (old style - returns *fiber.Error)
 func BadRequest(message string) *fiber.Error {
 	return fiber.NewError(fiber.StatusBadRequest, message)
 }
 
-// NotFound creates a 404 error
+// NotFound creates a 404 error (old style - returns *fiber.Error)
 func NotFound(message string) *fiber.Error {
 	return fiber.NewError(fiber.StatusNotFound, message)
 }
 
-// InternalError creates a 500 error
+// InternalError creates a 500 error (old style - returns *fiber.Error)
 func InternalError(message string) *fiber.Error {
 	return fiber.NewError(fiber.StatusInternalServerError, message)
 }
