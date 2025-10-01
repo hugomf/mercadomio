@@ -83,7 +83,7 @@ func TestHierarchicalCategoryFilter(t *testing.T) {
 		}
 
 		products, _, err := productService.ListProducts(ctx, bson.M{
-			"categories": bson.M{"$in": params.Categories},
+			"categories": bson.M{"$in": params.CategoryIDs},
 		}, 1, 10)
 
 		if err != nil {

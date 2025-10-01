@@ -20,9 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Paginated Response Support**: New pagination models for future list endpoints
 - **Response Helper Functions**: Utility functions for consistent API responses
 
+### Backend Improvements
+- **Enhanced Category Filtering**: Fixed hierarchical category filtering to include parent/child category relationships
+- **Category Hierarchy Support**: Products now correctly filter by parent categories including all child category products
+- **Search Parameter Enhancement**: Added CategoryIDs field for efficient MongoDB ObjectID queries
+
 ### Testing & Documentation
 - **Order Model Tests**: Comprehensive test coverage for order validation and transitions
 - **TDD Implementation**: Test-first development approach for order functionality
+- **Category Filter Tests**: Fixed and validated hierarchical category filtering
 - **API Standards**: Documented response format guidelines for future endpoints
 
 ## [0.0.1] - 2025-10-01
