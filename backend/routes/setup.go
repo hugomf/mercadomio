@@ -50,13 +50,15 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 
 	imageHandlers := handlers.NewImageHandlers()
 	categoryHandlers := handlers.NewCategoryHandlers(deps.CategoryService)
+	authHandlers := handlers.NewAuthHandlers(deps.AuthService)
 
 	// Setup routes
 	SetupProductRoutes(app, productHandlers)
-	SetupCartRoutes(app, cartHandlers)
+	SetupCartRoutes(app, cartHandlers, deps.AuthService)
 	SetupAnalyticsRoutes(app, analyticsHandlers)
 	SetupImageRoutes(app, imageHandlers, cloudinaryHandlers, directusHandlers)
 	SetupCategoryRoutes(app, categoryHandlers)
+	SetupAuthRoutes(app, authHandlers)
 
 	// Health check endpoint
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -74,4 +76,5 @@ type RouteDependencies struct {
 	CartService      services.CartService
 	AnalyticsService services.AnalyticsService
 	CategoryService  services.CategoryService
+	AuthService      *services.AuthService
 }

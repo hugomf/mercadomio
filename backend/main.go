@@ -70,6 +70,9 @@ func main() {
 	// Initialize Analytics Service
 	analyticsService := services.NewAnalyticsService(db, cartAnalyticsConfig, eventBus)
 
+	// Initialize Auth Service
+	authService := services.NewAuthService(db)
+
 	// Start analytics service to begin listening for events
 	if err := analyticsService.Start(); err != nil {
 		log.Printf("Warning: Failed to start analytics service: %v", err)
@@ -87,6 +90,7 @@ func main() {
 		CartService:      cartService,
 		AnalyticsService: analyticsService,
 		CategoryService:  categoryService,
+		AuthService:      authService,
 	}
 
 	routes.SetupRoutes(app, routeDeps)
