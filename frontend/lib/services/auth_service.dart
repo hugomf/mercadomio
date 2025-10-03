@@ -237,4 +237,174 @@ class AuthService extends GetxService {
     // For now, no persistence - user will need to login each time
     // TODO: Implement token persistence
   }
+
+  // User shopping profile methods
+  Future<List<Map<String, dynamic>>> getUserAddresses() async {
+    if (!isAuthenticated) return [];
+
+    try {
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/auth/addresses'),
+        headers: authHeaders,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return List<Map<String, dynamic>>.from(responseData['addresses'] ?? []);
+      } else {
+        throw responseData['message'] ?? 'Failed to get addresses';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  Future<bool> addUserAddress(Map<String, dynamic> addressData) async {
+    if (!isAuthenticated) return false;
+
+    try {
+      _isLoading.value = true;
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/auth/addresses'),
+        headers: authHeaders,
+        body: json.encode(addressData),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 201 && responseData['success'] == true) {
+        return true;
+      } else {
+        throw responseData['message'] ?? 'Failed to add address';
+      }
+    } catch (e) {
+      throw e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getUserPaymentMethods() async {
+    if (!isAuthenticated) return [];
+
+    try {
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/auth/payment-methods'),
+        headers: authHeaders,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return List<Map<String, dynamic>>.from(responseData['paymentMethods'] ?? []);
+      } else {
+        throw responseData['message'] ?? 'Failed to get payment methods';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  Future<bool> addUserPaymentMethod(Map<String, dynamic> paymentMethodData) async {
+    if (!isAuthenticated) return false;
+
+    try {
+      _isLoading.value = true;
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/auth/payment-methods'),
+        headers: authHeaders,
+        body: json.encode(paymentMethodData),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 201 && responseData['success'] == true) {
+        return true;
+      } else {
+        throw responseData['message'] ?? 'Failed to add payment method';
+      }
+    } catch (e) {
+      throw e.toString();
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<List<String>> getUserWishlist() async {
+    if (!isAuthenticated) return [];
+
+    try {
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.get(
+        Uri.parse('$apiUrl/api/auth/wishlist'),
+        headers: authHeaders,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return List<String>.from(responseData['wishlist'] ?? []);
+      } else {
+        throw responseData['message'] ?? 'Failed to get wishlist';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  Future<bool> addToWishlist(String productId) async {
+    if (!isAuthenticated) return false;
+
+    try {
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/auth/wishlist/$productId'),
+        headers: authHeaders,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return true;
+      } else {
+        throw responseData['message'] ?? 'Failed to add to wishlist';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
+
+  Future<bool> removeFromWishlist(String productId) async {
+    if (!isAuthenticated) return false;
+
+    try {
+      final apiUrl = await _getApiUrl();
+
+      final response = await http.delete(
+        Uri.parse('$apiUrl/api/auth/wishlist/$productId'),
+        headers: authHeaders,
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return true;
+      } else {
+        throw responseData['message'] ?? 'Failed to remove from wishlist';
+      }
+    } catch (e) {
+      throw e.toString();
+    }
+  }
 }

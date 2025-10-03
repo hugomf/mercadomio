@@ -134,17 +134,50 @@ class OrderResponse {
 
   // UI-ready calculated properties
   String get formattedDate {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = DateTime.now();
     final orderDate = DateTime(createdAt.year, createdAt.month, createdAt.day);
 
-    if (orderDate == today) {
+    if (orderDate == DateTime(today.year, today.month, today.day)) {
       return 'Hoy, ${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
-    } else if (orderDate == today.subtract(const Duration(days: 1))) {
+    } else if (orderDate == DateTime(today.year, today.month, today.day - 1)) {
       return 'Ayer, ${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
     } else {
       return '${createdAt.day}/${createdAt.month}/${createdAt.year}';
     }
+  }
+
+  double get progressPercentage {
+    switch (status) {
+      case OrderStatus.pending: return 0.1;
+      case OrderStatus.paid: return 0.33;
+      case OrderStatus.shipped: return 0.67;
+      case OrderStatus.completed: return 1.0;
+      case OrderStatus.cancelled: return 1.0;
+    }
+  }
+
+  String get estimatedDelivery {
+    if (status == OrderStatus.completed || status == OrderStatus.cancelled) {
+      return '';
+    }
+    // Mock delivery estimate
+    return (DateTime.now().add(const Duration(days: 3))).toString().split(' ')[0];
+  }
+
+  bool get canBeCancelled {
+    return status == OrderStatus.pending;
+  }
+
+  bool get canBeReturned {
+    return status == OrderStatus.completed;
+  }
+
+  String? get trackingNumber {
+    // Mock tracking number for shipped orders
+    if (status.index >= OrderStatus.shipped.index) {
+      return "TRK${id.substring(0, 8).toUpperCase()}";
+    }
+    return null;
   }
 
   String get formattedTime => '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';

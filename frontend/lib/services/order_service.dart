@@ -159,7 +159,7 @@ class OrderService {
 
     // For demo purposes, simulate immediate success
     final order = await createOrderFromCart(cartId);
-    return successUrl + '?order_id=${order.id}';
+    return '$successUrl?order_id=${order.id}';
   }
 }
 

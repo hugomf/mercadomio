@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../services/order_service.dart';
+import 'order_details_screen.dart';
 
 // Professional Order History Screen - Selling Point UI
 class OrderHistoryScreen extends StatefulWidget {

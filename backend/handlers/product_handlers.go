@@ -140,3 +140,27 @@ func (h *ProductHandlers) GetVariants(c *fiber.Ctx) error {
 	// Demo endpoint: return a static list of variants
 	return c.JSON([]string{"Small", "Medium", "Large", "XL"})
 }
+
+// GetProductReviews handles GET /api/products/:id/reviews
+func (h *ProductHandlers) GetProductReviews(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	reviews, err := h.ProductService.GetProductReviews(c.Context(), id)
+	if err != nil {
+		return middleware.NotFound("Product reviews not found")
+	}
+
+	return c.JSON(reviews)
+}
+
+// GetRelatedProducts handles GET /api/products/:id/related
+func (h *ProductHandlers) GetRelatedProducts(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	relatedProducts, err := h.ProductService.GetRelatedProducts(c.Context(), id)
+	if err != nil {
+		return middleware.NotFound("Related products not found")
+	}
+
+	return c.JSON(relatedProducts)
+}

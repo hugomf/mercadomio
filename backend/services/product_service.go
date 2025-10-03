@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"mercadomio-backend/models"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -253,4 +255,52 @@ func (s *productService) getAllChildCategoryIDs(ctx context.Context, parentID pr
 	}
 
 	return result, nil
+}
+
+func (s *productService) GetProductReviews(ctx context.Context, productID string) ([]models.Review, error) {
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	var product models.Product
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&product)
+	if err != nil {
+		return nil, err
+	}
+
+	return product.Reviews, nil
+}
+
+func (s *productService) GetRelatedProducts(ctx context.Context, productID string) ([]Product, error) {
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	var product models.Product
+	err = s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&product)
+	if err != nil {
+		return nil, err
+	}
+
+	// For now, return products with same category, excluding the current product
+	// This is a basic recommendation algorithm that can be enhanced later
+	filter := bson.M{
+		"category": product.Category,
+		"_id":      bson.M{"$ne": objID},
+	}
+
+	cursor, err := s.collection.Find(ctx, filter, options.Find().SetLimit(5))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var relatedProducts []Product
+	if err := cursor.All(ctx, &relatedProducts); err != nil {
+		return nil, err
+	}
+
+	return relatedProducts, nil
 }

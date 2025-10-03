@@ -4,9 +4,11 @@ import (
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/models"
 	"mercadomio-backend/services"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var validate = validator.New()
@@ -156,5 +158,160 @@ func (h *AuthHandlers) VerifyToken(c *fiber.Ctx) error {
 			"email": email,
 			"type":  userType,
 		},
+	})
+}
+
+// GetUserAddresses handles retrieving user addresses
+func (h *AuthHandlers) GetUserAddresses(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user addresses")
+	}
+
+	return c.JSON(fiber.Map{
+		"success":   true,
+		"addresses": user.Addresses,
+	})
+}
+
+// CreateUserAddress handles adding a new address
+func (h *AuthHandlers) CreateUserAddress(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	var address models.Address
+	if err := c.BodyParser(&address); err != nil {
+		return middleware.BadRequest("Invalid address data")
+	}
+
+	// Set defaults
+	if address.IsDefault {
+		// If this is default, unset other defaults
+		user, err := h.authService.GetUserByID(userID)
+		if err != nil {
+			return middleware.InternalError("Failed to get user")
+		}
+		for i := range user.Addresses {
+			user.Addresses[i].IsDefault = false
+		}
+		err = h.authService.UpdateUser(userID, bson.M{"addresses": user.Addresses})
+		if err != nil {
+			return middleware.InternalError("Failed to update addresses")
+		}
+	}
+
+	// Add the new address
+	err := h.authService.AddUserAddress(userID, &address)
+	if err != nil {
+		return middleware.InternalError("Failed to add address")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"success": true,
+		"message": "Address added successfully",
+		"address": address,
+	})
+}
+
+// GetUserPaymentMethods handles retrieving user payment methods
+func (h *AuthHandlers) GetUserPaymentMethods(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve payment methods")
+	}
+
+	return c.JSON(fiber.Map{
+		"success":        true,
+		"paymentMethods": user.PaymentMethods,
+	})
+}
+
+// CreateUserPaymentMethod handles adding a new payment method
+func (h *AuthHandlers) CreateUserPaymentMethod(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	var paymentMethod models.PaymentMethod
+	if err := c.BodyParser(&paymentMethod); err != nil {
+		return middleware.BadRequest("Invalid payment method data")
+	}
+
+	// Set creation time and defaults
+	paymentMethod.CreatedAt = time.Now()
+
+	if paymentMethod.IsDefault {
+		// If this is default, unset other defaults
+		user, err := h.authService.GetUserByID(userID)
+		if err != nil {
+			return middleware.InternalError("Failed to get user")
+		}
+		for i := range user.PaymentMethods {
+			user.PaymentMethods[i].IsDefault = false
+		}
+		err = h.authService.UpdateUser(userID, bson.M{"paymentMethods": user.PaymentMethods})
+		if err != nil {
+			return middleware.InternalError("Failed to update payment methods")
+		}
+	}
+
+	// Add the new payment method
+	err := h.authService.AddUserPaymentMethod(userID, &paymentMethod)
+	if err != nil {
+		return middleware.InternalError("Failed to add payment method")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"success":       true,
+		"message":       "Payment method added successfully",
+		"paymentMethod": paymentMethod,
+	})
+}
+
+// GetUserWishlist handles retrieving user wishlist
+func (h *AuthHandlers) GetUserWishlist(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve wishlist")
+	}
+
+	return c.JSON(fiber.Map{
+		"success":  true,
+		"wishlist": user.Wishlist,
+	})
+}
+
+// AddToWishlist handles adding a product to user's wishlist
+func (h *AuthHandlers) AddToWishlist(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	productID := c.Params("productId")
+
+	err := h.authService.AddToUserWishlist(userID, productID)
+	if err != nil {
+		return middleware.InternalError("Failed to add to wishlist")
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Product added to wishlist",
+	})
+}
+
+// RemoveFromWishlist handles removing a product from user's wishlist
+func (h *AuthHandlers) RemoveFromWishlist(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(string)
+	productID := c.Params("productId")
+
+	err := h.authService.RemoveFromUserWishlist(userID, productID)
+	if err != nil {
+		return middleware.InternalError("Failed to remove from wishlist")
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Product removed from wishlist",
 	})
 }

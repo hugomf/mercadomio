@@ -222,3 +222,94 @@ func (s *AuthService) generateToken(user *models.User) (string, error) {
 
 	return tokenString, nil
 }
+
+// AddUserAddress adds a new address to user's profile
+func (s *AuthService) AddUserAddress(userID string, address *models.Address) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	// Set creation timestamp
+	address.CreatedAt = time.Now()
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$push": bson.M{"addresses": address}}
+
+	result, err := s.db.Collection(userCollectionName).UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to add address: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("user not updated")
+	}
+
+	return nil
+}
+
+// AddUserPaymentMethod adds a new payment method to user's profile
+func (s *AuthService) AddUserPaymentMethod(userID string, paymentMethod *models.PaymentMethod) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$push": bson.M{"paymentMethods": paymentMethod}}
+
+	result, err := s.db.Collection(userCollectionName).UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to add payment method: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("user not updated")
+	}
+
+	return nil
+}
+
+// AddToUserWishlist adds a product to user's wishlist
+func (s *AuthService) AddToUserWishlist(userID string, productID string) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	filter := bson.M{"_id": objID, "wishlist": bson.M{"$ne": productID}}
+	update := bson.M{"$push": bson.M{"wishlist": productID}}
+
+	result, err := s.db.Collection(userCollectionName).UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to add to wishlist: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("product already in wishlist or user not found")
+	}
+
+	return nil
+}
+
+// RemoveFromUserWishlist removes a product from user's wishlist
+func (s *AuthService) RemoveFromUserWishlist(userID string, productID string) error {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$pull": bson.M{"wishlist": productID}}
+
+	result, err := s.db.Collection(userCollectionName).UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to remove from wishlist: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("product not in wishlist or user not found")
+	}
+
+	return nil
+}
