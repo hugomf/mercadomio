@@ -532,13 +532,13 @@ else
 fi
 
 # Database connections
-if docker exec \$(docker ps -q -f name=mongo) mongo --eval "db.stats()" > /dev/null 2>&1; then
+if docker exec $(docker ps -q -f name=mongo) mongo --eval "db.stats()" > /dev/null 2>&1; then
     echo "✅ MongoDB: OK"
 else
     echo "❌ MongoDB: FAILED"
 fi
 
-if docker exec \$(docker ps -q -f name=redis) redis-cli ping | grep -q PONG; then
+if docker exec $(docker ps -q -f name=redis) redis-cli ping | grep -q PONG; then
     echo "✅ Redis: OK"
 else
     echo "❌ Redis: FAILED"
@@ -557,22 +557,22 @@ EOF"
     sudo -u deploy bash -c "cat > $DEPLOY_PATH/backup.sh << 'EOF'
 #!/bin/bash
 BACKUP_DIR=\"./backup\"
-TIMESTAMP=\$(date +%Y%m%d_%H%M%S)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p \"\$BACKUP_DIR\"
 
 echo \"💾 Creating production backup...\"
 
 # Database backup
-docker exec \$(docker ps -q -f name=mongo) mongodump --db mercadomio --out /tmp/backup
-docker cp \$(docker ps -q -f name=mongo):/tmp/backup ./backup/mongo_backup_\$TIMESTAMP
-docker exec \$(docker ps -q -f name=mongo) rm -rf /tmp/backup
+docker exec $(docker ps -q -f name=mongo) mongodump --db mercadomio --out /tmp/backup
+docker cp $(docker ps -q -f name=mongo):/tmp/backup ./backup/mongo_backup_$TIMESTAMP
+docker exec $(docker ps -q -f name=mongo) rm -rf /tmp/backup
 
 # Compress
-cd \"\$BACKUP_DIR\" && tar -czf mongo_backup_\$TIMESTAMP.tar.gz mongo_backup_\$TIMESTAMP
-rm -rf mongo_backup_\$TIMESTAMP
+cd \"\$BACKUP_DIR\" && tar -czf mongo_backup_$TIMESTAMP.tar.gz mongo_backup_$TIMESTAMP
+rm -rf mongo_backup_$TIMESTAMP
 
-echo \"✅ Backup completed: \$BACKUP_DIR/mongo_backup_\$TIMESTAMP.tar.gz\"
+echo \"✅ Backup completed: \$BACKUP_DIR/mongo_backup_$TIMESTAMP.tar.gz\"
 EOF"
 
     # Update scripts
