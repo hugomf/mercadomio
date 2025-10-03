@@ -4,6 +4,14 @@
 - Docker & Docker Compose installed
 - (Optional) Figma for UI design
 
+
+## Getting Started
+1. Fork the repository
+2. Clone your fork locally
+3. Create a new branch for your changes
+4. Make your changes
+5. Push to your fork and submit a pull request
+
 ## 1. Clone the Repository
 ```
 git clone <your-repo-url>
@@ -49,7 +57,3 @@ docker-compose up --build
 ```
 docker-compose down
 ```
-
----
-
-For further details, see the architecture and branding docs in /docs. 
