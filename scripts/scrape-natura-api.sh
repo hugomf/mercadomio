@@ -187,8 +187,8 @@ else
     fi
 fi
 
-# Global array to track processed categories (prevents duplicate API checks)
-declare -A processed_categories=()
+# Global variable to track processed categories (prevents duplicate API checks)
+processed_categories=""
 
 # Function to fetch products from Natura API
 fetch_natura_products() {
@@ -309,13 +309,17 @@ create_product() {
     local category=$natura_category
 
     # Ensure category exists immediately when first encountered
-    if [ -n "$category" ] && [ -z "${processed_categories[$category]}" ]; then
-        echo "🏷️  Processing category: $category" >&2
-        if ensure_category_exists "$category"; then
-            processed_categories[$category]=1
-            echo "🏷️  Category ready: $category" >&2
-        else
-            echo "⚠️  Failed to create category: $category (continuing with product..." >&2
+    if [ -n "$category" ]; then
+        # Check if category is already processed (using string search)
+        category_processed=$(echo "$processed_categories" | grep -c "|$category|" || echo "0")
+        if [ "$category_processed" -eq 0 ]; then
+            echo "🏷️  Processing category: $category" >&2
+            if ensure_category_exists "$category"; then
+                processed_categories="${processed_categories}|$category"
+                echo "🏷️  Category ready: $category" >&2
+            else
+                echo "⚠️  Failed to create category: $category (continuing with product..." >&2
+            fi
         fi
     fi
 
@@ -468,7 +472,7 @@ ensure_category_exists() {
     if [ -n "$existing_category_name" ]; then
         echo "🎯 Found existing category by name match: '$existing_category_name' (slug: $existing_category_slug) for '$category_slug'" >&2
         # Update our processed_categories tracking to use the existing category slug
-        processed_categories[$existing_category_slug]=1
+        processed_categories="${processed_categories}|$existing_category_slug"
         return 0
     fi
 
@@ -599,12 +603,15 @@ scrape_natura_api() {
         echo ""
     done
 
-    # Count how many categories were processed
-    local categories_processed=${#processed_categories[@]}
+    # Count how many categories were processed (count pipe-separated entries)
+    local categories_processed=$(echo "$processed_categories" | tr -cd '|' | wc -c)
     echo ""
     echo "🏷️  Categories created during scraping: $categories_processed"
     if [ $categories_processed -gt 0 ]; then
-        echo "   Processed categories: $(echo ${!processed_categories[*]} | sed 's/ /\n   - /g' | sed 's/^/   - /')" >&2
+        echo "   Processed categories: $(echo "$processed_categories" | sed 's/|/\\n   - /g' | sed '1d' | head -10)" >&2
+        if [ $categories_processed -gt 10 ]; then
+            echo "   ... and $(($categories_processed - 10)) more" >&2
+        fi
     fi
 
     echo ""
