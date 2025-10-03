@@ -17,4 +17,10 @@ func SetupProductRoutes(app *fiber.App, productHandlers *handlers.ProductHandler
 
 	// Variants endpoint
 	app.Get("/api/variants", productHandlers.GetVariants)
+
+	// Product reviews endpoint
+	app.Get("/api/products/:id/reviews", productHandlers.GetProductReviews)
+
+	// Related products endpoint
+	app.Get("/api/products/:id/related", productHandlers.GetRelatedProducts)
 }

@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 
+	"mercadomio-backend/models"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -30,6 +32,8 @@ type (
 		DeleteProduct(ctx context.Context, id string) error
 		AddCategoryFilter(ctx context.Context, params *SearchParams, categoryIDs []primitive.ObjectID) error
 		AddCategoryNameFilter(ctx context.Context, params *SearchParams, categoryNames []string) error
+		GetProductReviews(ctx context.Context, productID string) ([]models.Review, error)
+		GetRelatedProducts(ctx context.Context, productID string) ([]Product, error)
 	}
 
 	SearchService interface {

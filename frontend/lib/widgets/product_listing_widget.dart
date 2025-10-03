@@ -9,7 +9,9 @@ import '../services/category_service.dart';
 import '../services/config_service.dart';
 import '../services/cart_controller.dart';
 import '../widgets/category_selector.dart';
+import '../widgets/category_breadcrumbs.dart';
 import '../widgets/product_search_controls.dart';
+import '../widgets/product_detail_screen.dart';
 import '../models/product.dart';
 
 class ProductListingWidget extends StatefulWidget {
@@ -213,113 +215,130 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     final fontSize = _getFontSize(context, base: 14);
     final iconSize = _getIconSize(context, base: 20);
     final starSize = _getIconSize(context, base: 14);
-    
+
     return SizedBox(
       height: cardHeight,
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        child: Column(
-          children: [
-            SizedBox(
-              height: imageHeight,
-              width: double.infinity,
-              child: CachedNetworkImage(
-                imageUrl: product.imageUrl,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[100],
-                  child: Center(
-                    child: SizedBox(
-                      width: _getIconSize(context, base: 24),
-                      height: _getIconSize(context, base: 24),
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[100],
-                  child: Icon(
-                    Icons.image,
-                    size: _getIconSize(context, base: 48),
-                    color: Colors.grey,
-                  ),
-                ),
-                fit: BoxFit.cover,
-              ),
-            ),
-            Expanded(
-              child: Container(
+      child: GestureDetector(
+        onTap: () => _navigateToProductDetail(product.id),
+        child: Card(
+          elevation: 1,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: imageHeight,
                 width: double.infinity,
-                padding: EdgeInsets.all(padding),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(_getPadding(context, base: 8)),
-                    bottomRight: Radius.circular(_getPadding(context, base: 8)),
+                child: CachedNetworkImage(
+                  imageUrl: product.imageUrl,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[100],
+                    child: Center(
+                      child: SizedBox(
+                        width: _getIconSize(context, base: 24),
+                        height: _getIconSize(context, base: 24),
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: fontSize,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[100],
+                    child: Icon(
+                      Icons.image,
+                      size: _getIconSize(context, base: 48),
+                      color: Colors.grey,
                     ),
-                    Text(
-                      '\$${product.basePrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: fontSize * 1.15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.deepPurple,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.star, size: starSize, color: Colors.amber),
-                            Icon(Icons.star, size: starSize, color: Colors.amber),
-                            Icon(Icons.star, size: starSize, color: Colors.amber),
-                            Icon(Icons.star, size: starSize, color: Colors.amber),
-                            Icon(Icons.star_border, size: starSize, color: Colors.amber),
-                            SizedBox(width: _getPadding(context, base: 4)),
-                            Text(
-                              '4.0',
-                              style: TextStyle(
-                                fontSize: fontSize * 0.85,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.add_shopping_cart,
-                            size: iconSize,
-                            color: Colors.deepPurple,
-                          ),
-                          onPressed: () => _addToCart(product),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
+                  fit: BoxFit.cover,
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(padding),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(_getPadding(context, base: 8)),
+                      bottomRight: Radius.circular(_getPadding(context, base: 8)),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: fontSize,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '\$${product.basePrice.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: fontSize * 1.15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              ...List.generate(5, (index) {
+                                return Icon(
+                                  Icons.star,
+                                  size: starSize,
+                                  color: index < (product.averageRating > 0 ? product.averageRating.floor() : 4)
+                                      ? Colors.amber
+                                      : Colors.grey,
+                                );
+                              }),
+                              SizedBox(width: _getPadding(context, base: 4)),
+                              Text(
+                                product.averageRating > 0 ? product.averageRating.toStringAsFixed(1) : '4.0',
+                                style: TextStyle(
+                                  fontSize: fontSize * 0.85,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              if (product.reviewCount > 0) ...[
+                                SizedBox(width: _getPadding(context, base: 4)),
+                                Text(
+                                  '(${product.reviewCount})',
+                                  style: TextStyle(
+                                    fontSize: fontSize * 0.8,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.add_shopping_cart,
+                              size: iconSize,
+                              color: Colors.deepPurple,
+                            ),
+                            onPressed: () => _addToCart(product),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -420,6 +439,10 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     );
   }
 
+  void _navigateToProductDetail(String productId) {
+    Get.to(() => ProductDetailScreen(productId: productId));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -456,6 +479,11 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         
         CategorySelector(
           onSelectionChanged: _fetchProducts,
+        ),
+
+        // Category breadcrumbs
+        CategoryBreadcrumbs(
+          onBreadcrumbTap: _fetchProducts,
         ),
 
         Padding(
@@ -585,6 +613,11 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         
         CategorySelector(
           onSelectionChanged: _fetchProducts,
+        ),
+
+        // Category breadcrumbs
+        CategoryBreadcrumbs(
+          onBreadcrumbTap: _fetchProducts,
         ),
 
         Padding(

@@ -3,7 +3,7 @@
 # Natura Real API Scraper
 # Uses the official Natura Mexico API to get real products
 
-API_URL="${API_URL:-http://192.168.1.210:8080}"
+API_URL="${API_URL:-http://localhost:8080}"
 NATURA_API_BASE="https://ncf-apigw.natura-mx-jcf-prd.naturacloud.com/bff-app-natura-mexico-v2"
 BEARER_TOKEN="REDACTED"
 TENANT_ID="mexico-natura-web"
@@ -42,7 +42,7 @@ categories=(
     "perfumeria"        # Perfumes
     "cuidados-diarios"
     "cabello"           # Hair care
-    "rostro"            # Rostro    
+    "rostro"            # Rostro
     "maquillaje"        # Makeup
     "hombre"
     "infantil"
@@ -52,6 +52,9 @@ categories=(
     # "cuidado-corporal"  # Body care
     # "proteccion-solar"  # Sun protection
 )
+
+# Global array to track processed categories (prevents duplicate API checks)
+declare -A processed_categories=()
 
 # Function to fetch products from Natura API
 fetch_natura_products() {
@@ -156,7 +159,7 @@ map_category() {
 create_product() {
     local natura_product="$1"
     local product_id="$2"
-    
+
     # Extract data from Natura product JSON
     local product_id_natura=$(echo "$natura_product" | jq -r '.productId // ""')
     local name=$(echo "$natura_product" | jq -r '.friendlyName // .name // ""')
@@ -168,10 +171,19 @@ create_product() {
     local natura_category=$(echo "$natura_product" | jq -r '.categoryId // ""')
     local original_image_url=$(echo "$natura_product" | jq -r '.images.medium[0].absURL // ""')
 
-    # Map to our category system
-    # local category=$(map_category "$natura_category")
-
+    # Use Natura category directly (no mapping)
     local category=$natura_category
+
+    # Ensure category exists immediately when first encountered
+    if [ -n "$category" ] && [ -z "${processed_categories[$category]}" ]; then
+        echo "🏷️  Processing category: $category" >&2
+        if ensure_category_exists "$category"; then
+            processed_categories[$category]=1
+            echo "🏷️  Category ready: $category" >&2
+        else
+            echo "⚠️  Failed to create category: $category (continuing with product..." >&2
+        fi
+    fi
 
     # Upload image to Cloudinary and get Cloudinary URL
     local image_url=$(upload_to_cloudinary "$original_image_url" "$product_id_natura" "$product_id")
@@ -258,6 +270,64 @@ EOF
     fi
 }
 
+# Function to ensure category exists in our database
+ensure_category_exists() {
+    local category_slug="$1"
+
+    echo "🔍 Checking category: $category_slug" >&2
+
+    # First test if categories endpoint is working
+    local test_response=$(curl -s -w "%{http_code}" "$API_URL/api/categories" 2>/dev/null)
+    local test_http_code="${test_response: -3}"
+    local test_body="${test_response%???}"
+
+    echo "📡 Categories API test - HTTP $test_http_code" >&2
+    if [[ ! "$test_http_code" =~ ^2[0-9][0-9]$ ]]; then
+        echo "❌ Categories API not responding properly: $test_body" >&2
+        return 1
+    fi
+
+    # Check if categories list is empty or malformed
+    if [ -z "$test_body" ] || [ "$test_body" = "null" ]; then
+        echo "📋 Categories list is empty, will create new ones" >&2
+        local existing=""
+    else
+        local existing="$test_body"
+    fi
+
+    # Check if category already exists by slug
+    if echo "$existing" | jq -e ".[] | select(.slug == \"$category_slug\")" > /dev/null 2>&1; then
+        echo "✓ Category exists: $category_slug" >&2
+        return 0
+    fi
+
+    # Create JSON payload using simple string instead of jq
+    local json_payload="{\"slug\":\"$category_slug\",\"name\":\"$category_slug\",\"isActive\":true}"
+
+    echo "📝 Creating category with payload: $json_payload" >&2
+
+    local response=$(curl -s -w "%{http_code}" -X POST \
+        -H "Content-Type: application/json" \
+        -d "$json_payload" \
+        "$API_URL/api/categories" 2>/dev/null)
+
+    local http_code="${response: -3}"
+    local response_body="${response%???}"
+
+    echo "📧 Category creation response - HTTP $http_code" >&2
+
+    if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+        echo "✅ Created category: $category_slug"
+        return 0
+    else
+        echo "❌ Failed to create category: $category_slug" >&2
+        echo "📄 Error response: $response_body" >&2
+        echo "🔗 Request URL: $API_URL/api/categories" >&2
+        echo "� Request payload: $json_payload" >&2
+        return 1
+    fi
+}
+
 # Main scraping function
 scrape_natura_api() {
     local success_count=0
@@ -294,38 +364,58 @@ scrape_natura_api() {
                 break
             fi
             
-            # Process each product
+            # Process each product (collect categories in a temp file to avoid subshell issues)
+            temp_categories_file=$(mktemp)
             echo "$response" | jq -c '.products[]?' 2>/dev/null | while read -r product; do
                 if [ $product_id -gt $max_products ]; then
                     break
                 fi
-                
+
                 echo "📦 Processing product $product_id: $(echo "$product" | jq -r '.name // "Unknown"')"
-                
+
+                # Extract category and append to temp file instead of array
+                local product_category=$(echo "$product" | jq -r '.categoryId // ""')
+                if [ -n "$product_category" ]; then
+                    echo "$product_category" >> "$temp_categories_file"
+                fi
+
                 if create_product "$product" "$product_id"; then
                     ((success_count++))
                 else
                     ((error_count++))
                 fi
-                
+
                 ((product_id++))
                 ((category_products++))
-                
+
                 sleep 0.5  # Be respectful to APIs
             done
+
+            # Clean up temp file
+            rm -f "$temp_categories_file"
             
             ((start += count))
             sleep 1  # Delay between pages
         done
-        
+
         echo "✅ Completed category: $category ($category_products products)"
         echo ""
     done
-    
+
+    # Count how many categories were processed
+    local categories_processed=${#processed_categories[@]}
+    echo ""
+    echo "🏷️  Categories created during scraping: $categories_processed"
+    if [ $categories_processed -gt 0 ]; then
+        echo "   Processed categories: $(echo ${!processed_categories[*]} | sed 's/ /\n   - /g' | sed 's/^/   - /')" >&2
+    fi
+
+    echo ""
     echo "🎉 Natura API scraping completed!"
     echo "✅ Successfully created: $success_count products"
     echo "❌ Failed to create: $error_count products"
     echo "📊 Success rate: $(echo "scale=1; $success_count * 100 / ($success_count + $error_count)" | bc -l 2>/dev/null || echo "N/A")%"
+    echo "🏷️  Categories processed: $categories_processed"
 }
 
 # Check dependencies
@@ -378,11 +468,8 @@ main() {
     echo "   • Multiple categories: hair care, perfumes, makeup, etc."
     echo "   • Images preserved with original filenames in Cloudinary"
     echo ""
-    read -p "Continue with real Natura API scraping and Cloudinary upload? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 0
-    fi
+    echo "🔥 Starting fully automated scraping (no confirmations required)..."
+    echo ""
     
     scrape_natura_api
 }

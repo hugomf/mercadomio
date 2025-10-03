@@ -26,6 +26,12 @@ func (h *CategoryHandlers) GetCategories(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	// Return empty array instead of nil if no categories exist
+	if categories == nil {
+		return c.JSON([]services.Category{})
+	}
+
 	return c.JSON(categories)
 }
 

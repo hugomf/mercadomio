@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,22 +29,12 @@ func NewSearchService(db *mongo.Database, categoryService CategoryService) Searc
 func (ss *searchServiceImpl) SearchProducts(ctx context.Context, params SearchParams, page int, limit int) (*SearchResult, error) {
 	filter := bson.M{}
 
-	// Text or partial search
+	// Text search with fallback to regex
 	if params.Query != "" {
-		cleaned := strings.ReplaceAll(params.Query, "*", "")
-		if len(params.Query) > 2 && (params.Query[0] == '*' || params.Query[len(params.Query)-1] == '*' || params.Query != cleaned) {
-			// Remove * and use as regex for partial match
-			pattern := params.Query
-			if pattern[0] == '*' {
-				pattern = pattern[1:]
-			}
-			if len(pattern) > 0 && pattern[len(pattern)-1] == '*' {
-				pattern = pattern[:len(pattern)-1]
-			}
-			filter["name"] = bson.M{"$regex": pattern, "$options": "i"}
-		} else {
-			filter["$text"] = bson.M{"$search": params.Query}
-		}
+		// First try regex search as fallback (more reliable than text search)
+		filter["name"] = bson.M{"$regex": params.Query, "$options": "i"}
+		// Comment out text search for now since no text index exists
+		// filter["$text"] = bson.M{"$search": params.Query}
 	}
 
 	// Category filter (case-insensitive)

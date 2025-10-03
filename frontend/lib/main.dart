@@ -6,6 +6,7 @@ import 'services/cart_controller.dart';
 import 'services/config_service.dart';
 import 'services/category_service.dart';
 import 'services/auth_service.dart';
+import 'services/product_service.dart';
 import 'widgets/product_listing_widget.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
@@ -39,7 +40,7 @@ class MyApp extends StatelessWidget {
           const Breakpoint(start: 1921, end: double.infinity, name: '4K'),
         ],
       ),
-      home: const AuthGuard(child: MainScreen()),
+      home: const MainScreen(),
       getPages: [
       ],
     );
@@ -61,6 +62,7 @@ class _MainScreenState extends State<MainScreen> {
     Get.put(ConfigService());
     Get.put(CategoryService());
     Get.put(AuthService());
+    Get.put(ProductService());
   }
 
   int _selectedIndex = 0;

@@ -197,6 +197,33 @@ class CategoryService extends GetxController {
     update();
   }
 
+  void removeCategoriesFromIndex(int startIndex) {
+    if (startIndex < 0 || startIndex >= selectedCategories.length) {
+      return;
+    }
+
+    // Remove from startIndex to end
+    final remainingIds = selectedCategories.sublist(0, startIndex);
+    final remainingNames = selectedCategoryNames.sublist(0, startIndex);
+
+    selectedCategories.assignAll(remainingIds);
+    selectedCategoryNames.assignAll(remainingNames);
+
+    // If no categories left, select "All"
+    if (selectedCategories.isEmpty) {
+      clearSelectedCategories();
+    } else {
+      // Update backward compatibility
+      if (selectedCategories.isNotEmpty) {
+        selectedCategoryName.value = selectedCategoryNames.last;
+        selectedCategoryId.value = selectedCategories.last;
+      }
+    }
+
+    _publishSelectionEvent();
+    update();
+  }
+
   bool isAllSelected() {
     return selectedCategories.contains(allCategoriesId);
   }

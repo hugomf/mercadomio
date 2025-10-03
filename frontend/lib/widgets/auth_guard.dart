@@ -10,9 +10,8 @@ class AuthGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Get.find<AuthService>();
-
     return Obx(() {
+      final authService = Get.find<AuthService>();
       if (authService.isAuthenticated) {
         return child;
       } else {

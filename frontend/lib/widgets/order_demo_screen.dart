@@ -29,12 +29,12 @@ class _OrderDemoScreenState extends State<OrderDemoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF5F5F5),
+              Theme.of(context).primaryColor.withOpacity(0.1),
               Colors.white,
             ],
           ),

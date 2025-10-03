@@ -20,4 +20,13 @@ func SetupAuthRoutes(app *fiber.App, authHandlers *handlers.AuthHandlers) {
 	auth.Get("/profile", authHandlers.GetProfile)
 	auth.Put("/profile", authHandlers.UpdateProfile)
 	auth.Get("/verify", authHandlers.VerifyToken)
+
+	// User shopping profile routes
+	auth.Get("/addresses", authHandlers.GetUserAddresses)
+	auth.Post("/addresses", authHandlers.CreateUserAddress)
+	auth.Get("/payment-methods", authHandlers.GetUserPaymentMethods)
+	auth.Post("/payment-methods", authHandlers.CreateUserPaymentMethod)
+	auth.Get("/wishlist", authHandlers.GetUserWishlist)
+	auth.Post("/wishlist/:productId", authHandlers.AddToWishlist)
+	auth.Delete("/wishlist/:productId", authHandlers.RemoveFromWishlist)
 }

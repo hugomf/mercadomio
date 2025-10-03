@@ -48,7 +48,6 @@ func (bus *InMemoryEventBus) Unsubscribe(eventPattern string, handler EventHandl
 func (bus *InMemoryEventBus) Publish(ctx context.Context, event DomainEvent) error {
 	bus.mu.RLock()
 	var matchingHandlers []EventHandler
-	
 	// Find all handlers that match the event type
 	eventType := event.EventType()
 	for pattern, handlers := range bus.handlers {
@@ -80,18 +79,18 @@ func (bus *InMemoryEventBus) matchesPattern(eventType, pattern string) bool {
 	if eventType == pattern {
 		return true
 	}
-	
+
 	// Wildcard match
 	if pattern == "*" {
 		return true
 	}
-	
+
 	// Prefix wildcard match (e.g., "cart.*" matches "cart.item.added")
 	if strings.HasSuffix(pattern, "*") {
 		prefix := strings.TrimSuffix(pattern, "*")
 		return strings.HasPrefix(eventType, prefix)
 	}
-	
+
 	return false
 }
 
@@ -116,10 +115,10 @@ func NewAsyncEventBus(bufferSize int) *AsyncEventBus {
 		eventChan:        make(chan eventWithContext, bufferSize),
 		done:             make(chan struct{}),
 	}
-	
+
 	// Start the event processing goroutine
 	go bus.processEvents()
-	
+
 	return bus
 }
 
@@ -154,10 +153,10 @@ func (bus *AsyncEventBus) Close() {
 
 // EventBusMetrics provides metrics about event bus usage
 type EventBusMetrics struct {
-	TotalEvents     int64
-	EventsByType    map[string]int64
-	HandlerErrors   int64
-	ActiveHandlers  int
+	TotalEvents    int64
+	EventsByType   map[string]int64
+	HandlerErrors  int64
+	ActiveHandlers int
 }
 
 // MetricsEventBus wraps an EventBus to provide metrics
@@ -183,7 +182,7 @@ func (bus *MetricsEventBus) Publish(ctx context.Context, event DomainEvent) erro
 	bus.metrics.TotalEvents++
 	bus.metrics.EventsByType[event.EventType()]++
 	bus.mu.Unlock()
-	
+
 	return bus.EventBus.Publish(ctx, event)
 }
 
@@ -191,7 +190,7 @@ func (bus *MetricsEventBus) Publish(ctx context.Context, event DomainEvent) erro
 func (bus *MetricsEventBus) GetMetrics() EventBusMetrics {
 	bus.mu.RLock()
 	defer bus.mu.RUnlock()
-	
+
 	// Create a copy to avoid race conditions
 	metrics := EventBusMetrics{
 		TotalEvents:    bus.metrics.TotalEvents,
@@ -199,10 +198,10 @@ func (bus *MetricsEventBus) GetMetrics() EventBusMetrics {
 		ActiveHandlers: bus.metrics.ActiveHandlers,
 		EventsByType:   make(map[string]int64),
 	}
-	
+
 	for k, v := range bus.metrics.EventsByType {
 		metrics.EventsByType[k] = v
 	}
-	
+
 	return metrics
 }
