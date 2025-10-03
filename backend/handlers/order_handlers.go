@@ -3,17 +3,13 @@ package handlers
 import (
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/models"
-<<<<<<< Updated upstream
 	"mercadomio-backend/services"
 	"strconv"
-=======
->>>>>>> Stashed changes
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type OrderHandlers struct {
-<<<<<<< Updated upstream
 	orderService   *services.OrderService
 	cartService    services.CartService
 	productService services.ProductService
@@ -237,28 +233,4 @@ func (h *OrderHandlers) GetOrderStats(c *fiber.Ctx) error {
 	}
 
 	return middleware.Success(c, stats)
-=======
-	// orderService will be implemented later
-}
-
-func NewOrderHandlers() *OrderHandlers {
-	return &OrderHandlers{}
-}
-
-func (h *OrderHandlers) GetOrders(c *fiber.Ctx) error {
-	// TODO: Implement actual order retrieval logic
-	orders := []models.Order{}
-	return c.JSON(orders)
-}
-
-func (h *OrderHandlers) CreateOrder(c *fiber.Ctx) error {
-	var order models.Order
-	if err := c.BodyParser(&order); err != nil {
-		return middleware.BadRequest("Invalid request body")
-	}
-
-	// TODO: Implement actual order creation logic
-	// For now, just return the order as created
-	return c.Status(fiber.StatusCreated).JSON(order)
->>>>>>> Stashed changes
 }
