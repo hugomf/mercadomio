@@ -93,3 +93,27 @@ func (h *CategoryHandlers) DeleteCategory(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+func (h *CategoryHandlers) SearchCategoryByName(c *fiber.Ctx) error {
+	ctx := context.Background()
+	categoryName := c.Query("name")
+	if categoryName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Category name parameter is required",
+		})
+	}
+
+	category, err := h.categoryService.GetCategoryByName(ctx, categoryName)
+	if err != nil {
+		if err.Error() == "category not found" {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Category not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(category)
+}
