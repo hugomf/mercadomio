@@ -1,12 +1,16 @@
 package models
 
 import (
+<<<<<<< Updated upstream
 	"fmt"
+=======
+>>>>>>> Stashed changes
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+<<<<<<< Updated upstream
 // OrderStatus represents the status of an order
 type OrderStatus string
 
@@ -141,3 +145,35 @@ func (o *Order) CalculateTotal() {
 	}
 	o.Total = total
 }
+=======
+type Order struct {
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	CustomerID   primitive.ObjectID `bson:"customerId" json:"customerId"`
+	CustomerName string             `bson:"customerName" json:"customerName"`
+	CustomerEmail string            `bson:"customerEmail" json:"customerEmail"`
+	Items        []OrderItem        `bson:"items" json:"items"`
+	TotalAmount  float64            `bson:"totalAmount" json:"totalAmount"`
+	Status       string             `bson:"status" json:"status"` // pending, processing, shipped, delivered, cancelled
+	ShippingAddress Address         `bson:"shippingAddress" json:"shippingAddress"`
+	CreatedAt    time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt    time.Time          `bson:"updatedAt" json:"updatedAt"`
+}
+
+type OrderItem struct {
+	ProductID   primitive.ObjectID `bson:"productId" json:"productId"`
+	ProductName string             `bson:"productName" json:"productName"`
+	VariantID   string             `bson:"variantId,omitempty" json:"variantId,omitempty"`
+	VariantName string             `bson:"variantName,omitempty" json:"variantName,omitempty"`
+	Quantity    int                `bson:"quantity" json:"quantity"`
+	UnitPrice   float64            `bson:"unitPrice" json:"unitPrice"`
+	TotalPrice  float64            `bson:"totalPrice" json:"totalPrice"`
+}
+
+type Address struct {
+	Street     string `bson:"street" json:"street"`
+	City       string `bson:"city" json:"city"`
+	State      string `bson:"state" json:"state"`
+	PostalCode string `bson:"postalCode" json:"postalCode"`
+	Country    string `bson:"country" json:"country"`
+}
+>>>>>>> Stashed changes

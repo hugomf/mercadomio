@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import '../services/category_service.dart';
 import '../services/config_service.dart';
@@ -11,7 +10,12 @@ import '../services/cart_controller.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/category_breadcrumbs.dart';
 import '../widgets/product_search_controls.dart';
+<<<<<<< HEAD
 import '../widgets/product_detail_screen.dart';
+=======
+import '../widgets/product_card.dart';
+import '../widgets/product_list_item.dart';
+>>>>>>> origin/main
 import '../models/product.dart';
 
 class ProductListingWidget extends StatefulWidget {
@@ -209,6 +213,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   Widget _buildProductCard(Product product) {
+<<<<<<< HEAD
     final cardHeight = _getCardHeight(context);
     final imageHeight = cardHeight * _getImageHeight(context);
     final padding = _getPadding(context, base: 8);
@@ -341,80 +346,35 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           ),
         ),
       ),
+=======
+    return ProductCard(
+      product: product,
+      onAddToCart: () => _addToCart(product),
+      cardHeight: _getCardHeight(context),
+      imageHeightRatio: _getImageHeight(context),
+      padding: _getPadding(context, base: 8),
+      fontSize: _getFontSize(context, base: 14),
+      iconSize: _getIconSize(context, base: 20),
+      starSize: _getIconSize(context, base: 14),
+>>>>>>> origin/main
     );
   }
 
   Widget _buildProductListItem(Product product) {
-    final padding = _getPadding(context, base: 8);
     final imageSize = _getResponsiveValue(context,
       mobile: 60,
       tablet: 70,
       desktop: 80,
       fourK: 90,
     );
-    final fontSize = _getFontSize(context, base: 14);
-    final iconSize = _getIconSize(context, base: 24);
     
-    return Card(
-      margin: EdgeInsets.only(bottom: padding),
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(_getPadding(context, base: 4)),
-              child: CachedNetworkImage(
-                imageUrl: product.imageUrl,
-                width: imageSize,
-                height: imageSize,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  width: imageSize,
-                  height: imageSize,
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  width: imageSize,
-                  height: imageSize,
-                  child: Icon(Icons.image, size: imageSize * 0.6, color: Colors.grey),
-                ),
-              ),
-            ),
-            SizedBox(width: _getPadding(context, base: 12)),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: fontSize,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: _getPadding(context, base: 4)),
-                  Text(
-                    '\$${product.basePrice.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: fontSize * 1.1,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.add_shopping_cart, size: iconSize),
-              onPressed: () => _addToCart(product),
-            ),
-          ],
-        ),
-      ),
+    return ProductListItem(
+      product: product,
+      onAddToCart: () => _addToCart(product),
+      imageSize: imageSize,
+      padding: _getPadding(context, base: 8),
+      fontSize: _getFontSize(context, base: 14),
+      iconSize: _getIconSize(context, base: 24),
     );
   }
 
