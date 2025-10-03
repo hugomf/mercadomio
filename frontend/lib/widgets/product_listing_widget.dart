@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import '../services/category_service.dart';
 import '../services/config_service.dart';
@@ -10,12 +11,7 @@ import '../services/cart_controller.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/category_breadcrumbs.dart';
 import '../widgets/product_search_controls.dart';
-<<<<<<< HEAD
 import '../widgets/product_detail_screen.dart';
-=======
-import '../widgets/product_card.dart';
-import '../widgets/product_list_item.dart';
->>>>>>> origin/main
 import '../models/product.dart';
 
 class ProductListingWidget extends StatefulWidget {
@@ -49,15 +45,15 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         _products.clear();
         await _fetchTotalCount();
       }
-      
+
       _isLoading.value = true;
       _errorMessage.value = '';
-      
+
       final configService = Get.find<ConfigService>();
       final categoryService = Get.find<CategoryService>();
       final searchQuery = _searchText.value.trim();
       final apiUrl = await configService.getApiUrl();
-      
+
       final response = await categoryService.getFilteredProducts(
         apiUrl: apiUrl,
         page: _currentPage,
@@ -66,14 +62,14 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         sortBy: _sortBy.value,
         sortAscending: _sortAscending.value,
       );
-      
+
       final newProducts = response['products'] as List<Product>;
       final totalCount = response['total'] as int;
-      
+
       final hasSearch = searchQuery.isNotEmpty;
       final hasCategoryFilter = categoryService.selectedCategories.isNotEmpty &&
                                !categoryService.isAllSelected();
-      
+
       if (hasSearch || hasCategoryFilter) {
         _filteredProducts.value = totalCount;
         if (!loadMore) await _fetchTotalCount();
@@ -81,13 +77,13 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         _totalProducts.value = totalCount;
         _filteredProducts.value = totalCount;
       }
-      
+
       if (loadMore) {
         _products.addAll(newProducts);
       } else {
         _products.value = newProducts;
       }
-      
+
       _hasMore = newProducts.length == _itemsPerPage;
       _currentPage++;
     } catch (e) {
@@ -103,7 +99,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       final apiUrl = await configService.getApiUrl();
       final uri = Uri.parse('$apiUrl/api/products?page=1&limit=1');
       final response = await http.get(uri);
-      
+
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         _totalProducts.value = decoded['total'] ?? 0;
@@ -213,7 +209,6 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   Widget _buildProductCard(Product product) {
-<<<<<<< HEAD
     final cardHeight = _getCardHeight(context);
     final imageHeight = cardHeight * _getImageHeight(context);
     final padding = _getPadding(context, base: 8);
@@ -346,17 +341,6 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           ),
         ),
       ),
-=======
-    return ProductCard(
-      product: product,
-      onAddToCart: () => _addToCart(product),
-      cardHeight: _getCardHeight(context),
-      imageHeightRatio: _getImageHeight(context),
-      padding: _getPadding(context, base: 8),
-      fontSize: _getFontSize(context, base: 14),
-      iconSize: _getIconSize(context, base: 20),
-      starSize: _getIconSize(context, base: 14),
->>>>>>> origin/main
     );
   }
 
@@ -367,14 +351,70 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       desktop: 80,
       fourK: 90,
     );
-    
-    return ProductListItem(
-      product: product,
-      onAddToCart: () => _addToCart(product),
-      imageSize: imageSize,
-      padding: _getPadding(context, base: 8),
-      fontSize: _getFontSize(context, base: 14),
-      iconSize: _getIconSize(context, base: 24),
+    final padding = _getPadding(context, base: 8);
+    final fontSize = _getFontSize(context, base: 14);
+    final iconSize = _getIconSize(context, base: 24);
+
+    return Card(
+      margin: EdgeInsets.only(bottom: padding),
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(_getPadding(context, base: 4)),
+              child: CachedNetworkImage(
+                imageUrl: product.imageUrl,
+                width: imageSize,
+                height: imageSize,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  color: Colors.grey[200],
+                  width: imageSize,
+                  height: imageSize,
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Colors.grey[200],
+                  width: imageSize,
+                  height: imageSize,
+                  child: Icon(Icons.image, size: imageSize * 0.6, color: Colors.grey),
+                ),
+              ),
+            ),
+            SizedBox(width: _getPadding(context, base: 12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: fontSize,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: _getPadding(context, base: 4)),
+                  Text(
+                    '\$${product.basePrice.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: fontSize * 1.1,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.add_shopping_cart, size: iconSize),
+              onPressed: () => _addToCart(product),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -436,7 +476,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           currentViewMode: _viewMode.value,
           searchText: _searchText,
         ),
-        
+
         CategorySelector(
           onSelectionChanged: _fetchProducts,
         ),
@@ -570,7 +610,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
           currentViewMode: _viewMode.value,
           searchText: _searchText,
         ),
-        
+
         CategorySelector(
           onSelectionChanged: _fetchProducts,
         ),
@@ -669,7 +709,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 800; // Lower threshold for testing
-        
+
         if (isDesktop) {
           return _buildDesktopLayout();
         } else {
