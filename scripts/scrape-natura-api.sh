@@ -3,7 +3,11 @@
 # Natura Real API Scraper
 # Uses the official Natura Mexico API to get real products
 
+<<<<<<< HEAD
 API_URL="${API_URL:-http://localhost:8080}"
+=======
+API_URL="${API_URL:-http://192.168.65.90:8080}"
+>>>>>>> origin/main
 NATURA_API_BASE="https://ncf-apigw.natura-mx-jcf-prd.naturacloud.com/bff-app-natura-mexico-v2"
 BEARER_TOKEN="REDACTED"
 TENANT_ID="mexico-natura-web"

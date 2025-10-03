@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+<<<<<<< Updated upstream
 // SetupOrderRoutes configures the order-related routes
 func SetupOrderRoutes(app *fiber.App, orderHandlers *handlers.OrderHandlers) {
 	// Order routes group with authentication
@@ -35,4 +36,11 @@ func SetupOrderRoutes(app *fiber.App, orderHandlers *handlers.OrderHandlers) {
 
 	// Order statistics (admin function)
 	orders.Get("/admin/stats", orderHandlers.GetOrderStats)
+=======
+// SetupOrderRoutes configures all order-related routes
+func SetupOrderRoutes(app *fiber.App, orderHandlers *handlers.OrderHandlers) {
+	// Order API routes
+	app.Get("/api/orders", orderHandlers.GetOrders)
+	app.Post("/api/orders", orderHandlers.CreateOrder)
+>>>>>>> Stashed changes
 }
