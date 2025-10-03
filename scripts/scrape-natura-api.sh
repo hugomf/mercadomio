@@ -404,7 +404,7 @@ EOF
     fi
 }
 
-# Function to ensure category exists in our database
+# Function to ensure category exists in our database by searching existing categories
 ensure_category_exists() {
     local category_slug="$1"
 
@@ -429,14 +429,77 @@ ensure_category_exists() {
         local existing="$test_body"
     fi
 
-    # Check if category already exists by slug
+    # First check if category already exists by slug (exact match)
     if echo "$existing" | jq -e ".[] | select(.slug == \"$category_slug\")" > /dev/null 2>&1; then
-        echo "✓ Category exists: $category_slug" >&2
+        echo "✓ Category exists by slug: $category_slug" >&2
         return 0
     fi
 
-    # Create JSON payload using simple string instead of jq
-    local json_payload="{\"slug\":\"$category_slug\",\"name\":\"$category_slug\",\"isActive\":true}"
+    # Try to find existing category by name similarity (search by name)
+    local existing_category_name=""
+    local existing_category_slug=""
+
+    # Clean up category slug for search (remove dashes, decode common patterns)
+    local search_term="${category_slug//-/ }"
+    search_term="${search_term//_/ }"
+
+    # Try to find category that contains similar words
+    while IFS= read -r category_line; do
+        if [ -n "$category_line" ]; then
+            # Extract name and slug from each category
+            local cat_name=$(echo "$category_line" | jq -r '.name // empty' 2>/dev/null)
+            local cat_slug=$(echo "$category_line" | jq -r '.slug // empty' 2>/dev/null)
+
+            if [ -n "$cat_name" ] && [ "$cat_name" != "empty" ] && [ -n "$cat_slug" ]; then
+                # Check if the category name contains our search term (case insensitive)
+                local lower_cat_name=$(echo "$cat_name" | tr '[:upper:]' '[:lower:]')
+                local lower_search=$(echo "$search_term" | tr '[:upper:]' '[:lower:]')
+
+                if [[ "$lower_cat_name" =~ .*"$lower_search".* ]] || [[ "$lower_search" =~ .*"$lower_cat_name".* ]]; then
+                    existing_category_name="$cat_name"
+                    existing_category_slug="$cat_slug"
+                    break
+                fi
+            fi
+        fi
+    done <<< "$(echo "$existing" | jq -c '.[]')"
+
+    # If we found a matching category by name, use the existing one
+    if [ -n "$existing_category_name" ]; then
+        echo "🎯 Found existing category by name match: '$existing_category_name' (slug: $existing_category_slug) for '$category_slug'" >&2
+        # Update our processed_categories tracking to use the existing category slug
+        processed_categories[$existing_category_slug]=1
+        return 0
+    fi
+
+    # No existing category found, create a new one
+    echo "🔄 No matching category found, creating new category: $category_slug" >&2
+
+    # Map Natura category to a more user-friendly name for display
+    local display_name="$category_slug"
+    case "$category_slug" in
+        "cabello")
+            display_name="Cuidado del Cabello"
+            ;;
+        "perfumeria")
+            display_name="Perfumería"
+            ;;
+        "maquillaje")
+            display_name="Maquillaje"
+            ;;
+        "cuidados-diarios")
+            display_name="Cuidado Personal"
+            ;;
+        "rostro")
+            display_name="Cuidado Facial"
+            ;;
+        "promociones")
+            display_name="Promociones"
+            ;;
+    esac
+
+    # Create JSON payload with user-friendly name
+    local json_payload="{\"slug\":\"$category_slug\",\"name\":\"$display_name\",\"isActive\":true}"
 
     echo "📝 Creating category with payload: $json_payload" >&2
 
@@ -451,13 +514,13 @@ ensure_category_exists() {
     echo "📧 Category creation response - HTTP $http_code" >&2
 
     if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
-        echo "✅ Created category: $category_slug"
+        echo "✅ Created new category: $display_name"
         return 0
     else
         echo "❌ Failed to create category: $category_slug" >&2
         echo "📄 Error response: $response_body" >&2
         echo "🔗 Request URL: $API_URL/api/categories" >&2
-        echo "� Request payload: $json_payload" >&2
+        echo "📋 Request payload: $json_payload" >&2
         return 1
     fi
 }
