@@ -81,29 +81,6 @@ search_category_by_name() {
         local found_name=$(echo "$search_body" | jq -r '.name // empty' 2>/dev/null)
         if [ -n "$found_name" ] && [ "$found_name" != "null" ] && [ "$found_name" != "empty" ]; then
             echo "🎯 Found category: '$found_name'" >&2
-            # Convert our category name to Natura API format
-            case "$found_name" in
-                *"Perfumería"*|*"perfume"*|*"Perfume"*)
-                    echo "perfumeria"
-                    return 0
-                    ;;
-                *"Cabello"*|*"pelo"*|*"hair"*)
-                    echo "cabello"
-                    return 0
-                    ;;
-                *"Maquillaje"*|*"makeup"*|*"cosmetics"*)
-                    echo "maquillaje"
-                    return 0
-                    ;;
-                *"Rostro"*|*"facial"*|*"face"*)
-                    echo "rostro"
-                    return 0
-                    ;;
-                *"Cuidado Personal"*|*"body"*|*"corporal"*)
-                    echo "cuidados-diarios"
-                    return 0
-                    ;;
-            esac
         fi
     fi
 
@@ -188,7 +165,21 @@ else
 fi
 
 # Global variable to track processed categories (prevents duplicate API checks)
-processed_categories=""
+processed_categories_list=""
+
+# Function to check if category is already processed
+category_processed() {
+    local category="$1"
+    [[ "$processed_categories_list" =~ (^| )"$category"( |$) ]]
+}
+
+# Function to mark category as processed
+mark_category_processed() {
+    local category="$1"
+    if ! category_processed "$category"; then
+        processed_categories_list="${processed_categories_list:+$processed_categories_list }$category"
+    fi
+}
 
 # Function to fetch products from Natura API
 fetch_natura_products() {
@@ -309,17 +300,13 @@ create_product() {
     local category=$natura_category
 
     # Ensure category exists immediately when first encountered
-    if [ -n "$category" ]; then
-        # Check if category is already processed (using string search)
-        category_processed=$(echo "$processed_categories" | grep -c "|$category|" || echo "0")
-        if [ "$category_processed" -eq 0 ]; then
-            echo "🏷️  Processing category: $category" >&2
-            if ensure_category_exists "$category"; then
-                processed_categories="${processed_categories}|$category"
-                echo "🏷️  Category ready: $category" >&2
-            else
-                echo "⚠️  Failed to create category: $category (continuing with product..." >&2
-            fi
+    if [ -n "$category" ] && ! category_processed "$category"; then
+        echo "🏷️  Processing category: $category" >&2
+        if ensure_category_exists "$category"; then
+            mark_category_processed "$category"
+            echo "🏷️  Category ready: $category" >&2
+        else
+            echo "⚠️  Failed to create category: $category (continuing with product..." >&2
         fi
     fi
 
@@ -472,7 +459,7 @@ ensure_category_exists() {
     if [ -n "$existing_category_name" ]; then
         echo "🎯 Found existing category by name match: '$existing_category_name' (slug: $existing_category_slug) for '$category_slug'" >&2
         # Update our processed_categories tracking to use the existing category slug
-        processed_categories="${processed_categories}|$existing_category_slug"
+        mark_category_processed "$existing_category_slug"
         return 0
     fi
 
@@ -603,15 +590,15 @@ scrape_natura_api() {
         echo ""
     done
 
-    # Count how many categories were processed (count pipe-separated entries)
-    local categories_processed=$(echo "$processed_categories" | tr -cd '|' | wc -c)
+    # Count how many categories were processed
+    local categories_processed=0
+    if [ -n "$processed_categories_list" ]; then
+        categories_processed=$(echo "$processed_categories_list" | wc -w)
+    fi
     echo ""
     echo "🏷️  Categories created during scraping: $categories_processed"
     if [ $categories_processed -gt 0 ]; then
-        echo "   Processed categories: $(echo "$processed_categories" | sed 's/|/\\n   - /g' | sed '1d' | head -10)" >&2
-        if [ $categories_processed -gt 10 ]; then
-            echo "   ... and $(($categories_processed - 10)) more" >&2
-        fi
+        echo "   Processed categories: $(echo "$processed_categories_list" | sed 's/ /\\n   - /g' | sed 's/^/   - /')" >&2
     fi
 
     echo ""

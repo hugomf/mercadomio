@@ -10,12 +10,14 @@ import (
 type Category struct {
 	ID          primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
 	Name        string              `bson:"name" json:"name"`
+	Slug        string              `bson:"slug" json:"slug"`
 	Description string              `bson:"description" json:"description"`
 	ImageURL    string              `bson:"imageUrl" json:"imageUrl"`
 	ParentID    *primitive.ObjectID `bson:"parentId,omitempty" json:"parentId"`
 	Path        string              `bson:"path" json:"path"`
 	Depth       int                 `bson:"depth" json:"depth"`
 	Children    []*Category         `bson:"-" json:"children,omitempty"`
+	IsActive    bool                `bson:"isActive" json:"isActive"`
 	CreatedAt   time.Time           `bson:"createdAt" json:"createdAt"`
 	UpdatedAt   time.Time           `bson:"updatedAt" json:"updatedAt"`
 }
