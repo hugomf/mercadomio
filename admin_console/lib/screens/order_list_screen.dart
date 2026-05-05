@@ -4,7 +4,7 @@ import '../models/order.dart';
 class OrderListScreen extends StatelessWidget {
   final List<Order> orders;
 
-  OrderListScreen({required this.orders});
+  const OrderListScreen({super.key, required this.orders});
 
   @override
   Widget build(BuildContext context) {
