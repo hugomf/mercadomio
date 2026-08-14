@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/order.dart';
 import '../services/cart_service.dart';
 import '../services/cart_controller.dart';
@@ -32,12 +33,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _zipCodeController = TextEditingController();
   final _countryController = TextEditingController(text: 'Mexico');
 
-  // Payment Info Fields
-  final _cardNumberController = TextEditingController();
-  final _expiryController = TextEditingController();
-  final _cvvController = TextEditingController();
-  final _cardNameController = TextEditingController();
-
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -49,10 +44,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _stateController.dispose();
     _zipCodeController.dispose();
     _countryController.dispose();
-    _cardNumberController.dispose();
-    _expiryController.dispose();
-    _cvvController.dispose();
-    _cardNameController.dispose();
     super.dispose();
   }
 
@@ -105,27 +96,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'country': _countryController.text,
       };
 
-      // Payment data (in production, this would be tokenized)
-      final paymentInfo = {
-        'paymentMethod': 'credit_card',
-        'cardholderName': _cardNameController.text,
-        'lastFourDigits': _cardNumberController.text.substring(_cardNumberController.text.length - 4),
-        'expiryMonth': _expiryController.text.split('/')[0],
-        'expiryYear': _expiryController.text.split('/')[1],
-        'billingAddress': shippingAddress, // Same as shipping for demo
-      };
-
-      // Create order from cart
+      // Create order from cart (no card data collected client-side)
       final orderResponse = await orderService.createOrderFromCart(
         widget.cartId,
-        paymentInfo: {'shippingAddress': shippingAddress, 'payment': paymentInfo},
+        paymentInfo: {'shippingAddress': shippingAddress},
       );
 
-      // For demo, simulate payment completion
-      final updatedOrder = await orderService.simulateOrderCompletion(orderResponse.id);
+      // Create a Conekta hosted checkout session
+      final checkout = await orderService.createCheckoutSession(orderResponse.id);
 
-      // Navigate to order confirmation
-      Get.offAll(() => OrderConfirmationScreen(order: updatedOrder));
+      if (checkout.demo) {
+        // No gateway keys configured: keep the simulated offline flow
+        final updatedOrder = await orderService.simulateOrderCompletion(orderResponse.id);
+        Get.offAll(() => OrderConfirmationScreen(order: updatedOrder));
+      } else {
+        // Redirect to Conekta's secure hosted payment page
+        final uri = Uri.parse(checkout.checkoutUrl);
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched) {
+          Get.snackbar(
+            'Checkout',
+            'Payment page could not be opened. Your order #${orderResponse.id} is pending payment.',
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        } else {
+          Get.offAllNamed('/');
+        }
+      }
 
     } catch (e) {
       Get.snackbar(
@@ -372,86 +370,56 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Payment Information',
+              'Payment',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _cardNameController,
-              decoration: const InputDecoration(labelText: 'Cardholder Name'),
-              validator: (value) => value?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cardNumberController,
-              decoration: InputDecoration(
-                labelText: 'Card Number',
-                hintText: '1234 5678 9012 3456',
-                suffixIcon: const Icon(Icons.credit_card),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value?.isEmpty == true) return 'Required';
-                if (value!.replaceAll(' ', '').length < 13) return 'Invalid card number';
-                return null;
-              },
-            ),
             const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _expiryController,
-                    decoration: const InputDecoration(
-                      labelText: 'Expiry (MM/YY)',
-                      hintText: '12/25',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value?.isEmpty == true) return 'Required';
-                      if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(value!)) return 'Use MM/YY format';
-                      return null;
-                    },
-                  ),
-                ),
+                const Icon(Icons.lock_outline, color: Colors.green),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _cvvController,
-                    decoration: const InputDecoration(labelText: 'CVV'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value?.isEmpty == true) return 'Required';
-                      if (value!.length < 3) return 'Invalid CVV';
-                      return null;
-                    },
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Secure hosted checkout',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'After placing your order you will be redirected to our secure payment page '
+                        'to pay by card, OXXO or bank transfer (SPEI). Your card details are never '
+                        'processed by this app.',
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[200]!),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This is a demo checkout. No real payment will be processed.',
-                      style: TextStyle(color: Colors.blue, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                _PaymentMethodChip(
+                  icon: Icons.credit_card,
+                  label: 'Card',
+                ),
+                _PaymentMethodChip(
+                  icon: Icons.storefront,
+                  label: 'OXXO',
+                ),
+                _PaymentMethodChip(
+                  icon: Icons.account_balance,
+                  label: 'SPEI',
+                ),
+              ],
             ),
           ],
         ),
@@ -567,8 +535,7 @@ class OrderConfirmationScreen extends StatelessWidget {
               Icons.check_circle,
               size: 80,
               color: Colors.green,
-            ),
-            const SizedBox(height: 16),
+            ),            const SizedBox(height: 16),
             const Text(
               'Order Placed Successfully!',
               style: TextStyle(
@@ -625,6 +592,33 @@ class OrderConfirmationScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentMethodChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _PaymentMethodChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.black54),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 13)),
+        ],
       ),
     );
   }

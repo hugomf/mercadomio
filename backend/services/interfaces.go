@@ -34,6 +34,9 @@ type (
 		AddCategoryNameFilter(ctx context.Context, params *SearchParams, categoryNames []string) error
 		GetProductReviews(ctx context.Context, productID string) ([]models.Review, error)
 		GetRelatedProducts(ctx context.Context, productID string) ([]Product, error)
+		DecrementStock(ctx context.Context, productID, variantID string, qty int) error
+		IncrementStock(ctx context.Context, productID, variantID string, qty int) error
+		SetVariantStock(ctx context.Context, productID, variantID string, stock int) error
 	}
 
 	SearchService interface {

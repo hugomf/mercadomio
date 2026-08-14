@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:admin_console/screens/catalog_management.dart';
+import 'package:admin_console/screens/inventory_screen.dart';
 
 class NavigationDrawer extends StatefulWidget {
   const NavigationDrawer({super.key});
@@ -31,7 +32,8 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           curve: Curves.easeInOut,
           width: drawerWidth,
           child: Drawer(
-            child: Column(
+            child: ListView(
+              padding: EdgeInsets.zero,
               children: [
                 _buildHeader(context, constraints),
                 const Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
@@ -63,9 +65,15 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
             autofocus: true,
           ),
           if (!_isCollapsed)
-            const Text(
-              'Admin Console',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Flexible(
+              child: Text(
+                'Admin Console',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
         ],
       ),
@@ -91,7 +99,7 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.dashboard,
           label: 'Dashboard',
           onTap: () {
-            // TODO: Implement dashboard navigation
+            Navigator.pop(context);
           },
         ),
         _buildMenuItem(
@@ -143,6 +151,14 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
         ),
         _buildMenuItem(
           context,
+          icon: Icons.assignment,
+          label: 'Order Management',
+          onTap: () {
+            Navigator.pop(context);
+          },
+        ),
+        _buildMenuItem(
+          context,
           icon: Icons.shopping_bag,
           label: 'Product Management',
           onTap: () {
@@ -154,7 +170,12 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.inventory,
           label: 'Inventory',
           onTap: () {
-            // TODO: Implement inventory navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const InventoryScreen(),
+              ),
+            );
           },
         ),
         _buildMenuItem(

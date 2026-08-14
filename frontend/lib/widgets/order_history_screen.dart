@@ -94,7 +94,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).primaryColor.withOpacity(0.1),
+              Theme.of(context).primaryColor.withValues(alpha: 0.1),
               Colors.white,
             ],
           ),
@@ -325,7 +325,7 @@ class _OrderCardState extends State<OrderCard>
         scale: _scaleAnimation,
         child: Card(
           elevation: 8,
-          shadowColor: order.status.statusColor.withOpacity(0.3),
+          shadowColor: order.status.statusColor.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -339,7 +339,7 @@ class _OrderCardState extends State<OrderCard>
                 gradient: LinearGradient(
                   colors: [
                     Colors.white,
-                    Colors.white.withOpacity(0.8),
+                    Colors.white.withValues(alpha: 0.8),
                   ],
                 ),
               ),

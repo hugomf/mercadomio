@@ -37,10 +37,10 @@ func TestAuthServiceRegister(t *testing.T) {
 
 	user, err := authService.Register(req)
 	if err != nil {
-		t.Errorf("Registration failed: %v", err)
+		t.Fatalf("Registration failed: %v", err)
 	}
 	if user == nil {
-		t.Error("User is nil")
+		t.Fatal("User is nil")
 	}
 	if user.Email != "test@example.com" {
 		t.Errorf("Expected email test@example.com, got %s", user.Email)
@@ -97,10 +97,10 @@ func TestAuthServiceLogin(t *testing.T) {
 
 	authResponse, err := authService.Login(loginReq)
 	if err != nil {
-		t.Errorf("Login failed: %v", err)
+		t.Fatalf("Login failed: %v", err)
 	}
 	if authResponse == nil {
-		t.Error("Auth response is nil")
+		t.Fatal("Auth response is nil")
 	}
 	if authResponse.Token == "" {
 		t.Error("Token is empty")

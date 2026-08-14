@@ -106,7 +106,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).primaryColor.withOpacity(0.05),
+              Theme.of(context).primaryColor.withValues(alpha: 0.05),
               Colors.white,
             ],
           ),
@@ -149,7 +149,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
   Widget _buildStatusCard(OrderResponse order) {
     return Card(
       elevation: 6,
-      shadowColor: order.status.statusColor.withOpacity(0.3),
+      shadowColor: order.status.statusColor.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -202,7 +202,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -225,7 +225,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: order.progressPercentage,
-                        backgroundColor: Colors.white.withOpacity(0.3),
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                         minHeight: 8,
                       ),

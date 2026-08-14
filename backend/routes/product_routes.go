@@ -18,6 +18,9 @@ func SetupProductRoutes(app *fiber.App, productHandlers *handlers.ProductHandler
 	// Variants endpoint
 	app.Get("/api/variants", productHandlers.GetVariants)
 
+	// Variant stock endpoint
+	app.Put("/api/products/:id/variants/:variantId/stock", productHandlers.UpdateVariantStock)
+
 	// Product reviews endpoint
 	app.Get("/api/products/:id/reviews", productHandlers.GetProductReviews)
 

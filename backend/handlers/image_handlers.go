@@ -15,7 +15,10 @@ func NewImageHandlers() *ImageHandlers {
 // ImageServerHealth provides health check for the image server
 func (h *ImageHandlers) ImageServerHealth(c *fiber.Ctx) error {
 	// Check if images directory exists
-	imagesDir := "./frontend/web/assets/images"
+	imagesDir := os.Getenv("IMAGES_PATH")
+	if imagesDir == "" {
+		imagesDir = "./frontend/web/assets/images"
+	}
 	if _, err := os.Stat(imagesDir); os.IsNotExist(err) {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
 			"status":  "error",

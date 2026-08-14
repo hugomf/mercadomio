@@ -123,6 +123,44 @@ func (s *OrderService) GetOrderByID(ctx context.Context, orderID string) (*model
 	return &order, nil
 }
 
+// GetOrderByConektaID retrieves an order by its stored Conekta order ID
+func (s *OrderService) GetOrderByConektaID(ctx context.Context, conektaOrderID string) (*models.Order, error) {
+	var order models.Order
+	err := s.collection.FindOne(ctx, bson.M{"paymentInfo.conekta_order_id": conektaOrderID}).Decode(&order)
+	if err != nil {
+		return nil, errors.New("order not found for conekta order: " + conektaOrderID)
+	}
+	return &order, nil
+}
+
+// AttachPaymentInfo stores payment reference details without changing order status
+func (s *OrderService) AttachPaymentInfo(ctx context.Context, orderID string, paymentInfo map[string]interface{}) error {
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		return errors.New("invalid order ID")
+	}
+
+	update := bson.M{
+		"paymentInfo": paymentInfo,
+		"updatedAt":   time.Now(),
+	}
+
+	result, err := s.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": orderObjID},
+		bson.M{"$set": update},
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.ModifiedCount == 0 {
+		return errors.New("order not updated")
+	}
+
+	return nil
+}
+
 // GetOrdersByUserID retrieves orders for a user with pagination
 func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, page, limit int) ([]*models.Order, error) {
 	userObjID, err := primitive.ObjectIDFromHex(userID)
@@ -162,6 +200,79 @@ func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, pag
 	return orders, cursor.Err()
 }
 
+// GetAllOrders retrieves all orders with pagination and optional status filter (admin)
+func (s *OrderService) GetAllOrders(ctx context.Context, page, limit int, status string) ([]*models.Order, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20 // Default limit
+	}
+
+	skip := (page - 1) * limit
+
+	filter := bson.M{}
+	if status != "" {
+		filter["status"] = models.OrderStatus(status)
+	}
+
+	opts := options.Find().
+		SetSkip(int64(skip)).
+		SetLimit(int64(limit)).
+		SetSort(bson.M{"createdAt": -1}) // Most recent first
+
+	cursor, err := s.collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var orders []*models.Order
+	for cursor.Next(ctx) {
+		var order models.Order
+		if err := cursor.Decode(&order); err != nil {
+			return nil, err
+		}
+		orders = append(orders, &order)
+	}
+
+	return orders, cursor.Err()
+}
+
+// CountOrders returns the total number of orders, optionally filtered by status (admin)
+func (s *OrderService) CountOrders(ctx context.Context, status string) (int64, error) {
+	filter := bson.M{}
+	if status != "" {
+		filter["status"] = models.OrderStatus(status)
+	}
+
+	return s.collection.CountDocuments(ctx, filter)
+}
+
+// adjustStock applies a delta (-1 decrement, +1 restore) to each order item's variant stock.
+func (s *OrderService) adjustStock(ctx context.Context, items []models.OrderItem, delta int) error {
+	if s.productService == nil {
+		return nil
+	}
+
+	for _, item := range items {
+		if item.VariantID == "" {
+			continue
+		}
+		var err error
+		if delta < 0 {
+			err = s.productService.DecrementStock(ctx, item.ProductID.Hex(), item.VariantID, item.Quantity)
+		} else {
+			err = s.productService.IncrementStock(ctx, item.ProductID.Hex(), item.VariantID, item.Quantity)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // UpdateOrderStatus updates the status of an order
 func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID string, newStatus models.OrderStatus) error {
 	orderObjID, err := primitive.ObjectIDFromHex(orderID)
@@ -178,6 +289,20 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, orderID string, ne
 	// Validate status transition
 	if !order.CanTransitionTo(newStatus) {
 		return errors.New("invalid status transition from " + string(order.Status) + " to " + string(newStatus))
+	}
+
+	// Inventory: decrement stock when an order becomes paid
+	if newStatus == models.OrderStatusPaid && order.Status != models.OrderStatusPaid {
+		if err := s.adjustStock(ctx, order.Items, -1); err != nil {
+			return errors.New("failed to update inventory: " + err.Error())
+		}
+	}
+
+	// Inventory: restore stock when a paid order is cancelled
+	if newStatus == models.OrderStatusCancelled && order.Status == models.OrderStatusPaid {
+		if err := s.adjustStock(ctx, order.Items, 1); err != nil {
+			return errors.New("failed to restore inventory: " + err.Error())
+		}
 	}
 
 	// Update status

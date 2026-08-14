@@ -36,7 +36,10 @@ type Order struct {
 	ID          primitive.ObjectID     `bson:"_id,omitempty" json:"id,omitempty"`
 	UserID      primitive.ObjectID     `bson:"userId" json:"userId"`
 	Items       []OrderItem            `bson:"items" json:"items"`
+	Subtotal    float64                `bson:"subtotal" json:"subtotal"`
+	Discount    float64                `bson:"discount" json:"discount"`
 	Total       float64                `bson:"total" json:"total"`
+	Pricing     map[string]interface{} `bson:"pricing,omitempty" json:"pricing,omitempty"`
 	Status      OrderStatus            `bson:"status" json:"status"`
 	PaymentInfo map[string]interface{} `bson:"paymentInfo,omitempty" json:"paymentInfo,omitempty"`
 
@@ -50,7 +53,10 @@ type OrderResponse struct {
 	ID          primitive.ObjectID     `json:"id"`
 	UserID      primitive.ObjectID     `json:"userId"`
 	Items       []OrderItem            `json:"items"`
+	Subtotal    float64                `json:"subtotal"`
+	Discount    float64                `json:"discount"`
 	Total       float64                `json:"total"`
+	Pricing     map[string]interface{} `json:"pricing,omitempty"`
 	Status      OrderStatus            `json:"status"`
 	PaymentInfo map[string]interface{} `json:"paymentInfo,omitempty"`
 	CreatedAt   time.Time              `json:"createdAt"`
@@ -75,7 +81,10 @@ func (o *Order) ToResponse() *OrderResponse {
 		ID:          o.ID,
 		UserID:      o.UserID,
 		Items:       o.Items,
+		Subtotal:    o.Subtotal,
+		Discount:    o.Discount,
 		Total:       o.Total,
+		Pricing:     o.Pricing,
 		Status:      o.Status,
 		PaymentInfo: o.PaymentInfo,
 		CreatedAt:   o.CreatedAt,
