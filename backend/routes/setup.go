@@ -17,7 +17,10 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	app.Use(middleware.SetupCORS())
 
 	// Serve static images with CORS support
-	imagesPath := "/Users/hugo/mercadomio-copilot/frontend/web/assets/images"
+	imagesPath := os.Getenv("IMAGES_PATH")
+	if imagesPath == "" {
+		imagesPath = "./frontend/web/assets/images"
+	}
 	log.Printf("Setting up static file serving: /assets/images -> %s", imagesPath)
 
 	// Configure static file serving for images
@@ -62,7 +65,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	SetupImageRoutes(app, imageHandlers, cloudinaryHandlers, directusHandlers)
 	SetupCategoryRoutes(app, categoryHandlers)
 	SetupAuthRoutes(app, authHandlers)
-	SetupOrderRoutes(app, orderHandlers)
+	SetupOrderRoutes(app, orderHandlers, deps.AuthService)
 	SetupPaymentRoutes(app, paymentRoutes)
 
 	// Health check endpoint

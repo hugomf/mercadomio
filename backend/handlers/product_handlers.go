@@ -164,3 +164,22 @@ func (h *ProductHandlers) GetRelatedProducts(c *fiber.Ctx) error {
 
 	return c.JSON(relatedProducts)
 }
+
+// UpdateVariantStock handles PUT /api/products/:id/variants/:variantId/stock
+func (h *ProductHandlers) UpdateVariantStock(c *fiber.Ctx) error {
+	id := c.Params("id")
+	variantID := c.Params("variantId")
+
+	var body struct {
+		Stock int `json:"stock"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return middleware.BadRequest("Invalid input")
+	}
+
+	if err := h.ProductService.SetVariantStock(c.Context(), id, variantID, body.Stock); err != nil {
+		return middleware.BadRequest(err.Error())
+	}
+
+	return middleware.SuccessMessage(c, "Stock updated")
+}

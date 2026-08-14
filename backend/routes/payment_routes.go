@@ -29,7 +29,10 @@ func SetupPaymentRoutes(app *fiber.App, handlers *PaymentHandlers) {
 	// Demo/Simulation endpoint
 	payments.Post("/simulate-success", handlers.SimulatePayment)
 
-	// Webhook endpoint (can be unauthenticated but would need different auth)
+	// Conekta hosted checkout
+	payments.Post("/checkout", handlers.CreateCheckout)
+
+	// Conekta webhook endpoint (unauthenticated; signature verified in handler)
 	payments.Post("/webhook", handlers.WebhookHandler)
 }
 
@@ -78,4 +81,9 @@ func (h *PaymentHandlers) SimulatePayment(c *fiber.Ctx) error {
 // WebhookHandler handles POST /api/payments/webhook
 func (h *PaymentHandlers) WebhookHandler(c *fiber.Ctx) error {
 	return h.handlers.WebhookHandler(c)
+}
+
+// CreateCheckout handles POST /api/payments/checkout
+func (h *PaymentHandlers) CreateCheckout(c *fiber.Ctx) error {
+	return h.handlers.CreateCheckout(c)
 }

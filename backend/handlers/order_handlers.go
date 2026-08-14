@@ -219,7 +219,45 @@ func (h *OrderHandlers) AddPaymentInfo(c *fiber.Ctx) error {
 	return middleware.SuccessMessage(c, "payment information added successfully")
 }
 
-// GetOrderStats handles GET /api/orders/stats (admin only)
+// GetOrdersAdmin handles GET /api/orders/admin
+// Returns all orders with pagination and optional status filter (admin only)
+func (h *OrderHandlers) GetOrdersAdmin(c *fiber.Ctx) error {
+	_, ok := c.Locals("userID").(string)
+	if !ok {
+		return middleware.Unauthorized(c, "authentication required")
+	}
+
+	page, err := strconv.Atoi(c.Query("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit", "20"))
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 20
+	}
+
+	status := c.Query("status")
+
+	orders, err := h.orderService.GetAllOrders(c.Context(), page, limit, status)
+	if err != nil {
+		return middleware.InternalError("failed to retrieve orders")
+	}
+
+	total, err := h.orderService.CountOrders(c.Context(), status)
+	if err != nil {
+		return middleware.InternalError("failed to count orders")
+	}
+
+	var orderResponses []*models.OrderResponse
+	for _, order := range orders {
+		orderResponses = append(orderResponses, order.ToResponse())
+	}
+
+	return middleware.SuccessPaginated(c, orderResponses, int(total), page, limit)
+}
+
+// GetOrderStats handles GET /api/orders/admin/stats (admin only)
 func (h *OrderHandlers) GetOrderStats(c *fiber.Ctx) error {
 	// In production, check if user is admin
 	_, ok := c.Locals("userID").(string)

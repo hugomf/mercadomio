@@ -204,26 +204,62 @@ func (h *PaymentHandlers) SimulatePayment(c *fiber.Ctx) error {
 	return middleware.SuccessMessage(c, "payment simulated successfully")
 }
 
-// WebhookHandler handles Stripe webhooks
+// WebhookHandler handles Conekta webhooks
 // POST /api/payments/webhook
 func (h *PaymentHandlers) WebhookHandler(c *fiber.Ctx) error {
 	payload := c.Body()
-	signature := c.Get("Stripe-Signature")
+	signature := c.Get("DIGEST")
 
-	// Validate webhook signature
-	err := h.paymentService.ValidateWebhookSignature(payload, signature)
-	if err != nil {
+	// Validate webhook signature (RSA-SHA256 over raw body)
+	if err := h.paymentService.ValidateConektaWebhookSignature(payload, signature); err != nil {
+		log.Printf("Webhook signature validation failed: %v", err)
 		return middleware.BadRequestResponse(c, "invalid webhook signature")
 	}
 
-	// In a real implementation, you'd parse the webhook event
-	// and handle different event types (payment_intent.succeeded, etc.)
-
-	// For demo purposes, just log it
-	log.Printf("Webhook received with signature: %s", signature)
+	eventType, err := h.paymentService.HandleConektaWebhook(c.Context(), payload)
+	if err != nil {
+		log.Printf("Webhook processing error (%s): %v", eventType, err)
+		return middleware.Success(c, fiber.Map{
+			"processed":  false,
+			"event_type": eventType,
+		})
+	}
 
 	return middleware.Success(c, fiber.Map{
 		"processed":  true,
-		"event_type": "webhook_received",
+		"event_type": eventType,
+	})
+}
+
+// CreateCheckout creates a Conekta hosted checkout session for an order
+// POST /api/payments/checkout
+func (h *PaymentHandlers) CreateCheckout(c *fiber.Ctx) error {
+	// Payments routes are not behind AuthMiddleware; resolve the user
+	// leniently so demo/guest flows work. Ownership is enforced by the
+	// service when a userID is present.
+	userID, _ := c.Locals("userID").(string)
+
+	log.Printf("User %s creating checkout", userID)
+
+	var req struct {
+		OrderID string `json:"orderId"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return middleware.BadRequestResponse(c, "invalid request body")
+	}
+	if req.OrderID == "" {
+		return middleware.BadRequestResponse(c, "order ID is required")
+	}
+
+	session, err := h.paymentService.CreateCheckoutSession(c.Context(), req.OrderID, userID)
+	if err != nil {
+		return middleware.BadRequestResponse(c, "failed to create checkout: "+err.Error())
+	}
+
+	return middleware.Success(c, fiber.Map{
+		"checkoutUrl":    session.CheckoutURL,
+		"checkoutId":     session.CheckoutID,
+		"conektaOrderId": session.ConektaOrderID,
+		"demo":           !h.paymentService.IsConektaConfigured(),
 	})
 }

@@ -195,6 +195,89 @@ func (s *productService) RemoveVariant(ctx context.Context, productID, variantID
 	return err
 }
 
+// DecrementStock atomically reduces a variant's stock, preventing negative stock.
+func (s *productService) DecrementStock(ctx context.Context, productID, variantID string, qty int) error {
+	if qty <= 0 {
+		return errors.New("invalid quantity")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return err
+	}
+
+	if variantID == "" {
+		return nil
+	}
+
+	result, err := s.collection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":                objID,
+			"variants.variantId": variantID,
+			"variants.stock":     bson.M{"$gte": qty},
+		},
+		bson.M{"$inc": bson.M{"variants.$.stock": -qty}},
+	)
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return errors.New("insufficient stock or variant not found")
+	}
+
+	return nil
+}
+
+// IncrementStock restores a variant's stock (e.g. when an order is cancelled).
+func (s *productService) IncrementStock(ctx context.Context, productID, variantID string, qty int) error {
+	if qty <= 0 {
+		return errors.New("invalid quantity")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return err
+	}
+
+	if variantID == "" {
+		return nil
+	}
+
+	_, err = s.collection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":                objID,
+			"variants.variantId": variantID,
+		},
+		bson.M{"$inc": bson.M{"variants.$.stock": qty}},
+	)
+	return err
+}
+
+// SetVariantStock sets a variant's stock to an absolute value (admin).
+func (s *productService) SetVariantStock(ctx context.Context, productID, variantID string, stock int) error {
+	if stock < 0 {
+		return errors.New("stock cannot be negative")
+	}
+
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.collection.UpdateOne(
+		ctx,
+		bson.M{
+			"_id":                objID,
+			"variants.variantId": variantID,
+		},
+		bson.M{"$set": bson.M{"variants.$.stock": stock}},
+	)
+	return err
+}
+
 func (s *productService) EnsureTextIndex(ctx context.Context) error {
 	model := mongo.IndexModel{
 		Keys: bson.D{

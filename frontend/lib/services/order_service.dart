@@ -161,6 +161,50 @@ class OrderService {
     final order = await createOrderFromCart(cartId);
     return '$successUrl?order_id=${order.id}';
   }
+
+  // Create a Conekta hosted checkout session for an order.
+  // Returns a demo session when the backend runs without a Conekta key.
+  Future<CheckoutSession> createCheckoutSession(String orderId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/payments/checkout'),
+      headers: _headers,
+      body: jsonEncode({'orderId': orderId}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body)['data'];
+      return CheckoutSession.fromJson(data);
+    } else if (response.statusCode == 400) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error']?['message'] ?? 'Failed to create checkout');
+    } else {
+      throw Exception('Failed to create checkout: ${response.statusCode}');
+    }
+  }
+}
+
+// Conekta hosted checkout session details
+class CheckoutSession {
+  final String checkoutUrl;
+  final String checkoutId;
+  final String conektaOrderId;
+  final bool demo;
+
+  CheckoutSession({
+    required this.checkoutUrl,
+    required this.checkoutId,
+    required this.conektaOrderId,
+    required this.demo,
+  });
+
+  factory CheckoutSession.fromJson(Map<String, dynamic> json) {
+    return CheckoutSession(
+      checkoutUrl: json['checkoutUrl'] as String? ?? '',
+      checkoutId: json['checkoutId'] as String? ?? '',
+      conektaOrderId: json['conektaOrderId'] as String? ?? '',
+      demo: json['demo'] as bool? ?? true,
+    );
+  }
 }
 
 // Extension for convenience methods

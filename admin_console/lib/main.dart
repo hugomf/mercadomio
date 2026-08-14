@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:admin_console/widgets/navigation_drawer.dart' as custom;
 import 'package:admin_console/screens/catalog_management.dart';
 import 'package:admin_console/screens/category_management.dart';
+import 'package:admin_console/screens/order_list_screen.dart';
 
 void main() {
   runApp(const AdminConsoleApp());
@@ -60,7 +61,7 @@ class _AdminConsoleHomeState extends State<AdminConsoleHome> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Admin Console'),
+        title: const Text('Order Management'),
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
@@ -76,9 +77,7 @@ class _AdminConsoleHomeState extends State<AdminConsoleHome> {
         ],
       ),
       drawer: const custom.NavigationDrawer(),
-      body: const Center(
-        child: Text('Main Content Area'),
-      ),
+      body: const OrderListScreen(),
     );
   }
 }
