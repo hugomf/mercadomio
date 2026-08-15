@@ -17,6 +17,7 @@ type OrderService struct {
 	db             *mongo.Database
 	collection     *mongo.Collection
 	productService ProductService
+	pricingService *PricingService
 }
 
 // NewOrderService creates a new order service
@@ -32,8 +33,13 @@ func (s *OrderService) SetProductService(productService ProductService) {
 	s.productService = productService
 }
 
+// SetPricingService sets the pricing service for discount resolution
+func (s *OrderService) SetPricingService(pricingService *PricingService) {
+	s.pricingService = pricingService
+}
+
 // CreateOrderFromCart creates an order from cart items
-func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, cartItems []CartItem) (*models.Order, error) {
+func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, cartItems []CartItem, priceCtx *PricingContext) (*models.Order, error) {
 	// Validate user ID
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
@@ -43,6 +49,8 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 	// Convert cart items to order items
 	var orderItems []models.OrderItem
 	total := 0.0
+
+	var priceInputs []PriceInput
 
 	for _, cartItem := range cartItems {
 		if cartItem.Quantity <= 0 {
@@ -70,6 +78,21 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 
 		orderItems = append(orderItems, orderItem)
 		total += orderItem.Price * float64(orderItem.Quantity)
+
+		var variant *Variant
+		if cartItem.VariantID != "" {
+			for i := range product.Variants {
+				if product.Variants[i].VariantID == cartItem.VariantID {
+					variant = &product.Variants[i]
+					break
+				}
+			}
+		}
+		priceInputs = append(priceInputs, PriceInput{
+			Product:  product,
+			Variant:  variant,
+			Quantity: orderItem.Quantity,
+		})
 	}
 
 	if len(orderItems) == 0 {
@@ -80,13 +103,52 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 		return nil, errors.New("invalid order total")
 	}
 
+	// Resolve pricing (schedules + coupons/loyalty price sets)
+	subtotal := total
+	discount := 0.0
+	var pricingMap map[string]interface{}
+
+	if priceCtx != nil && s.pricingService != nil {
+		if priceCtx.CustomerID == "" {
+			priceCtx.CustomerID = userID
+		}
+		result, err := s.pricingService.ResolvePrices(ctx, priceInputs, *priceCtx)
+		if err != nil {
+			return nil, errors.New("failed to resolve pricing: " + err.Error())
+		}
+		subtotal = result.Subtotal
+		discount = result.Discount
+		total = result.Total
+
+		if discount > 0 {
+			pricingMap = map[string]interface{}{
+				"subtotal":       subtotal,
+				"discount":       discount,
+				"couponCode":     priceCtx.CouponCode,
+				"customerTier":   priceCtx.CustomerTier,
+				"appliedSets":    result.AppliedSets,
+				"schedules":      result.AppliedScheduleNames,
+			}
+		}
+	}
+
+	if subtotal <= 0 {
+		return nil, errors.New("invalid order subtotal")
+	}
+	if total <= 0 {
+		return nil, errors.New("invalid order total after discounts")
+	}
+
 	// Create order
 	now := time.Now()
 	order := &models.Order{
 		ID:          primitive.NewObjectID(),
 		UserID:      userObjID,
 		Items:       orderItems,
+		Subtotal:    subtotal,
+		Discount:    discount,
 		Total:       total,
+		Pricing:     pricingMap,
 		Status:      models.OrderStatusPending,
 		PaymentInfo: nil,
 		CreatedAt:   now,

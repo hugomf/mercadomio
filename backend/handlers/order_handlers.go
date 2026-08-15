@@ -32,6 +32,13 @@ func (h *OrderHandlers) CreateOrder(c *fiber.Ctx) error {
 		return middleware.Unauthorized(c, "authentication required")
 	}
 
+	// Optional pricing context (coupon code, loyalty tier)
+	var req struct {
+		CouponCode   string `json:"couponCode"`
+		CustomerTier string `json:"customerTier"`
+	}
+	_ = c.BodyParser(&req)
+
 	// Get user's cart
 	cartID := "user_" + userID // Assuming cart is keyed by userID
 	cart, err := h.cartService.GetCart(c.Context(), cartID)
@@ -45,7 +52,12 @@ func (h *OrderHandlers) CreateOrder(c *fiber.Ctx) error {
 	}
 
 	// Create order from cart
-	order, err := h.orderService.CreateOrderFromCart(c.Context(), userID, cart.Items)
+	priceCtx := &services.PricingContext{
+		CustomerID:   userID,
+		CustomerTier: req.CustomerTier,
+		CouponCode:   req.CouponCode,
+	}
+	order, err := h.orderService.CreateOrderFromCart(c.Context(), userID, cart.Items, priceCtx)
 	if err != nil {
 		return middleware.BadRequestResponse(c, "failed to create order: "+err.Error())
 	}

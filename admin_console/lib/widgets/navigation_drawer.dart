@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:admin_console/screens/catalog_management.dart';
 import 'package:admin_console/screens/inventory_screen.dart';
+import 'package:admin_console/screens/pricing_screen.dart';
 
 class NavigationDrawer extends StatefulWidget {
   const NavigationDrawer({super.key});
@@ -174,6 +175,19 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
               context,
               MaterialPageRoute(
                 builder: (context) => const InventoryScreen(),
+              ),
+            );
+          },
+        ),
+        _buildMenuItem(
+          context,
+          icon: Icons.sell,
+          label: 'Pricing & Discounts',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PricingScreen(),
               ),
             );
           },

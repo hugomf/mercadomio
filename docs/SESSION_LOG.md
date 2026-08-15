@@ -1,5 +1,42 @@
 # Session Log
 
+## 2026-08-14 — Admin console pricing screens
+
+- Added `models/pricing.dart` (PriceSet/PriceRule/PriceConditions/PriceSchedule/
+  PriceHistoryEntry + enums with fromJson/toJson) and
+  `services/admin_pricing_service.dart` (CRUD against `/api/pricing/*`).
+- New `screens/pricing_screen.dart`: tabbed management UI — **Price Schedules**
+  (dated bulk %/absolute/fixed price changes) and **Price Sets** (coupons,
+  loyalty tier, min-subtotal/min-qty, special customers) with create/edit/
+  delete dialogs.
+- Wired drawer 'Pricing & Discounts' item (Icons.sell) to the new screen.
+- Fixed 3 analyzer errors (const PriceConditions ctor, `_DialogReturn.set()`
+  constructor, type-init-formals). Verified: `flutter analyze` clean + 2 widget
+  tests green.
+
+## 2026-08-14 — Checkout coupon entry (Flutter frontend)
+
+- Added coupon-code input to the checkout flow. Shipping → Promo Code → Payment → Terms.
+- `frontend/lib/models/order.dart` `OrderCreateRequest` now carries optional `couponCode` / `customerTier` (omitted from JSON when empty).
+- `frontend/lib/services/order_service.dart` `createOrderFromCart` accepts `couponCode`/`customerTier` and forwards them; backend `POST /api/orders` already read `{couponCode, customerTier}` from the body and applies the pricing engine (sets discount + records Subtotal/Discount).
+- `checkout_screen.dart`: new `_couponController` (+dispose) and `_buildCouponSection()` promo-code card; `_processOrder` passes the trimmed coupon to `createOrderFromCart`.
+- Verified: `flutter analyze` (only the 5 pre-existing warnings) + `flutter test` ('App renders without crashing' passes).
+
+## 2026-08-14 — Pricing module tests (unit + integration)
+
+- Unit: `backend/services/pricing_service_test.go` (package `services`, first
+  test in that package) — 16 tests: conditions match (coupon EqualFold,
+  subtotal/quantity thresholds, customer tier/IDs), window checks, schedule
+  match (global/product/variant/category), rule match (all/product/variant),
+  discount math (percentage/absolute/cap/never-negative), stop-further-rules
+  stacking, schedule math, history-name dedupe, Order Subtotal/Discount/Total
+  Validate. ALL PASS.
+- Integration: `backend/tests/pricing_integration_test.go` (package `tests`,
+  live-Mongo like `category_filter_test.go`) — seeds global +5% schedule +
+  SAVE10 coupon set against two products, asserts Subtotal/Discount/Total +
+  applied sets/schedules; drops price_sets/price_schedules/price_history.
+  Compiles + vets clean; needs MongoDB on localhost:27017 to run.
+
 ## 2026-08-14 — Inventory feature (stock decrement + admin screen)
 
 - Backend: added atomic `DecrementStock`/`IncrementStock` (bson `$inc` on

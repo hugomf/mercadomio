@@ -19,10 +19,17 @@ class OrderService {
   };
 
   // Create order from cart
-  Future<OrderResponse> createOrderFromCart(String cartId, {Map<String, dynamic>? paymentInfo}) async {
+  Future<OrderResponse> createOrderFromCart(
+    String cartId, {
+    Map<String, dynamic>? paymentInfo,
+    String? couponCode,
+    String? customerTier,
+  }) async {
     final request = OrderCreateRequest(
       cartId: cartId,
       paymentInfo: paymentInfo,
+      couponCode: couponCode,
+      customerTier: customerTier,
     );
 
     final response = await http.post(
