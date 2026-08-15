@@ -33,6 +33,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _zipCodeController = TextEditingController();
   final _countryController = TextEditingController(text: 'Mexico');
 
+  // Coupon code
+  final _couponController = TextEditingController();
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -44,6 +47,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _stateController.dispose();
     _zipCodeController.dispose();
     _countryController.dispose();
+    _couponController.dispose();
     super.dispose();
   }
 
@@ -100,6 +104,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final orderResponse = await orderService.createOrderFromCart(
         widget.cartId,
         paymentInfo: {'shippingAddress': shippingAddress},
+        couponCode: _couponController.text.trim().isEmpty
+            ? null
+            : _couponController.text.trim(),
       );
 
       // Create a Conekta hosted checkout session
@@ -170,6 +177,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
                       // Shipping Information
                       _buildShippingSection(),
+
+                      const SizedBox(height: 24),
+
+                      // Coupon Code
+                      _buildCouponSection(),
 
                       const SizedBox(height: 24),
 
@@ -355,6 +367,38 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCouponSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Promo Code',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _couponController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                hintText: 'Enter coupon code (e.g. SAVE10)',
+                prefixIcon: Icon(Icons.local_offer_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Discounts from coupons are applied at checkout.',
+              style: TextStyle(fontSize: 13, color: Colors.black54),
             ),
           ],
         ),

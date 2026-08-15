@@ -77,6 +77,10 @@ func main() {
 	orderService := services.NewOrderService(db)
 	orderService.SetProductService(productService)
 
+	// Initialize Pricing Service
+	pricingService := services.NewPricingService(db, productService)
+	orderService.SetPricingService(pricingService)
+
 	// Initialize Payment Service
 	paymentService := services.NewPaymentService(orderService)
 
@@ -100,6 +104,7 @@ func main() {
 		AuthService:      authService,
 		OrderService:     orderService,
 		PaymentService:   paymentService,
+		PricingService:   pricingService,
 	}
 
 	routes.SetupRoutes(app, routeDeps)

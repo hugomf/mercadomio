@@ -312,16 +312,23 @@ class OrderStatusTimeline {
 class OrderCreateRequest {
   final String cartId;
   final Map<String, dynamic>? paymentInfo;
+  final String? couponCode;
+  final String? customerTier;
 
   OrderCreateRequest({
     required this.cartId,
     this.paymentInfo,
+    this.couponCode,
+    this.customerTier,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'cartId': cartId,
       'paymentInfo': paymentInfo,
+      if (couponCode != null && couponCode!.isNotEmpty) 'couponCode': couponCode,
+      if (customerTier != null && customerTier!.isNotEmpty)
+        'customerTier': customerTier,
     };
   }
 }

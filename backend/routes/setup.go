@@ -57,6 +57,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	orderHandlers := handlers.NewOrderHandlers(deps.OrderService, deps.CartService, deps.ProductService)
 	paymentHandlers := handlers.NewPaymentHandlers(deps.PaymentService)
 	paymentRoutes := NewPaymentHandlers(paymentHandlers)
+	pricingHandlers := handlers.NewPricingHandlers(deps.PricingService)
 
 	// Setup routes
 	SetupProductRoutes(app, productHandlers)
@@ -67,6 +68,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	SetupAuthRoutes(app, authHandlers)
 	SetupOrderRoutes(app, orderHandlers, deps.AuthService)
 	SetupPaymentRoutes(app, paymentRoutes)
+	SetupPricingRoutes(app, pricingHandlers)
 
 	// Health check endpoint
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -87,4 +89,5 @@ type RouteDependencies struct {
 	AuthService      *services.AuthService
 	OrderService     *services.OrderService
 	PaymentService   *services.PaymentService
+	PricingService   *services.PricingService
 }
