@@ -1,5 +1,62 @@
 # Session Log
 
+## 2026-08-15 — Desktop login screen aligned to Stitch design
+
+Request: user said "next" (continuing the desktop Stitch alignment; cuarto design remaining in `.stitch/designs-desktop/`). Target `.stitch/designs-desktop/login-desktop.html`.
+
+Changes:
+- `frontend/lib/widgets/login_screen.dart` (desktop branch only; mobile untouched):
+  - Brand header moved out of the card into a `_buildBrandHeader` (48px primaryContainer circle with shopping_bag icon + "Mercadomio" w900 primary) above the form, matching the Stitch logo + wordmark row.
+  - Card centered column narrowed to `maxWidth: 440` (was 460), keeping the rounded-16 card with border + soft shadow.
+  - Password field: added `_obscurePassword` state + visibility/visibility_off suffix toggle button (styling matches Stitch eye toggle on the right of the input).
+  - Added right-aligned text link between password and submit: "¿Olvidaste tu contraseña?" in login mode / "¿Ya tienes cuenta? Inicia sesión" in register mode (replaces the old bottom-center trailing TextButton; still calls `_toggleMode`).
+  - Removed the now-redundant trailing toggle TextButton and the "Demo: usa cualquier correo y contraseña" hint from the desktop card (register mode is still reachable via the outlined "Crear cuenta nueva" button).
+  - Outlined secondary button border upgraded to `width: 2` + `colorScheme.outline` to match Stitch border-2.
+
+Verified: `flutter analyze` → No issues found; `flutter test` → All tests passed.
+
+## 2026-08-15 — Desktop storefront aligned to Stitch design
+
+Request: user said "next" (continuing the desktop Stitch alignment; sequence was cart → checkout → order-history → product-detail → product-listing → storefront). Target `.stitch/designs-desktop/storefront-desktop.html`.
+
+Changes:
+- New `frontend/lib/widgets/storefront_widget.dart`: `StorefrontWidget` (desktop-only, shown above the product listing). Renders a hero banner matching the Stitch hero (primaryContainer, 300px, rounded-16, gradient overlay, tertiary-container "OFERTA ESPECIAL" pill, "20% de descuento en Frutas y Verduras" headline, "Ver ofertas" StadiumButton that clears the category filter) plus a "Categorías principales" section with up to 7 circular category tiles (icon mapping via keyword heuristics: fruta/verd→eco, carne→set_meal, pan→bakery_dining, lact/huevo/leche→egg_alt, abarro→kitchen, bebida→local_drink, limpi→cleaning_services, fallback category), hover inverts bg/text, tap → `CategoryService.addSelectedCategory`. `initState` loads categories via postFrame when empty. Hero content is wrapped in `FittedBox(scaleDown)` so it never overflows on short viewports.
+- `frontend/lib/main.dart`: desktop HomeScreen branch now places `StorefrontWidget` above `ProductListingWidget` inside a `LayoutBuilder`; the storefront is capped at 50% of panel height inside a `SingleChildScrollView` so it never starves the listing. Mobile branch untouched; AppBar + sidebar chrome untouched.
+- `frontend/lib/services/category_service.dart`: `removeSelectedCategory` and `clearSelectedCategories` now also publish to `CategoryEventBus` (previously only `addSelectedCategory` and `removeCategoriesFromIndex` did), so every selection mutation notifies listeners.
+- `frontend/lib/widgets/product_listing_widget.dart`: subscribes to `CategoryEventBus.stream` in `initState` (with `dispose` cancel) and refetches products on any category change anywhere in the app. Removed now-redundant direct `_fetchProducts()` calls after category mutations (mobile CategorySelector/CategoryBreadcrumbs callbacks → no-op, desktop sidebar items, filter-chip remove, "Limpiar filtros") to avoid double fetches. Search-only paths (onClearSearch, onSortSelected, search-term chip) still fetch explicitly.
+
+Verified: `flutter analyze` → No issues found; `flutter test` → All tests passed.
+
+## 2026-08-15 — Desktop product listing screen aligned to Stitch design
+
+Request: user said "next" (continuing the desktop Stitch alignment; sequence was cart → checkout → order-history → product-detail → product-listing). Target `.stitch/designs-desktop/product-listing-desktop.html`.
+
+Changes in `frontend/lib/widgets/product_listing_widget.dart` (desktop branch only, mobile layout untouched):
+- Page header: replaced the old `CategoryBreadcrumbs` Padding + count GetBuilder Padding with `_buildDesktopPageHeader()` — Stitch-style breadcrumb row (Inicio > Categorías > active category), h1 title (`activeLabel` = last selected category name, or "Productos"), "{count} productos disponibles" subtitle (uses `_filteredProducts` when filtering/searching, else `_totalProducts`).
+- Applied-filters chips: new `_buildAppliedFilterChips` — one `primaryContainer` stadium Chip per selected category (remove via `removeCategoriesFromIndex(i)` + refetch), a search-term chip "“query”" when searching, and a "Limpiar filtros" TextButton that clears categories + search and refetches.
+- Sidebar restyle: `_buildCategorySidebar()` is now a floating card (surfaceContainerLowest, radius 12, border surfaceContainer, subtle shadow, width 240, vertical margin). `_buildSidebarHeader` shows title + `expand_less` icon; `_buildSidebarItem` uses check_box/check_box_outline_blank (primary/outline), bold+primary when selected. "Todos" first, same callbacks. Added `SizedBox(width: 24)` gap between sidebar and content.
+- Product card (`_buildDesktopProductCard`): discount badge now `colorScheme.error` bg + `onError` text, radius 6 (Stitch rounded-md), compact padding h8/v4, fontSize 11; removed the category uppercase label block (Stitch cards have none); added inline `/ unit` suffix under the current price on non-discounted cards; add button now circular with `bg primary + onPrimary` when discounted else `primaryContainer` + primary/20 border (Stitch swap).
+- Pagination (`_buildPaginationBar` + new `_buildPageNumber`): replaced "Página X de Y" text with Stitch-style 40x40 rounded-lg page-number buttons (active = filled primary + bold onPrimary, others onSurface), with a window of 5, ellipsis on both ends, and retained prev/next chevrons (disabled at bounds). Guarded window math when `totalPages <= 5`.
+
+Backend untouched. Verified: `flutter analyze` → No issues found; `flutter test` → All tests passed.
+
+## 2026-08-15 — Desktop product detail screen aligned to Stitch design
+
+Request: user said "continue with product detail" (next screen after order history). Target `.stitch/designs-desktop/product-detail-desktop.html`.
+
+Changes in `frontend/lib/widgets/product_detail_screen.dart` (desktop-only, mobile untouched):
+- Top bar breadcrumb text (`_breadcrumbLabel`) → interactive breadcrumb row `_buildDesktopBreadcrumb`: "Inicio" (InkWell → `Navigator.maybePop`) > chevron > category > chevron > product name.
+- Organic badge: new getter `_organicTag` reads `customAttributes['organic']` (bool true → "Orgánico", non-empty String → as-is) or scans `product.tags` for an "org"-matching tag → renders secondaryContainer pill (uppercase, letterSpacing 0.8) above the category label.
+- Price row: unit suffix added — `/ $unitLabel` appended after the current price when `customAttributes['unit']` is present (`_unitLabel` getter). Strikethrough original price (when discounted) unchanged.
+- Features Wrap (3 chips) → `_buildDesktopQuickInfo` + `_buildQuickInfoRow` (surfaceContainerLow card, icon + bold label + value rows: Origen/Entrega hoy/Calidad Premium). Removed `_buildDesktopFeatureChip`.
+- Main image (`_buildDesktopMainImage`): inner container now surfaceContainerLowest with 28px padding and images `BoxFit.contain` (matches Stitch contain layout).
+- Quantity stepper radius Circular(20) → Circular(999) (Stitch pill).
+- "Agregar al Carrito" button: rounded-999 full-pill ButtonStyle (padding h24/v16).
+
+Also removed now-unused `_breadcrumbLabel` getter (replaced by breadcrumb).
+
+Verified: `flutter analyze` No issues found; `flutter test` All tests passed.
+
 ## 2026-08-15 — Desktop order history screen aligned to Stitch design
 
 Request: user (answering "next please" after checkout alignment) wanted the desktop order history to match `.stitch/designs-desktop/order-history-desktop.html`.

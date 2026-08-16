@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import '../services/category_service.dart';
+import '../services/category_events.dart';
 import '../services/config_service.dart';
 import '../services/cart_controller.dart';
 import '../widgets/category_selector.dart';
@@ -554,17 +555,17 @@ child: Card(
                       left: 12,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
+                          color: colorScheme.error,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '-${discount.round()}%',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimaryContainer,
+                            color: colorScheme.onError,
                           ),
                         ),
                       ),
@@ -602,18 +603,6 @@ child: Card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (product.category != null) ...[
-                    Text(
-                      product.category!.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                  ],
                   Text(
                     product.name,
                     style: const TextStyle(
@@ -661,16 +650,40 @@ child: Card(
                                 height: 1,
                               ),
                             ),
+                            // Stitch shows the unit inline on regular-priced
+                            // cards: '$85.00 / kg'.
+                            if (discount == null && unit != null)
+                              Text(
+                                '/ $unit',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.normal,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                           ],
                         ),
                       ),
+                      // Stitch add button: filled primary when the product is
+                      // discounted, primary-container otherwise.
                       Material(
-                        color: colorScheme.primaryContainer,
-                        shape: const CircleBorder(),
+                        color: discount != null
+                            ? colorScheme.primary
+                            : colorScheme.primaryContainer,
+                        shape: CircleBorder(
+                          side: discount != null
+                              ? BorderSide.none
+                              : BorderSide(
+                                  color: colorScheme.primary.withValues(
+                                      alpha: 0.2),
+                                ),
+                        ),
                         child: IconButton(
                           icon: Icon(
                             Icons.add,
-                            color: colorScheme.onPrimaryContainer,
+                            color: discount != null
+                                ? colorScheme.onPrimary
+                                : colorScheme.onPrimaryContainer,
                           ),
                           onPressed: () => _addToCart(product),
                           tooltip: 'Agregar al carrito',
@@ -693,13 +706,27 @@ child: Card(
     return product.basePrice * (1 - discount / 100);
   }
 
+  StreamSubscription<CategorySelectionEvent>? _categorySub;
+
   @override
   void initState() {
     super.initState();
+    // Refresh results whenever categories change anywhere in the app
+    // (e.g. the storefront tiles), keeping them in sync with the sidebar.
+    _categorySub = CategoryEventBus.stream.listen((_) {
+      _fetchProducts();
+    });
     // Ensure products are loaded when widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchProducts();
     });
+  }
+
+  @override
+  void dispose() {
+    _categorySub?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Widget _buildMobileLayout() {
@@ -728,12 +755,14 @@ child: Card(
         ),
 
         CategorySelector(
-          onSelectionChanged: _fetchProducts,
+          // Category changes are handled by the event bus listener in
+          // initState (selection mutations publish to CategoryEventBus).
+          onSelectionChanged: () {},
         ),
 
         // Category breadcrumbs
         CategoryBreadcrumbs(
-          onBreadcrumbTap: _fetchProducts,
+          onBreadcrumbTap: () {},
         ),
 
         Padding(
@@ -842,6 +871,8 @@ child: Card(
         // Persistent category sidebar
         _buildCategorySidebar(),
 
+        const SizedBox(width: 24),
+
         // Main content column: toolbar, count, grid, pagination
         Expanded(
           child: Column(
@@ -876,41 +907,7 @@ child: Card(
                 ),
               ),
 
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _getPadding(context, base: 16),
-                  vertical: _getPadding(context, base: 4),
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: CategoryBreadcrumbs(
-                    onBreadcrumbTap: _fetchProducts,
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _getPadding(context, base: 16),
-                  vertical: _getPadding(context, base: 4),
-                ),
-                child: GetBuilder<CategoryService>(
-                  builder: (categoryService) {
-                    final hasActiveFilters = categoryService.selectedCategories.isNotEmpty ||
-                                          _searchText.value.trim().isNotEmpty;
-                    return Text(
-                      hasActiveFilters && !categoryService.isAllSelected()
-                        ? '${_filteredProducts.value} de ${_totalProducts.value} productos'
-                        : '${_totalProducts.value} productos disponibles',
-                      style: TextStyle(
-                        fontSize: _getFontSize(context, base: 15),
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
-                ),
-              ),
+              _buildDesktopPageHeader(),
 
               // Responsive product grid with bottom pagination (desktop)
               Expanded(
@@ -971,14 +968,206 @@ child: Card(
     );
   }
 
+  /// Stitch-style page header: breadcrumb, h1 title, product count and the
+  /// removable "applied filters" chips. Only rendered on desktop.
+  Widget _buildDesktopPageHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final horizontalPadding = _getPadding(context, base: 16);
+
+    return GetBuilder<CategoryService>(
+      builder: (categoryService) {
+        final hasActiveFilters =
+            categoryService.selectedCategories.isNotEmpty &&
+                !categoryService.isAllSelected();
+        final searchTerm = _searchText.value.trim();
+        final activeLabel = hasActiveFilters &&
+                categoryService.selectedCategoryNames.isNotEmpty
+            ? categoryService.selectedCategoryNames.last
+            : 'Productos';
+        final count = hasActiveFilters || searchTerm.isNotEmpty
+            ? _filteredProducts.value
+            : _totalProducts.value;
+
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: _getPadding(context, base: 4),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Breadcrumb: Inicio > Categorías > active category
+              Row(
+                children: [
+                  Text(
+                    'Inicio',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: colorScheme.outline,
+                  ),
+                  Text(
+                    'Categorías',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (hasActiveFilters) ...[
+                    Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: colorScheme.outline,
+                    ),
+                    Text(
+                      activeLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              // h1 title + product count
+              Text(
+                activeLabel,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$count productos disponibles',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              // Applied filters: removable chips + clear-all
+              if (hasActiveFilters || searchTerm.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildAppliedFilterChips(categoryService),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Removable primary-container chips for each active filter plus a
+  /// "Limpiar filtros" link (Stitch "Applied Filters" row).
+  Widget _buildAppliedFilterChips(CategoryService categoryService) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final searchTerm = _searchText.value.trim();
+    final hasAnyFilter = categoryService.selectedCategoryNames.isNotEmpty ||
+        searchTerm.isNotEmpty;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        // One chip per selected category (keeps filter order).
+        for (var i = 0; i < categoryService.selectedCategoryNames.length; i++)
+          Chip(
+            label: Text(
+              categoryService.selectedCategoryNames[i],
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+            backgroundColor: colorScheme.primaryContainer,
+            side: BorderSide.none,
+            shape: const StadiumBorder(),
+            visualDensity: VisualDensity.compact,
+            deleteIcon: Icon(
+              Icons.close,
+              size: 16,
+              color: colorScheme.onPrimaryContainer,
+            ),
+            onDeleted: () {
+              categoryService.removeCategoriesFromIndex(i);
+            },
+          ),
+        // A chip reflecting the active search term.
+        if (searchTerm.isNotEmpty)
+          Chip(
+            label: Text(
+              '“$searchTerm”',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onPrimaryContainer,
+              ),
+            ),
+            backgroundColor: colorScheme.primaryContainer,
+            side: BorderSide.none,
+            shape: const StadiumBorder(),
+            visualDensity: VisualDensity.compact,
+            deleteIcon: Icon(
+              Icons.close,
+              size: 16,
+              color: colorScheme.onPrimaryContainer,
+            ),
+            onDeleted: () {
+              _searchController.clear();
+              _searchText.value = '';
+              _debounceTimer?.cancel();
+              _fetchProducts();
+            },
+          ),
+        if (hasAnyFilter)
+          TextButton(
+            onPressed: () {
+              categoryService.clearSelectedCategories();
+              _searchController.clear();
+              _searchText.value = '';
+              _debounceTimer?.cancel();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            child: const Text('Limpiar filtros'),
+          ),
+      ],
+    );
+  }
+
   Widget _buildCategorySidebar() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 240,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        border: Border(
-          right: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-        ),
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.surfaceContainer),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -991,6 +1180,7 @@ child: Card(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildSidebarHeader('Categorías'),
+                  const SizedBox(height: 4),
                   _buildSidebarItem(
                     label: 'Todos',
                     selected: isAllSelected,
@@ -999,7 +1189,6 @@ child: Card(
                         CategoryService.allCategoriesId,
                         CategoryService.allCategoriesName,
                       );
-                      _fetchProducts();
                     },
                   ),
                   ...categoryService.categories.map((category) {
@@ -1009,7 +1198,6 @@ child: Card(
                       selected: isSelected,
                       onTap: () {
                         categoryService.addSelectedCategory(category.id, category.name);
-                        _fetchProducts();
                       },
                     );
                   }),
@@ -1023,20 +1211,26 @@ child: Card(
   }
 
   Widget _buildSidebarHeader(String title) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        _getPadding(context, base: 16),
-        _getPadding(context, base: 8),
-        _getPadding(context, base: 16),
-        _getPadding(context, base: 8),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: _getFontSize(context, base: 16),
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          Icon(
+            Icons.expand_less,
+            size: 20,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
       ),
     );
   }
@@ -1047,74 +1241,133 @@ child: Card(
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final padding = _getPadding(context, base: 12);
 
-    return Material(
-      color: selected ? colorScheme.primaryContainer.withValues(alpha: 0.4) : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding * 0.75),
-          child: Row(
-            children: [
-              Icon(
-                selected ? Icons.check_circle : Icons.category_outlined,
-                size: _getIconSize(context, base: 20),
-                color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-              ),
-              SizedBox(width: _getPadding(context, base: 12)),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: _getFontSize(context, base: 15),
-                    fontWeight: selected ? FontWeight.bold : FontWeight.w400,
-                    color: selected ? colorScheme.primary : colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.check_box : Icons.check_box_outline_blank,
+              size: 20,
+              color: selected ? colorScheme.primary : colorScheme.outline,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                  color: selected ? colorScheme.primary : colorScheme.onSurface,
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildPaginationBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     final totalPages = (_filteredProducts.value / _itemsPerPage).ceil().clamp(1, 1 << 20);
-    final currentPage = _currentPage - 1;
+    final currentPage = _currentPage - 1; // _currentPage is 1-based.
     if (totalPages <= 1 && !_hasMore) {
       return const SizedBox.shrink();
     }
 
+    // Page numbers to show around the current one (with ellipsis on both
+    // sides when the range is large), matching the Stitch pagination row.
+    final int window = 5;
+    final int start = totalPages <= window
+        ? 1
+        : (currentPage - (window ~/ 2)).clamp(1, totalPages - window + 1);
+    final int end = totalPages <= window
+        ? totalPages
+        : (start + window - 1).clamp(1, totalPages);
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: _getPadding(context, base: 16),
-        vertical: _getPadding(context, base: 8),
+        vertical: _getPadding(context, base: 16),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             icon: Icon(Icons.chevron_left, size: _getIconSize(context, base: 22)),
+            color: colorScheme.onSurfaceVariant,
             onPressed: currentPage > 1 ? () => _goToPage(currentPage - 1) : null,
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 8)),
-            child: Text(
-              'Página $currentPage de $totalPages',
-              style: TextStyle(
-                fontSize: _getFontSize(context, base: 14),
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          if (start > 1) ...[
+            _buildPageNumber(1, currentPage, colorScheme),
+            if (start > 2)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 4)),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    fontSize: _getFontSize(context, base: 14),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
-          ),
+          ],
+          for (var page = start; page <= end; page++)
+            _buildPageNumber(page, currentPage, colorScheme),
+          if (end < totalPages) ...[
+            if (end < totalPages - 1)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 4)),
+                child: Text(
+                  '...',
+                  style: TextStyle(
+                    fontSize: _getFontSize(context, base: 14),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            _buildPageNumber(totalPages, currentPage, colorScheme),
+          ],
           IconButton(
             icon: Icon(Icons.chevron_right, size: _getIconSize(context, base: 22)),
+            color: colorScheme.onSurfaceVariant,
             onPressed: currentPage < totalPages ? () => _goToPage(currentPage + 1) : null,
           ),
         ],
+      ),
+    );
+  }
+
+  /// Single square page-number button (active = filled primary).
+  Widget _buildPageNumber(int page, int currentPage, ColorScheme colorScheme) {
+    final selected = page == currentPage;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 2)),
+      child: InkWell(
+        onTap: selected ? null : () => _goToPage(page),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? colorScheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            '$page',
+            style: TextStyle(
+              fontSize: _getFontSize(context, base: 14),
+              fontWeight: selected ? FontWeight.bold : FontWeight.w400,
+              color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
+            ),
+          ),
+        ),
       ),
     );
   }

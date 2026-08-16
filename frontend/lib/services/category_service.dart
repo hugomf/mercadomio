@@ -181,6 +181,7 @@ class CategoryService extends GetxController {
       selectedCategoryName.value = '';
       selectedCategoryId.value = '';
     }
+    _publishSelectionEvent();
     update();
   }
 
@@ -194,6 +195,7 @@ class CategoryService extends GetxController {
     // Backward compatibility
     selectedCategoryName.value = allCategoriesName;
     selectedCategoryId.value = allCategoriesId;
+    _publishSelectionEvent();
     update();
   }
 

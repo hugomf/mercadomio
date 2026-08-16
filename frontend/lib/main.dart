@@ -13,6 +13,7 @@ import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
 import 'widgets/auth_guard.dart';
 import 'widgets/order_history_screen.dart';
+import 'widgets/storefront_widget.dart';
 import 'services/order_service.dart';
 
 void main() async {
@@ -692,17 +693,31 @@ class HomeScreen extends StatelessWidget {
         ],
       );
     } else {
-      // Desktop/tablet layout
+      // Desktop/tablet layout: storefront hero + category tiles above the
+      // flexible product listing. The storefront is capped at half the panel
+      // height (scrolling internally if needed) so it never starves the
+      // listing on short windows.
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Column(
-              children: [
-                const Expanded(
-                  child: ProductListingWidget(),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: constraints.maxHeight * 0.5,
+                    ),
+                    child: const SingleChildScrollView(
+                      child: StorefrontWidget(),
+                    ),
+                  ),
+                  const Expanded(
+                    child: ProductListingWidget(),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

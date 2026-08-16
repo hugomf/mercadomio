@@ -237,17 +237,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 tooltip: 'Volver',
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _breadcrumbLabel,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Expanded(child: _buildDesktopBreadcrumb(colorScheme)),
               IconButton(
                 icon: const Icon(Icons.share_outlined),
                 onPressed: () => Get.snackbar(
@@ -333,6 +323,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (_organicTag != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    _organicTag!.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.8,
+                                      color: colorScheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               if (product!.category != null) ...[
                                 Text(
                                   product!.category!.toUpperCase(),
@@ -406,31 +416,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       color: colorScheme.primary,
                                     ),
                                   ),
+                                  if (_unitLabel != null) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '/ $_unitLabel',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              // Features row
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children: [
-                                  _buildDesktopFeatureChip(
-                                    Icons.eco,
-                                    'Origen',
-                                    'Producción local',
-                                  ),
-                                  _buildDesktopFeatureChip(
-                                    Icons.local_shipping,
-                                    'Entrega hoy',
-                                    'Pide antes de las 2 PM',
-                                  ),
-                                  _buildDesktopFeatureChip(
-                                    Icons.verified,
-                                    'Calidad Premium',
-                                    'Selección a mano',
-                                  ),
-                                ],
-                              ),
+                              _buildDesktopQuickInfo(colorScheme),
                               const SizedBox(height: 32),
                               if (product!.variants.isNotEmpty) ...[
                                 _buildVariantsSection(),
@@ -459,6 +459,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                           ),
+                                        ),
+                                        style: ButtonStyle(
+                                          padding:
+                                              const WidgetStatePropertyAll(
+                                                  EdgeInsets.symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 16)),
+                                          shape: WidgetStatePropertyAll(
+                                              RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          999))),
                                         ),
                                       ),
                                     ),
@@ -505,47 +517,135 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return _currentPrice / (1 - discount / 100);
   }
 
-  String get _breadcrumbLabel {
-    final category = product?.category ?? 'Productos';
-    return 'Inicio • $category • ${product?.name ?? ''}';
+  /// Organic badge text when the product is marked as organic, either via a
+  /// boolean or string `organic` custom attribute, or an 'org'-matching tag.
+  String? get _organicTag {
+    final attrs = product?.customAttributes;
+    final raw = attrs?['organic'];
+    if (raw is bool && raw) return 'Orgánico';
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    for (final tag in product?.tags ?? const []) {
+      if (tag.toLowerCase().contains('org')) return tag;
+    }
+    return null;
   }
 
-  Widget _buildDesktopFeatureChip(
-      IconData icon, String label, String value) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
+  /// Unit label provided by the backend pricing engine (e.g. 'kg', 'L').
+  String? get _unitLabel {
+    final raw = product?.customAttributes?['unit'];
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+    return null;
+  }
+
+  /// Static breadcrumb for the desktop top bar: Inicio > category > name.
+  /// 'Inicio' pops back to the previous screen; the current product name is
+  /// the last (bold) segment.
+  Widget _buildDesktopBreadcrumb(ColorScheme colorScheme) {
+    final category = product?.category;
+    final name = product?.name ?? '';
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: colorScheme.primary),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
+          InkWell(
+            onTap: () => Navigator.of(context).maybePop(),
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Text(
+                'Inicio',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 14,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+            ),
+          ),
+          if (category != null) ...[
+            Icon(Icons.chevron_right,
+                size: 16, color: colorScheme.outline),
+            Text(
+              category,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurfaceVariant,
               ),
-            ],
+            ),
+          ],
+          Icon(Icons.chevron_right, size: 16, color: colorScheme.outline),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Quick info box: origin, delivery and quality rows in a single card.
+  Widget _buildDesktopQuickInfo(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildQuickInfoRow(Icons.eco, 'Origen', 'Producción local',
+              colorScheme),
+          const SizedBox(height: 12),
+          _buildQuickInfoRow(Icons.local_shipping, 'Entrega hoy',
+              'Pide antes de las 2 PM', colorScheme),
+          const SizedBox(height: 12),
+          _buildQuickInfoRow(
+              Icons.verified, 'Calidad Premium', 'Selección a mano', colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickInfoRow(IconData icon, String label, String value,
+      ColorScheme colorScheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: colorScheme.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: '$label: ',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: value),
+            ]),
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -554,7 +654,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Row(
@@ -657,15 +757,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       aspectRatio: 1,
       child: Container(
         decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Obx(() {
-          if (product!.images.isEmpty) {
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Obx(() {
+            if (product!.images.isEmpty) {
+              return CachedNetworkImage(
+                imageUrl: product!.imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  child: Icon(Icons.image, size: 100, color: Theme.of(context).colorScheme.outline),
+                ),
+              );
+            }
+            final currentImage = product!.images[_selectedImageIndex.value];
             return CachedNetworkImage(
-              imageUrl: product!.imageUrl,
-              fit: BoxFit.cover,
+              imageUrl: currentImage.url,
+              fit: BoxFit.contain,
               placeholder: (context, url) => Container(
                 color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 child: const Center(child: CircularProgressIndicator()),
@@ -675,21 +792,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 child: Icon(Icons.image, size: 100, color: Theme.of(context).colorScheme.outline),
               ),
             );
-          }
-          final currentImage = product!.images[_selectedImageIndex.value];
-          return CachedNetworkImage(
-            imageUrl: currentImage.url,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-            errorWidget: (context, url, error) => Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              child: Icon(Icons.image, size: 100, color: Theme.of(context).colorScheme.outline),
-            ),
-          );
-        }),
+          }),
+        ),
       ),
     );
   }
