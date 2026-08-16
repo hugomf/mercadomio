@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Historial de Pedidos - Mercadomio</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#e5eadf",
+                        "background": "#f6fbf0",
+                        "outline-variant": "#bfcab9",
+                        "outline": "#6f7a6b",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#7ddc7a",
+                        "surface-container-highest": "#dfe4d9",
+                        "on-background": "#181d16",
+                        "surface-bright": "#f6fbf0",
+                        "secondary": "#446741",
+                        "on-secondary-container": "#486b45",
+                        "surface-dim": "#d6dcd1",
+                        "inverse-on-surface": "#edf3e7",
+                        "error": "#ba1a1a",
+                        "surface-container": "#eaf0e4",
+                        "on-surface-variant": "#3f4a3d",
+                        "secondary-container": "#c2eaba",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffd9e2",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed": "#002204",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "tertiary": "#a0335d",
+                        "primary-container": "#268630",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "tertiary-container": "#c04c76",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f6fbf0",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "on-primary-container": "#f7fff1",
+                        "secondary-fixed": "#c5edbd",
+                        "on-surface": "#181d16",
+                        "primary-fixed": "#98f994",
+                        "primary": "#006b1b",
+                        "on-tertiary-fixed": "#3f001c",
+                        "on-secondary-fixed": "#012104",
+                        "on-primary-fixed-variant": "#005313",
+                        "inverse-surface": "#2c322a",
+                        "surface-variant": "#dfe4d9",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "on-error-container": "#93000a",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#006e1c",
+                        "surface-container-low": "#f0f5ea"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest sticky top-0 w-full shadow-sm z-50">
+<div class="flex items-center justify-between px-4 md:px-8 py-3 w-full">
+<div class="flex items-center gap-4">
+<img alt="Mercadomio Logo" class="h-8 w-8 object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLt4SUwj2j-MR1lN_qQj3BlgriMwLO-PCNKCoqdX1W0k8qrlA7sduT98W8XB7KMTTUYiAr6QcBV9hMDGr8fGJqva-a-QuACBP4Xnypw6tfqLEezO-carKUMEAKDvcwtLiouwwOyfOWiJMehNNtDIHnvwt1tH7rDBCm2kn7v0FACTrXZ7c9DpJp0C66Y6qrOKcCjvryAjxN9--H_sngs2VOp9e61v-zEvWpCXVMZ7FBjhBcGh_ph947qa0WY"/>
+<span class="text-2xl font-headline font-black text-primary hidden sm:block">Mercadomio</span>
+</div>
+<div class="flex-1 max-w-xl mx-8 hidden md:block">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-high rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary border-none text-sm placeholder-on-surface-variant" placeholder="Buscar productos" type="text"/>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low px-2 py-1 rounded" href="#">Inicio</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-low px-2 py-1 rounded" href="#">Categorías</a>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors relative group">
+<span class="material-symbols-outlined">favorite</span>
+<div class="absolute inset-0 bg-surface-container-low opacity-0 group-hover:opacity-100 rounded-full transition-opacity -z-10"></div>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+<button class="text-primary font-bold hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</nav>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 mb-20 md:mb-0">
+<!-- Breadcrumbs & Header -->
+<div class="mb-8">
+<nav class="text-sm font-label text-on-surface-variant mb-4 flex items-center gap-2">
+<a class="hover:text-primary hover:underline" href="#">Inicio</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-on-surface">Historial de Pedidos</span>
+</nav>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<h1 class="text-3xl font-headline font-bold text-on-background">Historial de Pedidos</h1>
+<div class="relative w-full md:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full bg-surface rounded-lg py-2 pl-9 pr-4 border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm" placeholder="Buscar pedido..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Filters Tabs -->
+<div class="mb-8 overflow-x-auto hide-scrollbar border-b border-outline-variant">
+<div class="flex gap-8 min-w-max px-1">
+<button class="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Todos</button>
+<button class="pb-3 text-sm font-bold text-primary border-b-2 border-primary">En camino</button>
+<button class="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Entregados</button>
+<button class="pb-3 text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">Cancelados</button>
+</div>
+</div>
+<!-- Active Order (En camino) -->
+<div class="mb-10">
+<h2 class="text-lg font-headline font-semibold mb-4 text-on-background">Pedido en curso</h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-primary-container/20 p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">En camino</span>
+<span class="text-sm text-on-surface-variant font-label">#9834</span>
+</div>
+<p class="font-headline font-semibold text-lg">Llega hoy 2:00 PM</p>
+<p class="text-sm text-on-surface-variant mt-1">4 artículos • $185.00</p>
+</div>
+</div>
+<button class="w-full md:w-auto bg-primary text-on-primary px-6 py-2.5 rounded-lg font-medium hover:bg-surface-tint transition-colors shadow-sm active:scale-95">
+                        Rastrear pedido
+                    </button>
+</div>
+</div>
+</div>
+<!-- Order List -->
+<div>
+<h2 class="text-lg font-headline font-semibold mb-4 text-on-background">Anteriores</h2>
+<div class="space-y-4">
+<!-- Order Card 1: Delivered -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/50 p-5 hover:border-outline-variant transition-colors">
+<div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-sm font-label text-on-surface-variant">#8429</span>
+<span class="inline-flex items-center gap-1 text-xs text-secondary font-medium">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Entregado
+                                </span>
+</div>
+<p class="text-on-background font-medium">12 Nov 2024</p>
+</div>
+<div class="text-left sm:text-right">
+<p class="font-headline font-semibold text-lg">$277.50</p>
+<p class="text-sm text-on-surface-variant">5 artículos</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-3 pt-4 border-t border-outline-variant/30">
+<button class="flex-1 sm:flex-none border border-outline text-on-surface px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-container-low transition-colors text-center">Ver detalles</button>
+<button class="flex-1 sm:flex-none bg-surface-container-high text-on-surface px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">replay</span> Volver a pedir
+                        </button>
+</div>
+</div>
+<!-- Order Card 2: Cancelled -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/50 p-5 hover:border-outline-variant transition-colors opacity-75">
+<div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-sm font-label text-on-surface-variant">#7912</span>
+<span class="inline-flex items-center gap-1 text-xs text-error font-medium">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Cancelado
+                                </span>
+</div>
+<p class="text-on-background font-medium">05 Nov 2024</p>
+</div>
+<div class="text-left sm:text-right">
+<p class="font-headline font-semibold text-lg">$115.00</p>
+<p class="text-sm text-on-surface-variant">2 artículos</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-3 pt-4 border-t border-outline-variant/30">
+<button class="flex-1 sm:flex-none border border-outline text-on-surface px-4 py-2 rounded-lg text-sm font-medium hover:bg-surface-container-low transition-colors text-center">Ver detalles</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Support Block -->
+<div class="mt-12 bg-surface-container rounded-xl p-6 text-center">
+<span class="material-symbols-outlined text-outline text-3xl mb-2">help_center</span>
+<h3 class="font-headline font-medium text-on-background mb-1">¿No encuentras un pedido?</h3>
+<p class="text-sm text-on-surface-variant mb-4">Podemos ayudarte a localizar información sobre pedidos pasados.</p>
+<a class="inline-flex items-center gap-2 text-primary font-medium hover:underline" href="#">
+                Consultar soporte <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container-lowest fixed bottom-0 left-0 w-full flex justify-around items-center py-2 z-50 rounded-t-xl border-t border-outline-variant shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all active:scale-90 p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined mb-1">storefront</span>
+<span class="font-label text-[10px]">Explorar</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all active:scale-90 p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined mb-1">favorite</span>
+<span class="font-label text-[10px]">Favoritos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-high transition-all active:scale-90 p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label text-[10px]">Pedidos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all active:scale-90 p-2 rounded-lg w-16" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label text-[10px]">Perfil</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="bg-surface-container w-full py-12 px-6 border-t border-outline-variant mt-auto hidden md:block">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+<div>
+<span class="font-headline font-bold text-primary text-xl mb-4 block">Mercadomio</span>
+<p class="font-body text-sm text-on-surface-variant">© 2024 Mercadomio. Frescura mexicana en tu hogar.</p>
+</div>
+<div class="flex flex-col gap-3">
+<h4 class="font-bold text-on-background">Legal</h4>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body text-sm" href="#">Privacidad</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body text-sm" href="#">Términos</a>
+</div>
+<div class="flex flex-col gap-3">
+<h4 class="font-bold text-on-background">Soporte</h4>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body text-sm" href="#">Contacto</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body text-sm" href="#">Ayuda</a>
+</div>
+</div>
+</footer>
+<style>
+        /* Utilities */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .pb-safe {
+                padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</body></html>

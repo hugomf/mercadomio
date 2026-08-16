@@ -1,10 +1,14 @@
 package handlers
 
 import (
-	"mercadomio-backend/middleware"
-	"mercadomio-backend/services"
+	"context"
+	"log"
+	"math"
 	"strconv"
 	"strings"
+
+	"mercadomio-backend/middleware"
+	"mercadomio-backend/services"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,14 +17,97 @@ type ProductHandlers struct {
 	ProductService   services.ProductService
 	SearchService    services.SearchService
 	AnalyticsService services.AnalyticsService
+	PricingService   *services.PricingService
 }
 
-func NewProductHandlers(productService services.ProductService, searchService services.SearchService, analyticsService services.AnalyticsService) *ProductHandlers {
+func NewProductHandlers(productService services.ProductService, searchService services.SearchService, analyticsService services.AnalyticsService, pricingService *services.PricingService) *ProductHandlers {
 	return &ProductHandlers{
 		ProductService:   productService,
 		SearchService:    searchService,
 		AnalyticsService: analyticsService,
+		PricingService:   pricingService,
 	}
+}
+
+// enrichCatalogPrices resolves each product's effective price through the
+// pricing engine (schedules + active price sets) and attaches the derived
+// price, discount percent, and unit to the product's customAttributes.
+//
+// The engine is the single source of truth for pricing: the catalog only
+// carries base prices, while discounts come from PriceSchedules/PriceSets.
+// None of the attached values are persisted — they are computed per-request.
+// If resolution fails, the product is left untouched (never fail a read).
+func (h *ProductHandlers) enrichCatalogPrices(ctx context.Context, products []*services.Product) {
+	if h.PricingService == nil || len(products) == 0 {
+		return
+	}
+
+	inputs := make([]services.PriceInput, 0, len(products))
+	for _, product := range products {
+		in := services.PriceInput{Product: product, Quantity: 1}
+		if len(product.Variants) > 0 {
+			in.Variant = &product.Variants[0]
+		}
+		inputs = append(inputs, in)
+	}
+
+	result, err := h.PricingService.ResolvePrices(ctx, inputs, services.PricingContext{})
+	if err != nil {
+		log.Printf("pricing enrichment skipped for %d products: %v", len(products), err)
+		return
+	}
+
+	for i, line := range result.Lines {
+		if i >= len(products) {
+			break
+		}
+		applyCatalogPrice(products[i], line)
+	}
+}
+
+// applyCatalogPrice writes the resolved unit price, discount percent, and unit
+// label into a product's customAttributes (transient, per-request).
+func applyCatalogPrice(product *services.Product, line services.PricedLine) {
+	if product.CustomAttributes == nil {
+		product.CustomAttributes = map[string]interface{}{}
+	}
+
+	product.CustomAttributes["effectivePrice"] = line.UnitPrice
+
+	discountPct := 0.0
+	if line.BasePrice > 0 {
+		discountPct = math.Round((line.BasePrice - line.UnitPrice) / line.BasePrice * 100)
+	}
+	product.CustomAttributes["discountPercent"] = discountPct
+
+	if productUnit(product) == "" {
+		product.CustomAttributes["unit"] = firstVariantUnit(product)
+	}
+}
+
+// productUnit returns the unit label already present on the product, if any.
+func productUnit(product *services.Product) string {
+	unit, _ := product.CustomAttributes["unit"].(string)
+	return unit
+}
+
+// firstVariantUnit returns the unit label of the first variant, if any.
+func firstVariantUnit(product *services.Product) string {
+	if len(product.Variants) == 0 {
+		return ""
+	}
+	unit, _ := product.Variants[0].Attributes["unit"].(string)
+	return unit
+}
+
+// productsOf converts a value slice into a pointer slice so enrichment can
+// mutate every product in place.
+func productsOf(products []services.Product) []*services.Product {
+	ptrs := make([]*services.Product, len(products))
+	for i := range products {
+		ptrs[i] = &products[i]
+	}
+	return ptrs
 }
 
 // GetProducts handles GET /api/products
@@ -59,6 +146,7 @@ func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 		if err != nil {
 			return middleware.InternalError("Failed to search products")
 		}
+		h.enrichCatalogPrices(c.Context(), productsOf(result.Data))
 
 		return c.JSON(fiber.Map{
 			"data":  result.Data,
@@ -74,6 +162,7 @@ func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 	if err != nil {
 		return middleware.InternalError("Failed to fetch products")
 	}
+	h.enrichCatalogPrices(c.Context(), productsOf(products))
 
 	return c.JSON(fiber.Map{
 		"data":  products,
@@ -91,6 +180,7 @@ func (h *ProductHandlers) GetProduct(c *fiber.Ctx) error {
 	if err != nil {
 		return middleware.NotFound("Product not found")
 	}
+	h.enrichCatalogPrices(c.Context(), []*services.Product{product})
 
 	return c.JSON(product)
 }

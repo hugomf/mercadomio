@@ -36,6 +36,9 @@ type PriceInput struct {
 type PricedLine struct {
 	ProductID   string
 	VariantID   string
+	SKU         string
+	Category    string
+	Categories  []string // parent category ids (hex)
 	BasePrice   float64
 	UnitPrice   float64
 	Quantity    int
@@ -47,11 +50,11 @@ type PricedLine struct {
 
 // PriceResult is the aggregate resolution for an order.
 type PriceResult struct {
-	Subtotal         float64
-	Discount         float64
-	Total            float64
-	Lines            []PricedLine
-	AppliedSets      []models.AppliedPriceRule
+	Subtotal             float64
+	Discount             float64
+	Total                float64
+	Lines                []PricedLine
+	AppliedSets          []models.AppliedPriceRule
 	AppliedScheduleNames []string
 }
 
@@ -262,6 +265,7 @@ func (s *PricingService) ListPriceHistory(ctx context.Context, productID string,
 	return out, nil
 }
 
+// RecordPriceHistory stores price change entries for the audit trail.
 func (s *PricingService) RecordPriceHistory(ctx context.Context, entries []models.PriceHistoryEntry) error {
 	if len(entries) == 0 {
 		return nil
@@ -275,6 +279,25 @@ func (s *PricingService) RecordPriceHistory(ctx context.Context, entries []model
 	}
 	_, err := s.history.InsertMany(ctx, docs)
 	return err
+}
+
+// IncrementSetUsage bumps the usage counters for applied sets after an order is
+// persisted, enforcing MaxUses and MaxUsesPerCustomer caps.
+func (s *PricingService) IncrementSetUsage(ctx context.Context, setIDs []string, customerID string) error {
+	for _, id := range setIDs {
+		objID, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			continue
+		}
+		inc := bson.M{"usedCount": 1}
+		if customerID != "" {
+			inc["customerUsage."+customerID] = 1
+		}
+		if _, err := s.sets.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$inc": inc}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ---- PricingEngine ----
@@ -328,9 +351,18 @@ func (s *PricingService) priceLine(ctx context.Context, in PriceInput, base floa
 	line := PricedLine{
 		ProductID: in.Product.ID.Hex(),
 		VariantID: variantIDOf(in.Variant),
+		SKU:       skuOf(in),
+		Category:  in.Product.Category,
 		BasePrice: base,
 		UnitPrice: base,
 		Quantity:  in.Quantity,
+	}
+	if len(in.Product.Categories) > 0 {
+		cats := make([]string, 0, len(in.Product.Categories))
+		for _, c := range in.Product.Categories {
+			cats = append(cats, c.Hex())
+		}
+		line.Categories = cats
 	}
 
 	all, err := s.loadActiveSchedules(ctx)
@@ -443,6 +475,14 @@ func variantIDOf(v *Variant) string {
 	return v.VariantID
 }
 
+// skuOf returns the variant SKU when present, otherwise the product SKU.
+func skuOf(in PriceInput) string {
+	if in.Variant != nil && in.Variant.SKU != "" {
+		return in.Variant.SKU
+	}
+	return in.Product.SKU
+}
+
 func subtotalOf(lines []PricedLine) float64 {
 	t := 0.0
 	for _, l := range lines {
@@ -477,6 +517,9 @@ func applySets(all []models.PriceSet, lines *[]PricedLine, pc PricingContext) ([
 		if !setInWindow(set, pc.Date) || !conditionsMatch(set.Conditions, pc) {
 			continue
 		}
+		if !usageAvailable(set, pc) {
+			continue
+		}
 		setApplied := applySetRules(set, lines)
 		if len(setApplied) > 0 {
 			applied = append(applied, setApplied...)
@@ -486,6 +529,19 @@ func applySets(all []models.PriceSet, lines *[]PricedLine, pc PricingContext) ([
 		}
 	}
 	return applied, nil
+}
+
+// usageAvailable reports whether a set still has budget left under its caps.
+func usageAvailable(set models.PriceSet, pc PricingContext) bool {
+	if set.MaxUses > 0 && set.UsedCount >= set.MaxUses {
+		return false
+	}
+	if set.MaxUsesPerCustomer > 0 && pc.CustomerID != "" {
+		if set.CustomerUsage[pc.CustomerID] >= set.MaxUsesPerCustomer {
+			return false
+		}
+	}
+	return true
 }
 
 func setInWindow(set models.PriceSet, d time.Time) bool {
@@ -570,6 +626,18 @@ func ruleMatches(rule models.PriceRule, line *PricedLine) bool {
 		return containsStr(rule.ScopeRefs, line.ProductID)
 	case models.RuleScopeVariant:
 		return line.VariantID != "" && containsStr(rule.ScopeRefs, line.VariantID)
+	case models.RuleScopeSKU:
+		return line.SKU != "" && containsStr(rule.ScopeRefs, line.SKU)
+	case models.RuleScopeCategory:
+		if line.Category != "" && containsStr(rule.ScopeRefs, line.Category) {
+			return true
+		}
+		for _, c := range line.Categories {
+			if containsStr(rule.ScopeRefs, c) {
+				return true
+			}
+		}
+		return false
 	}
 	return false
 }

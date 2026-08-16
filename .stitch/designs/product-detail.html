@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tomates Saladet - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#edf3e7",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#c5edbd",
+                        "surface": "#f6fbf0",
+                        "surface-container-low": "#f0f5ea",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#a0335d",
+                        "primary": "#006b1b",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#7ddc7a",
+                        "surface-dim": "#d6dcd1",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface": "#181d16",
+                        "on-secondary-container": "#486b45",
+                        "background": "#f6fbf0",
+                        "on-secondary-fixed": "#012104",
+                        "tertiary-fixed": "#ffd9e2",
+                        "on-surface-variant": "#3f4a3d",
+                        "inverse-surface": "#2c322a",
+                        "surface-container-highest": "#dfe4d9",
+                        "outline": "#6f7a6b",
+                        "primary-container": "#268630",
+                        "surface-container-high": "#e5eadf",
+                        "on-primary-fixed": "#002204",
+                        "surface-tint": "#006e1c",
+                        "on-primary-container": "#f7fff1",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "surface-container": "#eaf0e4",
+                        "surface-variant": "#dfe4d9",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#fffbff",
+                        "tertiary-container": "#c04c76",
+                        "secondary-container": "#c2eaba",
+                        "secondary": "#446741",
+                        "outline-variant": "#bfcab9",
+                        "on-tertiary-fixed": "#3f001c",
+                        "primary-fixed": "#98f994",
+                        "on-primary-fixed-variant": "#005313",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#181d16",
+                        "surface-bright": "#f6fbf0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body antialiased pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md shadow-sm">
+<div class="flex justify-between items-center px-4 h-16 w-full max-w-screen-xl mx-auto">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-100 text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-100 text-on-surface">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95 duration-100 text-on-surface">
+<span class="material-symbols-outlined">favorite_border</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-16">
+<!-- Hero Image -->
+<div class="w-full aspect-square bg-surface-container relative">
+<img alt="Tomates Saladet" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1GtfJ9YHke8a7OgZ8BzIy30SL_28TJJ9WCd2lGXAL1sgDsOH_Sk5IxRwdO_X_jEGGX1CaXdxxxAnDvD0Jnt42bpGpv5xo9r0Jqnj7RunRvNJGVgDv3VDhWXW5UGzojgkOysE3ZjHDIk7MOiV3j7fdiQJ1_aufAyM2Tiny0OnzB1JFTYfp5Xy8ZYQFt44x0UFLMZ50oTkKOjJ82rYluaV8-LoxD9ntxcYKegwNSbxaJsvA7UK3ynsbXT8NrWytKYjEM7iX8CH18K8"/>
+<div class="absolute bottom-4 left-4 flex gap-2">
+<span class="bg-error text-on-error font-label text-label-small px-2 py-1 rounded-full font-bold shadow-sm">-15%</span>
+</div>
+</div>
+<div class="px-4 py-6 max-w-screen-xl mx-auto">
+<!-- Product Info -->
+<div class="mb-6">
+<p class="text-primary font-label text-label-medium font-semibold mb-1 uppercase tracking-wide">Orgánicos del Valle</p>
+<h1 class="font-display text-2xl font-bold text-on-surface mb-2">Tomates Saladet</h1>
+<div class="flex items-center gap-2 mb-4">
+<div class="flex text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star_half</span>
+</div>
+<span class="text-on-surface-variant text-sm font-medium">4.8 (120 reviews)</span>
+</div>
+<div class="flex items-baseline gap-3">
+<span class="font-display text-3xl font-black text-on-surface">$25.50</span>
+<span class="text-on-surface-variant line-through text-lg">$30.00</span>
+<span class="text-on-surface-variant text-sm">/ kg</span>
+</div>
+</div>
+<!-- Chips -->
+<div class="flex flex-wrap gap-2 mb-6">
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">scale</span>
+<span class="text-sm font-medium text-on-surface">Pieza aprox. 120g</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">location_on</span>
+<span class="text-sm font-medium text-on-surface">Origen: Local</span>
+</div>
+</div>
+<!-- Quantity Selector -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl mb-8 border border-outline-variant">
+<span class="font-medium text-on-surface">Cantidad</span>
+<div class="flex items-center gap-4 bg-surface rounded-full px-2 py-1 shadow-sm border border-outline-variant">
+<button class="p-1 rounded-full text-primary hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="font-bold text-lg text-on-surface w-6 text-center">1</span>
+<button class="p-1 rounded-full text-primary hover:bg-primary-container hover:text-on-primary-container transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Details Accordion -->
+<div class="border-t border-outline-variant">
+<details class="group py-4 border-b border-outline-variant" open="">
+<summary class="flex justify-between items-center font-medium cursor-pointer list-none text-on-surface">
+<span>Descripción</span>
+<span class="transition group-open:rotate-180 material-symbols-outlined">expand_more</span>
+</summary>
+<div class="text-on-surface-variant text-sm mt-3 leading-relaxed">
+                        Tomates Saladet frescos y cultivados orgánicamente en la región. Ideales para salsas, ensaladas y guisos. Su pulpa es firme y jugosa, con un equilibrio perfecto entre acidez y dulzor.
+                    </div>
+</details>
+<details class="group py-4 border-b border-outline-variant">
+<summary class="flex justify-between items-center font-medium cursor-pointer list-none text-on-surface">
+<span>Información Nutrimental</span>
+<span class="transition group-open:rotate-180 material-symbols-outlined">expand_more</span>
+</summary>
+<div class="text-on-surface-variant text-sm mt-3 leading-relaxed">
+                        Ricos en vitamina C, potasio y licopeno. Aportan aproximadamente 18 kcal por cada 100g.
+                    </div>
+</details>
+<details class="group py-4 border-b border-outline-variant">
+<summary class="flex justify-between items-center font-medium cursor-pointer list-none text-on-surface">
+<span>Envío</span>
+<span class="transition group-open:rotate-180 material-symbols-outlined">expand_more</span>
+</summary>
+<div class="text-on-surface-variant text-sm mt-3 leading-relaxed">
+                        Entrega garantizada en menos de 60 minutos o programa tu pedido para cuando te venga mejor. Envío gratis en pedidos mayores a $200.
+                    </div>
+</details>
+</div>
+<!-- Related Products -->
+<div class="mt-10 mb-8">
+<h2 class="font-display text-lg font-bold text-on-surface mb-4">Productos similares</h2>
+<div class="flex overflow-x-auto gap-4 pb-4 snap-x hide-scrollbar">
+<!-- Product Card -->
+<div class="min-w-[140px] snap-start bg-surface rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col">
+<div class="h-24 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A close up top-down view of fresh, vibrant green jalapeño peppers scattered on a clean white surface. The lighting is bright and even, highlighting the smooth texture and rich color of the peppers. Clean, modern, e-commerce aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZhwhCVipVpOX8QtoqeL0ZgWDrez42fWgRfUl93QtQR8YKBRpEGDRPmDV1hxaYHVgUmk1zG0awAA-Ojtwk396vpzkmCT98bPpWdtJ92HI9Dss94FLFDdO-ZhGTiI040U867YbwqDqjjw_UAEJ9qYU89URYs3TKmvz1yiMJo12SplHWdrfMqDMUPivh0ujKCwOvlPHX5EaYMhwQQxkDtNHcGTPiNAHeuKIiQJNLKAdw1us7IRAi2Sph-SA9uff13rIF7S3p2-CCFhc"/>
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="text-xs text-on-surface-variant mb-1 line-clamp-1">Chile Jalapeño</span>
+<span class="font-bold text-on-surface">$18.00<span class="text-xs font-normal text-on-surface-variant">/kg</span></span>
+<button class="mt-auto pt-2 text-primary text-sm font-semibold flex items-center gap-1 hover:text-primary-container">
+<span class="material-symbols-outlined text-sm">add_circle</span> Agregar
+                            </button>
+</div>
+</div>
+<!-- Product Card -->
+<div class="min-w-[140px] snap-start bg-surface rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col">
+<div class="h-24 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A bunch of fresh cilantro with bright green leaves tied together, placed on a light neutral background. The lighting is soft and natural, emphasizing the freshness of the herb. High-quality food photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC03tn70DfhgSwSnTQLRXonhIqQ-BoRZAXY0Yyoy2BawB2TCWyAskOBRWf_hM8zyKslL41thwgBiB2C_waoo09h1Y093wTErMcwoeozILKXKCsz1LpqZUACR3mCO2RhfRvH0Q8SwhHbXlUIrJY2grFUjsH6-zs1RMjOykVlUOAmTK81v-SKyuDQPmq30wMGFeLOWf1B0_KSad8tnoOl3wZFxV2wX41fg4IG6Cq9Xh6L67brMO6vlkvJRqhHDjF43U4x0AXzn36NXL8"/>
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="text-xs text-on-surface-variant mb-1 line-clamp-1">Cilantro Fresco</span>
+<span class="font-bold text-on-surface">$8.50<span class="text-xs font-normal text-on-surface-variant">/manojo</span></span>
+<button class="mt-auto pt-2 text-primary text-sm font-semibold flex items-center gap-1 hover:text-primary-container">
+<span class="material-symbols-outlined text-sm">add_circle</span> Agregar
+                            </button>
+</div>
+</div>
+<!-- Product Card -->
+<div class="min-w-[140px] snap-start bg-surface rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col">
+<div class="h-24 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="A halved white onion showing its crisp, layered interior, resting next to a whole white onion on a minimalist grey surface. Crisp lighting highlights the texture and freshness. Clean, commercial food styling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfJO_qHOu0rpl7f_NsF3poTIq26z4kvx-4oC8bX1D5fb2MsuZfBbJMlGm6AqC4oZubN17CvXnLi4vGDlonxB-5CMa98R2d5scEKzG_C9C1pLigmpo59ZIPxBF5Ut8kKc1vXfULP7sBzVXWIqaFp8AA8oKW7rWqjCBBlC3Rzc0nGx1UO3vLKlYTtdQdeymnAtlIqMqLIzMGtSGlWjtiN5DMjY4hXfAuEJ5pLMZYKbW-yQMdt7G6EJ5pMN0z4dJi3r9yvJuk5Dgi5EM"/>
+</div>
+<div class="p-3 flex flex-col flex-grow">
+<span class="text-xs text-on-surface-variant mb-1 line-clamp-1">Cebolla Blanca</span>
+<span class="font-bold text-on-surface">$22.00<span class="text-xs font-normal text-on-surface-variant">/kg</span></span>
+<button class="mt-auto pt-2 text-primary text-sm font-semibold flex items-center gap-1 hover:text-primary-container">
+<span class="material-symbols-outlined text-sm">add_circle</span> Agregar
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Footer -->
+<div class="fixed bottom-0 w-full bg-surface border-t border-outline-variant p-4 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+<div class="max-w-screen-xl mx-auto flex justify-between items-center gap-4">
+<div class="flex flex-col">
+<span class="text-xs text-on-surface-variant uppercase font-semibold">Total</span>
+<span class="font-display font-bold text-xl text-on-surface">$25.50</span>
+</div>
+<button class="flex-grow bg-primary text-on-primary py-3 px-6 rounded-full font-bold font-label flex items-center justify-center gap-2 hover:bg-primary-container active:scale-95 transition-all shadow-md">
+<span class="material-symbols-outlined">shopping_cart</span>
+                Agregar al carrito
+            </button>
+</div>
+</div>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

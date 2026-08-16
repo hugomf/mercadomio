@@ -197,19 +197,19 @@ func TestApplySetRulesNeverNegative(t *testing.T) {
 func TestApplySetsStopFurtherRules(t *testing.T) {
 	pid := primitive.NewObjectID().Hex()
 	first := models.PriceSet{
-		ID:              primitive.NewObjectID(),
-		Name:            "first",
-		Priority:        1,
+		ID:               primitive.NewObjectID(),
+		Name:             "first",
+		Priority:         1,
 		StopFurtherRules: true,
 		Conditions:       models.PriceConditions{CustomerTier: "gold"},
 		Rules:            []models.PriceRule{{Kind: models.RuleKindPercentage, Amount: 10, Scope: models.RuleScopeAll}},
 	}
 	second := models.PriceSet{
-		ID:        primitive.NewObjectID(),
-		Name:      "second",
-		Priority:  2,
+		ID:         primitive.NewObjectID(),
+		Name:       "second",
+		Priority:   2,
 		Conditions: models.PriceConditions{CustomerTier: "gold"},
-		Rules:     []models.PriceRule{{Kind: models.RuleKindAbsolute, Amount: 5, Scope: models.RuleScopeAll}},
+		Rules:      []models.PriceRule{{Kind: models.RuleKindAbsolute, Amount: 5, Scope: models.RuleScopeAll}},
 	}
 	lines := []PricedLine{{ProductID: pid, UnitPrice: 100, Quantity: 1, Subtotal: 100, LineTotal: 100}}
 	pc := PricingContext{CustomerTier: "gold"}
@@ -311,5 +311,94 @@ func TestOrderModelPricingValidate(t *testing.T) {
 	}
 	if err := order.Validate(); err != nil {
 		t.Errorf("discounted order should validate: %v", err)
+	}
+}
+
+func TestRuleMatchesSkuAndCategory(t *testing.T) {
+	catID := primitive.NewObjectID()
+	line := &PricedLine{
+		ProductID:  "p1",
+		VariantID:  "v1",
+		SKU:        "SKU-123",
+		Category:   "groceries",
+		Categories: []string{catID.Hex(), "fresh"},
+	}
+
+	if !ruleMatches(models.PriceRule{Scope: models.RuleScopeSKU, ScopeRefs: []string{"SKU-123"}}, line) {
+		t.Error("sku scope should match line sku")
+	}
+	if ruleMatches(models.PriceRule{Scope: models.RuleScopeSKU, ScopeRefs: []string{"SKU-999"}}, line) {
+		t.Error("sku scope should not match other sku")
+	}
+	if !ruleMatches(models.PriceRule{Scope: models.RuleScopeCategory, ScopeRefs: []string{"groceries"}}, line) {
+		t.Error("category scope should match line category name")
+	}
+	if !ruleMatches(models.PriceRule{Scope: models.RuleScopeCategory, ScopeRefs: []string{catID.Hex()}}, line) {
+		t.Error("category scope should match a line parent category id")
+	}
+	if ruleMatches(models.PriceRule{Scope: models.RuleScopeCategory, ScopeRefs: []string{"electronics"}}, line) {
+		t.Error("category scope should not match unrelated category")
+	}
+}
+
+func TestApplySetsUsageCaps(t *testing.T) {
+	// MaxUses exhausted → set must not apply
+	exhausted := models.PriceSet{
+		ID:        primitive.NewObjectID(),
+		Name:      "exhausted",
+		Priority:  1,
+		MaxUses:   5,
+		UsedCount: 5,
+		Rules:     []models.PriceRule{{Kind: models.RuleKindPercentage, Amount: 10, Scope: models.RuleScopeAll}},
+	}
+	lines := []PricedLine{{ProductID: "p1", UnitPrice: 100, Quantity: 1, Subtotal: 100, LineTotal: 100}}
+	applied, err := applySets([]models.PriceSet{exhausted}, &lines, PricingContext{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(applied) != 0 || lines[0].UnitPrice != 100 {
+		t.Errorf("exhausted set should not apply, got applied=%d unit=%v", len(applied), lines[0].UnitPrice)
+	}
+
+	// within budget → applies
+	exhausted.UsedCount = 4
+	lines = []PricedLine{{ProductID: "p1", UnitPrice: 100, Quantity: 1, Subtotal: 100, LineTotal: 100}}
+	applied, err = applySets([]models.PriceSet{exhausted}, &lines, PricingContext{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(applied) != 1 || lines[0].UnitPrice != 90 {
+		t.Errorf("set within budget should apply, got applied=%d unit=%v", len(applied), lines[0].UnitPrice)
+	}
+}
+
+func TestApplySetsPerCustomerCap(t *testing.T) {
+	// Per-customer cap reached for this customer → set must not apply.
+	set := models.PriceSet{
+		ID:                 primitive.NewObjectID(),
+		Name:               "one-per-customer",
+		Priority:           1,
+		MaxUsesPerCustomer: 1,
+		CustomerUsage:      map[string]int{"cust-1": 1},
+		Rules:              []models.PriceRule{{Kind: models.RuleKindPercentage, Amount: 10, Scope: models.RuleScopeAll}},
+	}
+
+	lines := []PricedLine{{ProductID: "p1", UnitPrice: 100, Quantity: 1, Subtotal: 100, LineTotal: 100}}
+	applied, err := applySets([]models.PriceSet{set}, &lines, PricingContext{CustomerID: "cust-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(applied) != 0 || lines[0].UnitPrice != 100 {
+		t.Errorf("set over per-customer cap should not apply, got applied=%d unit=%v", len(applied), lines[0].UnitPrice)
+	}
+
+	// different customer within budget → applies
+	lines = []PricedLine{{ProductID: "p1", UnitPrice: 100, Quantity: 1, Subtotal: 100, LineTotal: 100}}
+	applied, err = applySets([]models.PriceSet{set}, &lines, PricingContext{CustomerID: "cust-2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(applied) != 1 || lines[0].UnitPrice != 90 {
+		t.Errorf("set within per-customer budget should apply, got applied=%d unit=%v", len(applied), lines[0].UnitPrice)
 	}
 }

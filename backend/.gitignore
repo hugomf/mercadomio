@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+local.env
 
 # Binaries
 server
@@ -28,4 +29,4 @@ vendor/
 .vscode/
 *.swp
 *.swo
- .DS_Store
+.DS_Store

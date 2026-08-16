@@ -272,7 +272,6 @@ class CategoryService extends GetxController {
       }
       throw Exception('Failed to load products');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load products');
       rethrow;
     }
   }

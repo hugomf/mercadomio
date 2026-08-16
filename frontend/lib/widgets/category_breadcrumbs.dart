@@ -9,6 +9,7 @@ class CategoryBreadcrumbs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final CategoryService categoryService = Get.find<CategoryService>();
 
     return Obx(() {
@@ -26,13 +27,13 @@ class CategoryBreadcrumbs extends StatelessWidget {
 
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: Colors.grey[50],
+        color: colorScheme.surfaceContainer,
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.location_on,
               size: 16,
-              color: Colors.grey,
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -44,11 +45,11 @@ class CategoryBreadcrumbs extends StatelessWidget {
                       categoryService.clearSelectedCategories();
                       onBreadcrumbTap();
                     },
-                    child: const Text(
-                      'All',
+                    child: Text(
+                      'Todos',
                       style: TextStyle(
-                        color: Colors.deepPurple,
-                        fontWeight: FontWeight.w500,
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -56,10 +57,10 @@ class CategoryBreadcrumbs extends StatelessWidget {
 
                   // Arrow separator
                   if (selectedCategoryNames.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       ' > ',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -81,19 +82,19 @@ class CategoryBreadcrumbs extends StatelessWidget {
                           },
                           child: Text(
                             categoryName,
-                            style: const TextStyle(
-                              color: Colors.deepPurple,
-                              fontWeight: FontWeight.w500,
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w600,
                               decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
                         // Arrow separator (except for last item)
                         if (index < selectedCategoryNames.length - 1) ...[
-                          const Text(
+                          Text(
                             ' > ',
                             style: TextStyle(
-                              color: Colors.grey,
+                              color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

@@ -64,18 +64,20 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
       // In real app, would emit event or use state management
 
       // Show success message
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Order updated to ${newStatus.displayName}'),
+          content: Text('Pedido actualizado a ${newStatus.displayName}'),
           backgroundColor: newStatus.statusColor,
         ),
       );
     } catch (e) {
       setState(() => _isLoading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update order: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          content: Text('No se pudo actualizar el pedido: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -88,9 +90,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text('Pedido #${order.id.substring(0, 8)}'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
         actions: [
           if (order.canBeCancelled && !_isLoading)
             IconButton(
@@ -100,22 +99,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).primaryColor.withValues(alpha: 0.05),
-              Colors.white,
-            ],
-          ),
-        ),
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Status Card
@@ -142,7 +130,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -284,7 +271,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -295,7 +282,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(8),
             ),
             child: item.imageUrl != null
@@ -308,7 +295,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                           const Icon(Icons.inventory_2),
                     ),
                   )
-                : const Icon(Icons.inventory_2, color: Colors.grey, size: 30),
+                : Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.outline, size: 30),
           ),
           const SizedBox(width: 16),
           // Product details
@@ -329,7 +316,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                 Text(
                   '${item.quantity} × \$${item.price.toStringAsFixed(2)}',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                 ),
@@ -339,10 +326,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
           // Item total
           Text(
             '\$${item.total.toStringAsFixed(2)}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.green,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
         ],
@@ -380,8 +367,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     height: 12,
                     decoration: BoxDecoration(
                       color: timeline.isCompleted
-                          ? Colors.green
-                          : Colors.grey.shade400,
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outlineVariant,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -398,7 +385,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                         Text(
                           timeline.formattedTime,
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
@@ -447,7 +434,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                   Text(
                     item['label'] as String,
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
@@ -476,7 +463,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -495,7 +482,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             onPressed: () {
               // Would integrate with tracking service
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tracking integration coming soon!')),
+                SnackBar(content: Text('La integración de rastreo estará disponible pronto'), backgroundColor: Theme.of(context).colorScheme.tertiary),
               );
             },
             icon: const Icon(Icons.track_changes),
@@ -511,7 +498,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             label: const Text('Solicitar devolución'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
-              side: BorderSide(color: Theme.of(context).primaryColor),
+              side: BorderSide(color: Theme.of(context).colorScheme.primary),
             ),
           ),
         if (order.status == OrderStatus.completed && !_isLoading)
@@ -520,8 +507,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             icon: const Icon(Icons.reorder),
             label: const Text('Reordenar productos'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
+              foregroundColor: Theme.of(context).colorScheme.onTertiary,
               minimumSize: const Size(double.infinity, 48),
             ),
           ),
@@ -534,7 +521,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
             icon: const Icon(Icons.payment),
             label: const Text('Completar pago'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 48),
             ),
@@ -563,7 +550,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
               await _simulateOrderAction(OrderStatus.cancelled);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
               foregroundColor: Colors.white,
             ),
             child: const Text('Cancelar pedido'),

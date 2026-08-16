@@ -58,26 +58,62 @@ class _AdminConsoleHomeState extends State<AdminConsoleHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Order Management'),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
-            onPressed: _toggleTheme,
-            tooltip: 'Toggle dark mode',
-            focusNode: FocusNode(),
-            autofocus: true,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 800;
+
+        if (isDesktop) {
+          // Persistent left sidebar on desktop; the menu button also opens it.
+          return Scaffold(
+            key: _scaffoldKey,
+            appBar: AppBar(
+              title: const Text('Order Management'),
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                  onPressed: _toggleTheme,
+                  tooltip: 'Toggle dark mode',
+                  focusNode: FocusNode(),
+                  autofocus: true,
+                ),
+              ],
+            ),
+            body: const Row(
+              children: [
+                custom.NavigationDrawer(),
+                VerticalDivider(width: 1, thickness: 1),
+                Expanded(child: OrderListScreen()),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: AppBar(
+            title: const Text('Order Management'),
+            leading: IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(_isDarkMode ? Icons.light_mode : Icons.dark_mode),
+                onPressed: _toggleTheme,
+                tooltip: 'Toggle dark mode',
+                focusNode: FocusNode(),
+                autofocus: true,
+              ),
+            ],
           ),
-        ],
-      ),
-      drawer: const custom.NavigationDrawer(),
-      body: const OrderListScreen(),
+          drawer: const custom.NavigationDrawer(),
+          body: const OrderListScreen(),
+        );
+      },
     );
   }
 }

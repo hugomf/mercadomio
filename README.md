@@ -1,8 +1,7 @@
 # MercadoMío 🏪
 
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![Tests](https://img.shields.io/badge/tests-7%2F7%20PASSING-green)
-![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![Tests](https://img.shields.io/badge/unit%20tests-19%20PASSING-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Complete E-commerce Platform 🌟
@@ -35,9 +34,9 @@ A professional **Order Management System** with **Payment Processing** built usi
 - ✅ **Payment Security**: PCI-compliant payment processing
 
 #### 🧪 Quality Assurance
-- ✅ **7/7 Tests Passing**: Comprehensive test coverage
-- ✅ **TDD Development**: Tests-first professional workflow
-- ✅ **Clean Builds**: No warnings, production-ready
+- ✅ Backend unit test suite passing (currently 19)
+- ✅ TDD Development: Tests-first professional workflow
+- ✅ Clean Builds: No warnings, production-ready
 
 ## Architecture Overview
 
@@ -141,7 +140,7 @@ cp .env.example .env
 go mod tidy
 
 # Run tests
-go test ./tests -v
+go test ./services/ ./tests/ -v
 
 # Start server
 go run main.go
@@ -176,7 +175,8 @@ Frontend runs on: http://localhost:3000
 **Run Backend Tests:**
 ```bash
 cd backend
-go test ./tests/order_test.go ./tests/auth_test.go ./tests/category_filter_test.go -v
+go test ./services/ -v       # unit tests (no external services required)
+go test ./tests/ -v          # integration tests (requires local MongoDB)
 ```
 
 **Run Frontend Tests:**
@@ -210,11 +210,10 @@ flutter test
 
 **Backend (.env):**
 ```bash
-MONGODB_URI=mongodb://localhost:27017
+MONGO_URI=mongodb://localhost:27017
 REDIS_ADDR=localhost:6379
-STRIPE_SECRET_KEY=sk_test_your_stripe_key
-STRIPE_PUBLIC_KEY=pk_test_your_stripe_key
 JWT_SECRET=your_secret_key
+# Payment provider keys — see backend/.env.example for the full list
 ```
 
 **Stripe Setup:**
@@ -236,7 +235,7 @@ To run backend tests and see coverage:
 
 ```bash
 cd backend
-go test -coverprofile=coverage.out ./fragments
+go test -coverprofile=coverage.out ./...
 go tool cover -func=coverage.out
 ```
 

@@ -186,7 +186,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     // Verify our main widgets exist
-    expect(find.text('Tianguis Botis'), findsOneWidget);
+    expect(find.text('Mercadomio'), findsWidgets);
     expect(find.byType(Scaffold), findsWidgets);
   });
 }

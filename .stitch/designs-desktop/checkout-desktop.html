@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finalizar Compra - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#446741",
+                        "surface-bright": "#f6fbf0",
+                        "on-primary-fixed-variant": "#005313",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "tertiary-fixed": "#ffd9e2",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dfe4d9",
+                        "surface-tint": "#006e1c",
+                        "tertiary-container": "#c04c76",
+                        "primary": "#006b1b",
+                        "inverse-surface": "#2c322a",
+                        "surface": "#f6fbf0",
+                        "surface-variant": "#dfe4d9",
+                        "on-primary-fixed": "#002204",
+                        "tertiary": "#a0335d",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "on-surface-variant": "#3f4a3d",
+                        "on-secondary-fixed": "#012104",
+                        "background": "#f6fbf0",
+                        "on-primary-container": "#f7fff1",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "inverse-on-surface": "#edf3e7",
+                        "surface-container-low": "#f0f5ea",
+                        "surface-container": "#eaf0e4",
+                        "primary-fixed": "#98f994",
+                        "surface-container-high": "#e5eadf",
+                        "on-tertiary-container": "#fffbff",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#181d16",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "inverse-primary": "#7ddc7a",
+                        "on-secondary": "#ffffff",
+                        "outline": "#6f7a6b",
+                        "on-background": "#181d16",
+                        "secondary-container": "#c2eaba",
+                        "on-secondary-container": "#486b45",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#c5edbd",
+                        "on-tertiary-fixed": "#3f001c",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#268630",
+                        "surface-dim": "#d6dcd1",
+                        "outline-variant": "#bfcab9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": [
+                            "Inter", "sans-serif"
+                        ],
+                        "display": [
+                            "Inter", "sans-serif"
+                        ],
+                        "body": [
+                            "Inter", "sans-serif"
+                        ],
+                        "label": [
+                            "Public Sans", "sans-serif"
+                        ]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #bfcab9;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased pb-24 md:pb-0">
+<!-- Top Navigation Bar - Explicitly excluded per instructions as this is a transactional page -->
+<!-- Although the prompt asks for a checkout page, which is a transactional flow, the TopAppBar was present in the shared components list, however the "Semantic Shell Mandate" specifically says to suppress the navigation shell for Linear/Transactional flows like Checkout. I will omit the standard nav and instead use a simplified, minimal header to maintain focus on the transaction. -->
+<header class="bg-surface-container-lowest shadow-sm sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+<a class="text-2xl font-headline font-black text-primary flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+                Mercadomio
+            </a>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm font-label">
+<span class="material-symbols-outlined text-outline">lock</span>
+<span>Pago Seguro</span>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 md:px-6 py-8">
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" class="flex text-sm text-on-surface-variant font-label mb-6">
+<ol class="inline-flex items-center space-x-1 md:space-x-3">
+<li class="inline-flex items-center">
+<a class="inline-flex items-center hover:text-primary transition-colors" href="#">
+                        Inicio
+                    </a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Carrito</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-on-surface font-medium">Finalizar Compra</span>
+</div>
+</li>
+</ol>
+</nav>
+<!-- Header -->
+<div class="mb-8">
+<h1 class="text-3xl md:text-4xl font-headline font-bold text-on-surface mb-2">Finalizar Compra</h1>
+<p class="text-on-surface-variant font-label">5 productos en tu carrito</p>
+</div>
+<div class="flex flex-col lg:flex-row gap-8 relative">
+<!-- Left Column (Main Content) -->
+<div class="w-full lg:w-2/3 space-y-6">
+<!-- Delivery Section -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 p-6">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-xl font-headline font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+                            Entrega a domicilio
+                        </h2>
+<button class="text-primary hover:text-primary-container text-sm font-label font-medium transition-colors">Editar</button>
+</div>
+<div class="bg-surface-container-low rounded-lg p-4 border border-primary/20 relative">
+<div class="absolute -left-[1px] top-4 w-1 h-12 bg-primary rounded-r-full"></div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5" style="font-variation-settings: 'FILL' 1;">home</span>
+<div>
+<p class="font-medium text-on-surface">Casa - Principal</p>
+<p class="text-on-surface-variant text-sm mt-1">Calle Morelos 123, Polanco, CDMX</p>
+<p class="text-outline text-xs mt-1">Referencia: Portón verde</p>
+</div>
+</div>
+</div>
+<button class="mt-4 flex items-center justify-center gap-2 w-full py-3 border border-dashed border-outline text-on-surface-variant hover:text-primary hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-label text-sm">
+<span class="material-symbols-outlined text-lg">add</span>
+                        Agregar nueva dirección
+                    </button>
+</section>
+<!-- Payment Method Section -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 p-6">
+<h2 class="text-xl font-headline font-semibold flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">credit_card</span>
+                        Método de pago
+                    </h2>
+<div class="space-y-3">
+<!-- Credit Card Option (Selected) -->
+<label class="flex items-center justify-between p-4 bg-surface-container-low border border-primary rounded-lg cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input checked="" class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment" type="radio"/>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">payments</span>
+                                        Tarjeta de Crédito/Débito
+                                    </span>
+<span class="text-sm text-on-surface-variant mt-0.5">Termina en •••• 4242</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">check_circle</span>
+</label>
+<!-- Cash Option -->
+<label class="flex items-center justify-between p-4 bg-surface-container-lowest border border-outline-variant/50 hover:bg-surface-container-low rounded-lg cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment" type="radio"/>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">money</span>
+                                        Efectivo al recibir
+                                    </span>
+</div>
+</div>
+</label>
+<!-- OXXO Pay Option -->
+<label class="flex items-center justify-between p-4 bg-surface-container-lowest border border-outline-variant/50 hover:bg-surface-container-low rounded-lg cursor-pointer transition-all">
+<div class="flex items-center gap-3">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment" type="radio"/>
+<div class="flex flex-col">
+<span class="font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">store</span>
+                                        OXXO Pay
+                                    </span>
+</div>
+</div>
+</label>
+</div>
+<!-- Additional Notes -->
+<div class="mt-6">
+<label class="block text-sm font-medium text-on-surface-variant mb-2" for="notes">Notas adicionales (opcional)</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-shadow" id="notes" placeholder="Ej. Tocar el timbre dos veces, dejar con el portero..." rows="2"></textarea>
+</div>
+</section>
+<!-- Security Badge -->
+<div class="flex items-center justify-center gap-2 py-4 text-sm text-on-surface-variant bg-surface-container-low rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-primary">shield</span>
+<span>Pago 100% seguro y encriptado</span>
+</div>
+</div>
+<!-- Right Column (Sticky Sidebar) -->
+<div class="w-full lg:w-1/3">
+<div class="sticky top-24 space-y-6">
+<section class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 p-6 flex flex-col">
+<h2 class="text-xl font-headline font-semibold mb-6 pb-4 border-b border-outline-variant/30">Resumen de tu pedido</h2>
+<!-- Order Items -->
+<div class="space-y-4 mb-6 max-h-[409px] overflow-y-auto custom-scrollbar pr-2">
+<!-- Item 1 -->
+<div class="flex gap-4 items-center">
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-variant shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Close up photography of fresh, vibrant red saladet tomatoes on a clean, light surface. The lighting is soft and natural, emphasizing the dew drops on the tomatoes. The overall aesthetic is fresh, clean, and appetizing, fitting a modern Mexican grocery marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9ZS31isjrL8z2i4rHD2x9ov9N9APpLLAgcm0p3LPMPro6rU3pRmfEdLs-SoIyq4BnFpAE5Aey-ItzDRv3DfAosXFNTperQ_YW5d0OsybzGrpWuqMD95HK5jFmLkOZt6S4A53uvhA9fRG0ZnI0S-rWNOYMTHcplgTbjtTkww_u24SAMwfR6EX8L9vjuF36THEgyXNopI8TL9M_UXnwFZ2sfuFSRB0Buws2Q9hS3id1aN5l1EwX4qV-3rG2QaFbnJRogybSLDS-yn0"/>
+<span class="absolute -top-1 -right-1 bg-surface-variant text-on-surface text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">1</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-medium text-on-surface line-clamp-2">Tomates Saladet Fresh</h4>
+<p class="text-primary font-semibold mt-1">$45.00</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4 items-center">
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-variant shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="High quality studio photography of a perfectly ripe Hass avocado cut in half, revealing the vibrant green flesh and brown pit. The background is a warm, bright white. The mood is fresh, healthy, and premium, aligning with a high-end fresh produce delivery service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB33AznX8H0qzq1Wol946oBGNYLyG4EWStyNEfhTZ9MGpKAemHV5ziDHPrcCxQYoWMhgK8L0sUVOtbaNteqs7MmEAgkOrFL_liJtG13z6L19DtHn2aRTmTq9DZolhZ1bBcSXbpV8z1GF7Dmib2sYYOVTzb6iQWpFoyjiSQ_7TxAUAAHKylc0esAkLfqmaOtEcOUNcnMce-aAK2PyTzQsqtRbffmfvt6W5KfAGvDW2heKTVpqHE7ysPmhn9k5FBQ395-M2SIeP66k0E"/>
+<span class="absolute -top-1 -right-1 bg-surface-variant text-on-surface text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">1</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-medium text-on-surface line-clamp-2">Aguacate Hass Primera</h4>
+<p class="text-primary font-semibold mt-1">$85.50</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-4 items-center">
+<div class="w-16 h-16 rounded-lg overflow-hidden bg-surface-variant shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="A clean, modern carton of fresh whole milk sitting on a light, warm-toned countertop. The lighting is bright and inviting, suggesting morning freshness. The aesthetic is crisp and wholesome, perfectly suited for an online grocery store catalog." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCt1BY_z5kRW0lnRhOUIxRPur4gq09AxYWt8w9TiEVRO4uVuewxLBCavP56tnEDpPYfBVqoktVbc-sMfrbHeUBTwvyUJpnr69XbhNS9fSAteHeU5Xk2hRLZjx_Xuu8Ggrsl8JDe-J3L581gQGG3BFbrFfDxb652ojazY56FINndVqkAsdPiaMV1h7-KOMV_J6dyQfV_KNwfFJUYyKZRocGMl1J6HLNAY_jcLovYHm9hrRezsWeDwM3Sy25wz2UiSM3dK8htPIq0G70"/>
+<span class="absolute -top-1 -right-1 bg-surface-variant text-on-surface text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">2</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-medium text-on-surface line-clamp-2">Leche Entera Fresca</h4>
+<p class="text-primary font-semibold mt-1">$54.00</p>
+</div>
+</div>
+</div>
+<!-- Coupon Button -->
+<button class="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary-container transition-colors mb-6 py-2">
+<span class="material-symbols-outlined text-lg">local_offer</span>
+                            Agregar cupón de descuento
+                        </button>
+<!-- Financial Breakdown -->
+<div class="space-y-3 text-sm border-t border-outline-variant/30 pt-4">
+<div class="flex justify-between text-on-surface-variant">
+<span>Subtotal</span>
+<span>$287.50</span>
+</div>
+<div class="flex justify-between text-tertiary">
+<span>Descuento</span>
+<span>-$10.00</span>
+</div>
+<div class="flex justify-between text-primary font-medium">
+<span>Envío</span>
+<span>Gratis</span>
+</div>
+<div class="flex justify-between items-center text-lg font-headline font-bold text-on-surface pt-4 border-t border-outline-variant/30 mt-2">
+<span>Total</span>
+<span>$277.50</span>
+</div>
+</div>
+<!-- Desktop Confirm Button (Hidden on Mobile, shown in Bottom Bar) -->
+<div class="hidden md:block mt-6">
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-4 px-6 rounded-lg shadow-sm transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                                Confirmar pedido
+                                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<p class="text-center text-xs text-on-surface-variant mt-3 flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]">undo</span>
+                                Regresa fácilmente si necesitas cambiar algo
+                            </p>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Fixed Bar (Only visible on small screens) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] p-4 md:hidden z-50">
+<div class="flex justify-between items-center mb-3">
+<div>
+<p class="text-xs text-on-surface-variant">Total a pagar</p>
+<p class="text-xl font-headline font-bold text-on-surface">$277.50</p>
+</div>
+<span class="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span>
+                Envío gratis
+            </span>
+</div>
+<button class="w-full bg-primary text-on-primary font-bold py-3 rounded-lg shadow-sm transition-colors active:bg-primary-container flex justify-center items-center gap-2">
+            Confirmar pedido
+        </button>
+</div>
+<!-- Footer Area (Simplified for checkout) -->
+<footer class="mt-12 bg-surface-container-high py-8 px-6 text-center border-t border-outline-variant/30">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+<span class="text-xl font-headline font-bold text-secondary">Mercadomio</span>
+<p class="text-sm font-label text-on-surface-variant">© 2024 Mercadomio. Sabor a México.</p>
+</div>
+</footer>
+</body></html>

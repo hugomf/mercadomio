@@ -61,6 +61,7 @@ class ProductSearchControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final padding = _getPadding(context, base: 16);
     final smallPadding = _getPadding(context, base: 8);
     final isDesktop = ResponsiveBreakpoints.of(context).isDesktop || ResponsiveBreakpoints.of(context).isTablet;
@@ -79,24 +80,17 @@ class ProductSearchControls extends StatelessWidget {
               controller: searchController,
               onChanged: onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Search products...',
+                hintText: 'Buscar productos...',
                 hintStyle: TextStyle(fontSize: _getFontSize(context, base: isDesktop ? 16 : 14)),
                 prefixIcon: Icon(Icons.search, size: _getIconSize(context, base: isDesktop ? 22 : 20)),
                 suffixIcon: searchController.text.isNotEmpty
                   ? IconButton(
                       key: const Key('search_clear_button'),
                       icon: Icon(Icons.close, size: _getIconSize(context, base: isDesktop ? 20 : 18)),
-                      tooltip: 'Clear search',
+                      tooltip: 'Limpiar búsqueda',
                       onPressed: onClearSearch,
                     )
                   : SizedBox(width: _getPadding(context, base: 48)),
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: _getPadding(context, base: isDesktop ? 14 : 12),
-                  horizontal: _getPadding(context, base: 16),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(_getPadding(context, base: 8)),
-                ),
               ),
               style: TextStyle(fontSize: _getFontSize(context, base: isDesktop ? 16 : 14)),
             ),
@@ -107,7 +101,7 @@ class ProductSearchControls extends StatelessWidget {
             height: _getPadding(context, base: isDesktop ? 48 : 44),
             width: isDesktop ? null : _getPadding(context, base: 48),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(_getPadding(context, base: 8)),
             ),
             child: PopupMenuButton<String>(
@@ -117,14 +111,14 @@ class ProductSearchControls extends StatelessWidget {
                 PopupMenuItem(
                   value: 'basePrice_asc',
                   child: Text(
-                    'Price ↑ Low to High',
+                    'Precio ↑ Más baratos',
                     style: TextStyle(fontSize: _getFontSize(context, base: isDesktop ? 16 : 14)),
                   ),
                 ),
                 PopupMenuItem(
                   value: 'basePrice_desc',
                   child: Text(
-                    'Price ↓ High to Low',
+                    'Precio ↓ Más caros',
                     style: TextStyle(fontSize: _getFontSize(context, base: isDesktop ? 16 : 14)),
                   ),
                 ),
@@ -136,7 +130,7 @@ class ProductSearchControls extends StatelessWidget {
           Container(
             height: _getPadding(context, base: isDesktop ? 48 : 44),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(_getPadding(context, base: 8)),
             ),
             child: Row(
@@ -146,23 +140,23 @@ class ProductSearchControls extends StatelessWidget {
                     Icons.grid_view,
                     size: _getIconSize(context, base: isDesktop ? 22 : 20),
                     color: currentViewMode == 'card'
-                      ? Colors.deepPurple
-                      : Colors.grey,
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   onPressed: () => onViewModeChanged('card'),
                 ),
                 Container(
                   width: 1,
                   height: _getPadding(context, base: 20),
-                  color: Colors.grey[300],
+                  color: colorScheme.outlineVariant,
                 ),
                 IconButton(
                   icon: Icon(
                     Icons.list,
                     size: _getIconSize(context, base: isDesktop ? 22 : 20),
                     color: currentViewMode == 'list'
-                      ? Colors.deepPurple
-                      : Colors.grey,
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),
                   onPressed: () => onViewModeChanged('list'),
                 ),

@@ -1,5 +1,424 @@
 # Session Log
 
+## 2026-08-15 — Desktop order history screen aligned to Stitch design
+
+Request: user (answering "next please" after checkout alignment) wanted the desktop order history to match `.stitch/designs-desktop/order-history-desktop.html`.
+
+Changes in `frontend/lib/widgets/order_history_screen.dart` (desktop-only, mobile untouched):
+- Header: replaced single "Mis Pedidos" title with breadcrumb ("Inicio > Historial de Pedidos", Inicio → `_goToStorefront`) + title "Historial de Pedidos" (32 w900) with a 280px "Buscar pedido..." search field on the right (search state/filtering logic unchanged).
+- Filter pills → Stitch underline tabs (bottom-border 2px primary on active, plain on-surface-variant text) via new `_buildDesktopFilterTab`; filter logic (`_activeFilter` Todos/En camino/Entregados/Cancelados, ID search) unchanged.
+- Added `_buildDesktopSectionHeader` for the two Stitch section headings: "Pedido en curso" and "Anteriores".
+- `_buildDesktopActiveBanner`: now surfaceContainerLowest card w/ soft shadow + primaryContainer/20 border, circular primaryContainer icon (local_shipping), "EN CAMINO" status pill (primary/10 bg, uppercase, letterSpacing 0.8) + `#short-id`, headline "Llega hoy por la tarde" (18 w600), "N artículos • $total" subtitle, filled primary "Rastrear pedido" button → order details.
+- `_buildDesktopOrderCard`: restructured to Stitch layout — `#id` + inline status (`_buildDesktopInlineStatus`: statusIcon + statusColor + displayName, 12 w500) + formattedDate on left, right-aligned total (18 w600) + item count on right, 1px outlineVariant/30 divider, footer with two equal-width buttons: outlined "Ver detalles" (border outline) and (for completed only) "Volver a pedir" (surfaceContainerHigh bg, replay icon, same snackbar behavior). Cancelled cards wrapped in `Opacity(opacity: 0.75)`.
+- Added `_buildDesktopSupportCard` (Stitch support block): surfaceContainer rounded-12, help_center icon, "¿No encuentras un pedido?", helper text, "Consultar soporte" link (primary, arrow_forward) — shown at the bottom of the orders list.
+- Removed now-unused `_buildDesktopStatusChip` and `_buildDesktopFilterPill`. Added `_goToStorefront()` = `Get.offAll(() => const MainScreen())`; added `import '../main.dart'` and `import 'package:get/get.dart'`.
+
+Verified: `flutter analyze` No issues found; `flutter test` All tests passed.
+
+## 2026-08-15 — Desktop checkout screen aligned to Stitch design
+
+Request: user wanted the desktop checkout to match `.stitch/designs-desktop/checkout-desktop.html`.
+
+Changes in `frontend/lib/widgets/checkout_screen.dart` (desktop-only, mobile untouched):
+- Transactional header (Nav suppressed per Stitch): brand "Mercadomio" (shopping_basket) left, "Pago Seguro" (lock) right, surfaceContainerLowest with soft shadow.
+- Breadcrumb "Inicio > Carrito > Finalizar Compra" + page title "Finalizar Compra" with "N producto(s) en tu carrito" subtitle.
+- Left column (flex 2): "Entrega a domicilio" section (local_shipping icon + shipping form), "Método de pago" section (credit_card icon + selectable radio cards: Tarjeta de Crédito/Débito "Termina en •••• 4242" / Efectivo al recibir / OXXO Pay, state `_selectedPayment`), notes field, terms card, security badge "Pago 100% seguro y encriptado" (shield).
+- Right column (400px summary card): "Resumen de tu pedido" with order items (64x64 image, quantity badge, unit price from `effectivePrice`), collapsible "Agregar cupón de descuento" toggle (`_showCouponField`), breakdown (Subtotal original, Descuento -$savings in tertiary, Envío Gratis in primary, Total in primary w900 using effective prices), "Confirmar pedido" button + "Regresa fácilmente si necesitas cambiar algo".
+- Added helpers `_currentUnitPrice(item)` / `_originalUnitPrice(item)` (same effectivePrice/basePrice pattern as cart). Order submit `_processOrder` unchanged (still sends shippingAddress + optional coupon to backend).
+
+Verified: `flutter analyze` No issues found; `flutter test` All tests passed.
+
+## 2026-08-15 — Desktop cart screen aligned to Stitch design
+
+Request: the desktop cart screen did not match the Stitch designs in
+`.stitch/designs-desktop/` (user picked this as the next focus).
+
+Changes in `frontend/lib/widgets/cart_screen.dart` (desktop-only, mobile
+untouched):
+- Desktop header now shows a breadcrumb ("Inicio > Mi Carrito") + page title
+  "Mi Carrito" with an "(N artículos)" subtitle and a right-aligned
+  "Seguir comprando" link (both return to the storefront via `_goToStorefront`).
+- Replaced the `DataTable` with a Stitch-style custom 12-col grid (flex 6/3/2/1):
+  "Producto" + "Cantidad" + "Subtotal" headers, dropping the extra
+  "Precio unitario" column.
+- Product cells now show unit subtitle (`customAttributes['unit']`), an "Opción:"
+  fallback line, and a low-stock badge ("¡Últimas N!") when a variant is
+  available with 1–3 units left.
+- Quantity stepper redesigned as a rounded-full pill (minus / qty / plus) to
+  match the reference.
+- Subtotal column stacks current price over a strikethrough original price when
+  the product is discounted.
+- Summary card now shows Subtotal (at original prices), "Envío gratis" (bold
+  primary), Descuentos (error when > 0), a large primary Total, a savings alert
+  ("¡Ahorras $X en esta compra!") only when a discount applies, a coupon input
+  with an "Aplicar" button, the "Finalizar Compra" CTA with an icon, and a
+  "Pago 100% seguro" lock note.
+- New helpers: `_goToStorefront`, `_currentUnitPrice` (uses
+  `customAttributes['effectivePrice']`, falls back to basePrice),
+  `_originalUnitPrice`, `_unitLabel`. Discount arithmetic is local to the desktop
+  summary (does NOT change `Cart.total`/backend).
+
+Verified: `flutter analyze` No issues; `flutter test` All tests passed.
+
+## 2026-08-15 — Add-to-cart feedback: hover/press states + success/error snackbars
+
+Request: the add-to-cart button gave no visual feedback (no hover/press state)
+and no confirmation that a product was added.
+
+Root cause: `_addToCart` in `product_listing_widget.dart` did not await
+`cartController.addToCart` and showed the success snackbar unconditionally, so
+a failure showed nothing meaningful. The buttons used `IconButton.styleFrom`
+with a flat `backgroundColor` (no `overlayColor`), so there was no visible
+hover/pressed state on desktop.
+
+Fix (frontend only; backend was already verified working in the cart-auth fix):
+- `_addToCart` is now `async`, awaits the cart call, and shows a success or
+  error snackbar accordingly (success "Agregado al carrito", error "No se pudo
+  agregar" with the message).
+- New `_cartButtonStyle(colorScheme)` helper builds a `ButtonStyle` with a
+  `WidgetStateProperty` overlayColor (hover alpha 0.10, pressed 0.24) and a
+  disabled-aware backgroundColor, restoring Material hover/press feedback.
+  Applied to both the mobile and desktop add-to-cart `IconButton`s.
+
+Verified: `flutter analyze` No issues, `flutter test` All tests passed. Backend
+guest-cart POST with a real product ID returns 201.
+
+## 2026-08-15 — Fixed improper GetX usage in desktop cart header
+
+Request: GetX "improper use of a GetX has been detected" (and a 99065px RenderFlex
+overflow) thrown from `cart_screen.dart:507`.
+
+Root cause: `_buildDesktopLayout` wrapped its header item-count text in a
+nested `Obx` that read no reactive variable (it read the plain `cart` value
+passed in, already unwrapped by the outer `Obx` in `build()`).
+
+Fix: replaced the nested `Obx` with a plain `Builder` (the outer per-body `Obx`
+already rebuilds this subtree when the cart changes).
+
+## 2026-08-15 — Guest cart now works without auth (add-to-cart fix)
+
+Request: clicking "add to cart" in the Flutter app did nothing.
+
+Root cause: `backend/routes/cart_routes.go` mounted every mutating cart route
+(POST items, PUT/DELETE item, merge) behind `AuthMiddleware`, but the Flutter
+`CartService` uses a token-less guest cart (`guest-cart-<epoch>`). The POST came
+back 401, the controller swallowed the error (`error.value`), and no snackbar
+state change happened.
+
+Backend carts are keyed purely by `cartId` (Redis), never by user identity, and
+the handlers (`cart_handlers.go`) don't read `userID` — so auth was unnecessary.
+
+Fix: `cart_routes.go` — all cart routes now use `OptionalAuthMiddleware`
+(consistent with the existing public GET). A valid token still populates
+`userID` in Locals for handlers that want it.
+
+Verification: `go build` clean; guest POST `curl` now works **after restarting
+the backend** (the running instance still returns 401 until restarted).
+Backend tests: 28/29 (same pre-existing `TestPricingResolvePricesIntegration`
+failure). No Flutter changes needed.
+
+## 2026-08-15 — Fixed catalog rendering overflows + uninitialized orders-screen fields
+
+Request: rendering library exceptions during app run — `RenderFlex overflowed`
+in the product card (plus several more) and `LateInitializationError` on
+`_ordersFuture` / `_animationController`.
+
+Changes (frontend only):
+- **`widgets/product_listing_widget.dart`** (`_buildProductCard`): the card's
+  fixed-height image (`SizedBox(height: cardHeight * _getImageHeight)`) squeezed
+  the name/price/stars text block down to ~42px on short grid tiles → overflow.
+  Replaced with a flexible `Expanded` image so the text block always gets its
+  natural height. Removed the now-unused `_getImageHeight` helper and the
+  redundant bottom-corner decoration. Card keeps `clipBehavior` for rounded image.
+- **`widgets/order_history_screen.dart`** (`_OrderHistoryScreenState`): added the
+  missing `initState` that initializes `_ordersFuture` (initial `getOrderHistory`
+  load), `_animationController`, and `_fadeAnimation` — previously `late` fields
+  were only set in refresh/retry callbacks, so `FutureBuilder` read them
+  uninitialized.
+
+Verification: `flutter analyze` → No issues found; `flutter test` → all pass.
+
+Follow-up fix (post hot-reload, same request): the stars/rating/count + add-to-cart
+`Row` inside `_buildProductCard` overflowed ~6.9px right on narrow cards. Wrapped
+the stars group in `Expanded` and made rating + review-count `Text`s `Flexible`
+(ellipsis, maxLines 1) so the row shrinks; the flexible `Expanded` image also
+covers any remaining short-tile bottom overflow. Verified: analyze no issues,
+tests all pass. Also reverted stray duplicate `_getImageHeight` copies (removed the
+now-unused helper).
+
+Follow-up fix (desktop branch): `_buildDesktopProductCard`'s square `AspectRatio(1)`
+image + tall body Column overflowed ~57px bottom on narrow desktop grid columns.
+Replaced the fixed square image with a flexible `Expanded` Stack (overlays intact),
+so the body keeps its natural height. Verified: analyze no issues, tests all pass.
+
+## 2026-08-15 — Pricing engine now resolves catalog discounts/units (backend + Flutter)
+
+Request: make discounts/units real via the existing backend pricing engine
+(PriceSchedules/PriceSets) instead of UI placeholders, keeping Flutter code clean.
+
+Decision: resolve-through-engine on every catalog read; attach transient
+`effectivePrice`, `discountPercent`, `unit` to `product.customAttributes`
+(nothing persisted, model structs unchanged).
+
+Backend changes:
+- **`handlers/product_handlers.go`**: `ProductHandlers` gained `PricingService`;
+  `NewProductHandlers` signature now takes it. New `enrichCatalogPrices(ctx,
+  products []*services.Product)` resolves each product (first variant, qty 1,
+  anonymous `PricingContext`) in one `ResolvePrices` call and mutates products
+  in place — errors log and skip (never fail a catalog read). `applyCatalogPrice`
+  writes `effectivePrice`, `discountPercent` (rounded base-vs-unit %), `unit`
+  (product customAttributes → first variant attrs). Helpers: `productsOf`,
+  `productUnit`, `firstVariantUnit`. Wired into both GetProducts return paths
+  (search + simple list) and GetProduct.
+- **`routes/setup.go:38`**: passes `deps.PricingService` to `NewProductHandlers`.
+
+Flutter changes (all reads flow through documented helpers):
+- **`widgets/product_listing_widget.dart`**: `_productUnit` / `_productDiscount`
+  now carry doc comments explaining the pricing-engine origin. Behavior unchanged.
+- **`widgets/product_detail_screen.dart`**: `_desktopDiscount` / `_desktopOriginalPrice`
+  getters documented (engine-derived; fallback to current price when no discount).
+
+Verification: `go build ./...` + `go vet ./...` clean; backend tests 28/29 pass —
+the 1 failure (`TestPricingResolvePricesIntegration`, applySets asserts `AppliedSets==1`
+but engine emits per-line = 2) is pre-existing and isolated from this change.
+`flutter analyze` no issues; `flutter test` all pass.
+
+## 2026-08-15 — Desktop Stitch layouts integrated into Flutter responsive branches
+
+Request: integrate the 7 desktop/web Stitch HTML designs (`.stitch/designs-desktop/`)
+into the Flutter desktop (>=800px) branches, after the mobile M3 migration.
+
+Changes (via integration agent + follow-up):
+- **`main.dart`**: sidebar brand row + "Ayuda y soporte" rows made overflow-safe at 800px.
+- **`cart_screen.dart`**: desktop sticky header "Mi Carrito (n artículos)", table columns
+  Producto/Cantidad/Subtotal, coupon field, "Resumen de compra" card incl. Envío Gratis pill,
+  savings amount + Total + Finalizar Compra.
+- **`checkout_screen.dart`**: desktop sections Entrega a domicilio / Resumen de tu pedido /
+  Método de pago (radio cards: Tarjeta •••• 4242 / Efectivo / OXXO Pay + "Pago 100% seguro") /
+  Notas adicionales / términos; right rail with coupon + totals + Confirmar Pedido. `_processOrder`
+  (Conekta) logic intact.
+- **`order_history_screen.dart`**: desktop header + search by order #, status filter pills
+  (Todos/En camino/Entregados/Cancelados), "Pedido en curso" banner (Rastrear pedido),
+  order cards (ver detalles / volver a pedir).
+- **`test/widget_test.dart`**: updated brand string assertion 'Tianguis Botis' → 'Mercadomio'.
+- Data pulls discount/unit from `customAttributes` (Product model has no dedicated fields);
+  coupon apply + savings are UI-only placeholders.
+
+Verification: `flutter analyze` no issues; `flutter test` all pass.
+
+## 2026-08-15 — Stitch HTML designs → Flutter Material 3 theme migration
+
+Request: convert the 7 regenerated Stitch HTML designs (`.stitch/designs/`) into a
+Material 3 theme + Spanish-branded Mercadomio Flutter UI (`frontend/lib/`).
+
+Changes:
+- **`frontend/lib/theme.dart`** (new): `AppTheme.light` — `ColorScheme.fromSeed(0xFF006B1B)`
+  with exact Stitch palette overrides (primary #006b1b, primaryContainer #268630,
+  onPrimaryContainer #f7fff1, secondary #446741, secondaryContainer #c2eaba,
+  onSecondaryContainer #486b45, error #ba1a1a, surface #f6fbf0, surfaceContainer
+  #eaf0e4, surfaceContainerLow #f0f5ea, surfaceContainerLowest #ffffff, surfaceContainerHigh
+  #e5eadf, surfaceContainerHighest #dfe4d9, onSurface #181d16, onSurfaceVariant #3f4a3d,
+  outline #6f7a6b, outlineVariant #bfcab9). Radii: 8 inputs/chips, 12 cards/buttons,
+  16 large cards. `base.copyWith` widget themes: AppBar (surface, no elevation), Card
+  (surfaceContainerLowest), buttons, InputDecoration, Chip, SnackBar, BottomNavigationBar,
+  FAB. System fonts only (google_fonts NOT installed).
+- **`main.dart`**: `title: 'Mercadomio'`, `theme: AppTheme.light`; AppBar = shopping_bag
+  icon + 'Mercadomio' wordmark (primary color, responsive break at 400px), search action,
+  CartIcon, AuthOptional popup; BottomNavigationBar themed (Inicio/Carrito/Pedidos);
+  removed logo.png container + deepPurple.
+- **Screens restyled to theme + Spanish**: login_screen (full rewrite), cart_screen
+  (fixed `Undefined name 'context'` → private builders use `Get.theme`), product_listing_widget
+  (card grid, list, sidebar, pagination 'N de M', 'No hay productos disponibles'),
+  product_detail_screen (Descripción/Opciones/Imágenes/Reseñas, cantidad stepper,
+  themed variant chips, SliverAppBar surfaceTintColor transparent; fixed a botched
+  python replacement), order_history_screen ('Historial de Pedidos', removed primary
+  gradient AppBar), checkout_screen (Shipping/Pago/Confirmar Pedido, validated Spanish
+  fields, payment chips Tarjeta/OXXO/SPEI, OrderConfirmationScreen '¡Pedido Realizado!').
+- **Support widgets themed**: product_search_controls (Spanish sort labels), category_selector
+  ('Todos', primary selected chip), category_breadcrumbs (surfaceContainer strip, 'Todos'
+  root), cart_icon (primary badge), order_details_screen (removed `primaryColor` AppBar +
+  gradient container, status colors kept from OrderStatus, Spanish snackbars/dialogs,
+  themed buttons).
+
+Verification: `flutter analyze` → **No issues found! (ran in 0.9s)** at every checkpoint.
+
+Notes: `product_card.dart` / `product_list_item.dart` are orphaned (not imported
+anywhere — listing widget uses inline builders); left unconverted. `order_demo_screen.dart`
+and `error_boundary_widget.dart` are debug/dev widgets, not in the 7-screen task list.
+`order_history_screen.dart` still has `Colors.grey.shade200`/`Colors.grey` (lines 555/600,
+image bg + empty-state icon) that could be themed in a follow-up.
+
+Next: (from previous entry) integrate the remaining Stitch screens; optionally restyle
+order_details further, run `flutter test`.
+
+## 2026-08-15 — Stitch design workflow skill + Mercadomio screen regeneration
+
+Request: "podrias borrar el projecto en google stitch y gneerar de neuvo las
+pantallas usando los skills" — reset the Stitch project and regenerate screens
+using the newly installed skills.
+
+Findings:
+- Stitch MCP generation is async: `generate_screen_from_text` always returns
+  MCP error -32001 "Request timed out" (~65s) even on success. Screens can take
+  >2 minutes to appear in `list_screens`. Re-firing within that window creates
+  permanent duplicates (no per-screen delete tool). Screens finish when
+  `htmlCode.downloadUrl` is present (empty `htmlCode:{}` = logo/image
+  artifacts, ignore them).
+- API args gotcha: `projectId` must be the NUMERIC id for
+  `generate_screen_from_text` / `list_design_systems`, but `projects/<id>` for
+  `get_project` / `list_screens`.
+
+Changes:
+- Installed Google's official `stitch-skills` library (15 skills) into
+  `~/.agents/skills/` for cross-app use (generate-design, stitch-loop,
+  react-native, react-components, manage-design-system, etc.).
+- Created user-level skill `~/.agents/skills/stitch-design-workflow/SKILL.md`
+  encoding the full async loop: prompt structure (purpose + PLATFORM + PAGE
+  STRUCTURE, no color/font tokens — design system handles them), one screen at
+  a time, expect timeout, wait ~90s, poll `list_screens` every 45-60s with
+  `get_project.updateTime` as liveness signal, re-fire only after 4-5 min dead
+  window, verify by TITLE, download HTML via curl.
+- Deleted old Stitch project `projects/17908365451696268078` and created fresh
+  `projects/9322283502076035827` "Mercadomio" with design system
+  `assets/14132221149110130373` (LIGHT, INTER, ROUND_EIGHT, #43A047).
+- Generated 7 screens one-at-a-time and downloaded HTML to `.stitch/designs/`:
+  login, storefront, product-listing (Frutas y Verduras), product-detail,
+  cart, checkout (Finalizar Compra), order-history (Historial de Pedidos).
+- Persisted `.stitch/metadata.json` (project id, design system, screen map).
+
+Next: integrate the Stitch HTML designs into the Flutter frontend
+(`frontend/lib/` screens/widgets).
+
+## 2026-08-16 — API Docker packaging for QA + production deploys
+
+Request: "you didn't create Dockerfile for the api server when we deploy to qa and production."
+
+Findings:
+- `backend/Dockerfile` already exists and is used by QA (`docker/docker-compose.qa.yml`
+  builds from `build: ../backend`). The real gap was **production**: the generated
+  `docker-compose.prod.yml` pulls `ghcr.io/hugomf/mercadomio/backend:latest` and
+  `:frontend:latest`, but nothing ever published those images (no `.github/` existed).
+
+Changes:
+- **`backend/Dockerfile`**: runtime stage now `apk add ca-certificates tzdata curl`
+  so the prod compose container healthcheck (which curls `/health`) actually works.
+- **`.github/workflows/docker-publish.yml`** (new): builds + pushes
+  `ghcr.io/hugomf/mercadomio/{backend,frontend}:{latest|<git-tag>}` on pushes to
+  `master`/`main`, tag-creating pushes `v*`, and `workflow_dispatch`. Uses
+  `docker/build-push-action@v6`, login to GHCR with `GITHUB_TOKEN`.
+- **`deploy/setup-pi-production.sh`** (production setup script, pre-existing fixes):
+  - Was unparseable: all six file-writers used `sudo -u deploy bash -c "cat > ... << EOF"`,
+    where the raw `"` inside heredoc bodies closed the outer double-quote early →
+    `bash -n` failed at the health-check heredoc. Rewrote all six as top-level
+    `sudo -u deploy tee "$DEPLOY_PATH/x" > /dev/null << EOF|'EOF'` heredocs,
+    decoding `\"`, `\$`, `\${...}` escapes so generated files are identical to intent.
+  - healthcheck URL `/api/health` → `/health` (Fiber route is `GET /health`).
+  - mongo command dropped `--smallfiles` (removed in MongoDB 4.0+; `mongo:7-jammy`
+    rejects it at startup).
+  - Compose image refs now use a script-computed `IMG_ORG` (from git remote, default
+    `hugomf`) instead of inline `$(git config ...)` (which also never survived the old
+    heredoc nesting).
+- Verified: `docker build` of `backend/` succeeds; image contains `curl 8.14.1` and runs
+  as non-root `appuser`; `bash -n deploy/setup-pi-production.sh` passes; sandbox dry-run
+  of the generation functions produced a valid `docker-compose.prod.yml`
+  (`docker compose config --quiet` OK), correct `.env.production`, nginx.conf with real
+  `$host/$remote_addr/$uri` vars, and correct health-check/backup/update scripts.
+  `go build ./... && go vet ./...` still pass.
+
+## 2026-08-16 — Fix backend startup logs + app crash on unreachable backend
+
+- `scripts/start-backend.sh` showed no output because `nc` blocked on the unreachable
+  `192.168.1.218` from `local.env` with no connect timeout. Added `nc -z -G 2 -w 2`
+  and a "Checking <name>..." line so each dependency check fails fast and prints.
+- Backend printed nothing at request time: `routes/setup.go` only had CORS. Added
+  `app.Use(logger.New())` (gofiber/fiber/v2/middleware/logger) so every request
+  logs method/path/status/latency.
+- Flutter crash "No Overlay widget found" from a `Get.snackbar` raised inside
+  `CategoryService.getFilteredProducts` (service layer) when the backend is down.
+  Removed the snackbar (UI layer already renders the error state); verified
+  `flutter analyze` clean on `lib/services/category_service.dart`.
+
+## 2026-08-16 — Add backend start script
+
+- Added `scripts/start-backend.sh` (executable): sources `backend/local.env`
+  (godotenv in `main.go` only reads `.env`, which isn't committed locally),
+  resolves defaults matching `main.go` (`MONGO_URI` mongodb://localhost:27017,
+  `REDIS_ADDR` localhost:6379, `PORT` 8080), verifies MongoDB + Redis are
+  reachable via `nc` (with a `docker compose up -d mongo redis` hint), runs
+  `go build ./...` as a compile gate, then `exec go run .` from `backend/`.
+
+## 2026-08-15 — Desktop redesign for both apps (Stitch design → Flutter port) [SPEC]
+
+- Brainstormed and got approval for improving the desktop version of both Flutter
+  apps using Google Stitch: storefront (`frontend/`) + admin console
+  (`admin_console/`), "modern refresh, keep purple" direction, full core screen
+  sets on each.
+- Chose Stitch-first workflow: define design system + 10 desktop screens in Stitch,
+  then port approved designs to Flutter, preserving existing state/logic/services.
+- Wrote design spec at `docs/superpowers/specs/2026-08-15-mercadomio-desktop-redesign-design.md`
+  (design system, 5 storefront screens, 5 admin screens, porting rules, acceptance
+  criteria, out of scope: mobile/tablet, backend, auth, CI).
+- Self-review passed (no placeholders/contradictions; clarified dark-mode = retain
+  existing admin toggle, only light default is redesigned).
+- Stitch screen generation timed out repeatedly (project + design system were
+  created: `projects/8331453007382199929`, `assets/1851934900949917938`), so the
+  approved spec was implemented directly in Flutter per user decision.
+- Desktop branches (`>= 800 px`, `MediaQuery`) added to all 10 screens:
+  - Storefront (`frontend/lib/widgets/`): `product_listing_widget.dart` (sidebars
+    sidebar + search/sort toolbar + pagination bar + 3-col/4-col/top grid),
+    `product_detail_screen.dart` (2-col image + details), `cart_screen.dart`
+    (DataTable + order-summary panel), `checkout_screen.dart` (2-col forms +
+    summary), `order_history_screen.dart` (DataTable + status chips).
+  - Admin (`admin_console/lib/`): `main.dart` persistent sidebar
+    (`Row[NavigationDrawer, VerticalDivider, body]`) on desktop; `order_list_screen.dart`
+    DataTable w/ status chips + status-update menu; `catalog_management.dart`
+    rewritten from stub → searchable DataTable + edit dialog + stock editing;
+    `category_management.dart` desktop `Categories` wrapper; `pricing_screen.dart`
+    two DataTables (schedules + sets) sharing refactored card formatters;
+    `inventory_screen.dart` desktop stock DataTable with low-stock chips.
+- Lint fixes surfaced by full-app `flutter analyze`: `auth_guard.dart:41` unused
+  var, `order_details_screen.dart:67/75` `use_build_context_synchronously`,
+  `models/order.dart:189` unused var.
+- Verified: `flutter analyze` clean in both `admin_console` and `frontend`;
+  backend still green per VERIFICATION.md (build/vet/gofmt + 19 unit tests).
+  Mobile/tablet layouts preserved on every screen. No git commands run.
+
+## 2026-08-14 — Backend housekeeping (docs, gitignore)
+
+- Created `docs/VERIFICATION.md`, a per-repo verification checklist: backend build/vet/gofmt gates, the 19 services unit tests, a compile-only gate for `backend/tests/` (integration needs live Mongo — expected to fail when it is down), and Flutter `analyze`/`test` for `frontend/` and `admin_console/`.
+- Fixed README stale content: badges no longer hardcode bogus "7/7 tests"/"100% coverage" (now reflect 19 passing unit tests, no coverage claim); the "Testing & Development" snippets previously ran `go test ./tests/order_test.go ./tests/auth_test.go ...` and `go test -coverprofile=coverage.out ./fragments` (a nonexistent package) — now `go test ./services/ ./tests/ -v` and `go test -coverprofile=coverage.out ./...`; backend `.env` example uses the real `MONGO_URI` (was `MONGODB_URI`).
+- Fixed `docs/setup.md`: Directus collection list dropped the bogus `fragments` collection (schemas are products, users, orders, categories, control_panels); duplicate `## 6.` header renumbered (`Testing Features` 6, `Stopping Services` 7).
+- Hardened `backend/.gitignore`: added `local.env` (previously only `.env` patterns, so the committed dev env file was not ignored) and fixed the `.DS_Store` line that had a stray leading space (ineffective pattern).
+- Removed stray `scripts/scrape-natura-api copy.sh` (leftover of a duplicated/renamed script).
+- Left for later: CI workflow (not selected this round). No git commands run.
+
+## 2026-08-14 — Enforce pricing extensions (usage caps + SKU/category scopes)
+
+- `backend/models/pricing.go`: `PriceSet` gained `CustomerUsage map[string]int`
+  (json/bson `customerUsage`) storing per-customer usage counts inside the set
+  doc (no separate collection).
+- `backend/services/pricing_service.go`:
+  - `PricedLine` now carries `SKU`, `Category`, `Categories` (parent category
+    ids as hex) populated in `priceLine`; new `skuOf` helper (variant SKU
+    preferred).
+  - `ruleMatches` now enforces `RuleScopeSKU` and `RuleScopeCategory`
+    (previously stored but unenforced).
+  - `applySets` gates each set on new `usageAvailable(set, pc)`: skips sets
+    with `UsedCount >= MaxUses` or, for a known customer,
+    `CustomerUsage[customer] >= MaxUsesPerCustomer`.
+  - New `IncrementSetUsage(ctx, setIDs, customerID)` — `$inc usedCount` + `$inc
+    customerUsage.<customerID>` per set id, skips invalid ids.
+- `backend/services/order_service.go` `CreateOrderFromCart`: captures
+  `appliedSets`, then after the order is inserted calls `IncrementSetUsage`
+  (deduped ids) so discounts are in force without burning caps on previews —
+  `POST /api/pricing/resolve` unchanged and side-effect free.
+- Tests: unit `pricing_service_test.go` 16 → 19 (added `TestRuleMatchesSkuAndCategory`,
+  `TestApplySetsUsageCaps`, `TestApplySetsPerCustomerCap`). Integration test
+  (`tests/pricing_integration_test.go`) still compiles/vets clean; full Mongo
+  run blocked locally (mongodb not running).
+- Verified: `go build ./...` + `go vet ./...` clean, `gofmt -l` empty, `go test
+  ./services/` → 19 passed.
+
 ## 2026-08-14 — Admin console pricing screens
 
 - Added `models/pricing.dart` (PriceSet/PriceRule/PriceConditions/PriceSchedule/

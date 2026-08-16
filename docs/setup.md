@@ -33,7 +33,7 @@ docker-compose up --build
 - Log in with:
   - Email: admin@mercadomio.mx
   - Password: admin123
-- Create collections for products, users, orders, fragments, control_panels (matching the provided schemas).
+- Create collections for products, users, orders, categories, control_panels (matching the provided schemas).
 - Use Directus’s content builder to add fields as per the MongoDB schemas in /backend/schemas.
 
 ## 4. MongoDB
@@ -53,7 +53,7 @@ docker-compose up --build
   curl "http://localhost:8080/api/products?sort=createdAt&order=desc"
   ```
 
-## 6. Stopping Services
+## 7. Stopping Services
 ```
 docker-compose down
 ```

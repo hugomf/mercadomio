@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../theme.dart';
 import '../services/auth_service.dart';
 
 
@@ -44,11 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (success) {
           Get.snackbar(
-            'Success',
-            'Login successful!',
+            '¡Bienvenido!',
+            'Inicio de sesión exitoso',
             snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
+            backgroundColor: Get.theme.colorScheme.primary,
+            colorText: Get.theme.colorScheme.onPrimary,
           );
 
           // Navigate to main screen
@@ -58,11 +59,11 @@ class _LoginScreenState extends State<LoginScreen> {
         // For now, navigate to home after "register"
         // In a real app, this would register the user
         Get.snackbar(
-          'Success',
-          'Registration successful!',
+          '¡Listo!',
+          'Registro exitoso',
           snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          backgroundColor: Get.theme.colorScheme.primary,
+          colorText: Get.theme.colorScheme.onPrimary,
         );
         // TODO: Implement register flow
       }
@@ -71,8 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'Error',
         e.toString(),
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
       );
     } finally {
       _isLoading.value = false;
@@ -84,132 +85,366 @@ class _LoginScreenState extends State<LoginScreen> {
     _formKey.currentState?.reset();
   }
 
+  /// Returns to the storefront. Pops the current route if one exists,
+  /// otherwise falls back to the home screen.
+  void _goBack() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      Get.offAllNamed('/');
+    }
+  }
+
+  /// Small back button shown at the top-left corner so the user can
+  /// return to the storefront without navigating away.
+  Widget _backButton() {
+    return Positioned(
+      top: 8,
+      left: 8,
+      child: IconButton(
+        tooltip: 'Volver a la tienda',
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _goBack,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+
+    if (isDesktop) {
+      return Scaffold(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Obx(() => Form(
+                      key: _formKey,
+                      child: _buildFormCard(colorScheme),
+                    )),
+                  ),
+                ),
+              ),
+              _backButton(),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Obx(() => Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo/Title
-                const Center(
-                  child: Text(
-                    'Mercado Mío',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 440),
+                  child: Obx(() => Form(
+                    key: _formKey,
+                    child: _buildMobileForm(colorScheme),
+                  )),
                 ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    _isLogin.value ? 'Sign In' : 'Create Account',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // Email Field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!GetUtils.isEmail(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Password Field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 24),
-
-                // Submit Button
-                ElevatedButton(
-                  onPressed: _isLoading.value ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: _isLoading.value
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(_isLogin.value ? 'Sign In' : 'Create Account'),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Toggle Mode
-                TextButton(
-                  onPressed: _toggleMode,
-                  child: Text(
-                    _isLogin.value
-                        ? 'Don\'t have an account? Sign Up'
-                        : 'Already have an account? Sign In',
-                    style: TextStyle(color: Colors.deepPurple),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Demo Account Hint
-                const Center(
-                  child: Text(
-                    'Demo: Use any email/password to sign in',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
+              ),
             ),
-          )),
+            _backButton(),
+          ],
         ),
       ),
+    );
+  }
+
+  /// Desktop (>=800px) login card layout.
+  Widget _buildFormCard(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.onSurface.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(
+            child: Text(
+              'Mercadomio',
+              style: TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+                color: AppTheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Text(
+              _isLogin.value ? 'Iniciar sesión' : 'Crear cuenta',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Ingresa a tu cuenta para continuar',
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'Correo electrónico',
+              prefixIcon: Icon(Icons.mail_outline),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Ingresa tu correo electrónico';
+              }
+              if (!GetUtils.isEmail(value)) {
+                return 'Ingresa un correo válido';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Contraseña',
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Ingresa tu contraseña';
+              }
+              if (value.length < 6) {
+                return 'La contraseña debe tener al menos 6 caracteres';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _isLoading.value ? null : _submitForm,
+            icon: _isLoading.value
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.login),
+            label: Text(
+              _isLogin.value ? 'Iniciar sesión' : 'Crear cuenta',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Divider with "o"
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'o',
+                    style: TextStyle(
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: _isLoading.value ? null : _toggleMode,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: colorScheme.outline),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            ),
+            icon: const Icon(Icons.person_add_alt),
+            label: Text(
+              _isLogin.value ? 'Crear cuenta nueva' : 'Iniciar sesión',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: _isLoading.value ? null : _toggleMode,
+              child: Text(
+                _isLogin.value
+                    ? '¿Ya tienes cuenta? Inicia sesión'
+                    : '¿No tienes cuenta? Regístrate',
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              'Demo: usa cualquier correo y contraseña',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mobile (<800px) login form layout.
+  Widget _buildMobileForm(ColorScheme colorScheme) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Brand logo/title
+        const Center(
+          child: Text(
+            'Mercadomio',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Center(
+          child: Icon(
+            Icons.shopping_bag,
+            size: 40,
+            color: colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Center(
+          child: Text(
+            _isLogin.value ? 'Ingresa a tu cuenta' : 'Crea tu cuenta',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        // Email Field
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            labelText: 'Correo electrónico',
+            prefixIcon: Icon(Icons.email),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Ingresa tu correo electrónico';
+            }
+            if (!GetUtils.isEmail(value)) {
+              return 'Ingresa un correo válido';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        // Password Field
+        TextFormField(
+          controller: _passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Contraseña',
+            prefixIcon: Icon(Icons.lock),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Ingresa tu contraseña';
+            }
+            if (value.length < 6) {
+              return 'La contraseña debe tener al menos 6 caracteres';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 24),
+        // Submit Button
+        ElevatedButton(
+          onPressed: _isLoading.value ? null : _submitForm,
+          child: _isLoading.value
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(_isLogin.value ? 'Ingresar' : 'Crear cuenta'),
+        ),
+        const SizedBox(height: 16),
+        // Toggle Mode
+        TextButton(
+          onPressed: _toggleMode,
+          child: Text(
+            _isLogin.value
+                ? '¿No tienes cuenta? Regístrate'
+                : '¿Ya tienes cuenta? Inicia sesión',
+          ),
+        ),
+        const SizedBox(height: 24),
+        // Demo Account Hint
+        const Center(
+          child: Text(
+            'Demo: usa cualquier correo y contraseña',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }

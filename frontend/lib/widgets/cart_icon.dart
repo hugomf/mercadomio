@@ -9,6 +9,7 @@ class CartIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final CartController cartController = Get.find<CartController>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Obx(() {
       final itemCount = cartController.cart.value?.itemCount ?? 0;
@@ -27,7 +28,7 @@ class CartIcon extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 constraints: const BoxConstraints(

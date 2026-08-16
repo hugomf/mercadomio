@@ -445,9 +445,9 @@ func (s *PaymentService) HandleConektaWebhook(ctx context.Context, payload []byt
 		Type string `json:"type"`
 		Data struct {
 			Object struct {
-				ID     string `json:"id"`
-				Status string `json:"status"`
-				Amount int    `json:"amount"`
+				ID      string `json:"id"`
+				Status  string `json:"status"`
+				Amount  int    `json:"amount"`
 				Charges struct {
 					Data []struct {
 						ID            string `json:"id"`

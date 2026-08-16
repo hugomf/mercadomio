@@ -186,7 +186,6 @@ class OrderResponse {
 
   // Status tracking for timeline UI
   List<OrderStatusTimeline> get statusTimeline {
-    final now = DateTime.now();
     final timeline = <OrderStatusTimeline>[];
 
     // Add statuses based on current order status
