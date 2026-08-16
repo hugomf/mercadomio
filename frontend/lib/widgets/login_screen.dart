@@ -20,6 +20,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _isLoading = false.obs;
   final _isLogin = true.obs; // true for login, false for register
 
+  /// Whether the password field is hidden (matches the Stitch visibility toggle).
+  bool _obscurePassword = true;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -125,10 +128,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: Obx(() => Form(
-                      key: _formKey,
-                      child: _buildFormCard(colorScheme),
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Obx(() => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildBrandHeader(colorScheme),
+                        const SizedBox(height: 32),
+                        Form(
+                          key: _formKey,
+                          child: _buildFormCard(colorScheme),
+                        ),
+                      ],
                     )),
                   ),
                 ),
@@ -163,6 +173,38 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// Brand mark displayed above the login card on wide screens.
+  Widget _buildBrandHeader(ColorScheme colorScheme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.shopping_bag,
+            size: 26,
+            color: colorScheme.onPrimaryContainer,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          'Mercadomio',
+          style: TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.5,
+            color: colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Desktop (>=800px) login card layout.
   Widget _buildFormCard(ColorScheme colorScheme) {
     return Container(
@@ -183,18 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(
-            child: Text(
-              'Mercadomio',
-              style: TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
-                color: AppTheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Center(
             child: Text(
               _isLogin.value ? 'Iniciar sesión' : 'Crear cuenta',
@@ -236,10 +266,17 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
               labelText: 'Contraseña',
-              prefixIcon: Icon(Icons.lock_outline),
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                tooltip: _obscurePassword ? 'Mostrar contraseña' : 'Ocultar contraseña',
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                ),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -251,7 +288,17 @@ class _LoginScreenState extends State<LoginScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _isLoading.value ? null : _toggleMode,
+              child: Text(
+                _isLogin.value ? '¿Olvidaste tu contraseña?' : '¿Ya tienes cuenta? Inicia sesión',
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: _isLoading.value ? null : _submitForm,
             icon: _isLoading.value
@@ -295,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
           OutlinedButton.icon(
             onPressed: _isLoading.value ? null : _toggleMode,
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: colorScheme.outline),
+              side: BorderSide(color: colorScheme.outline, width: 2),
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             ),
             icon: const Icon(Icons.person_add_alt),
@@ -304,27 +351,6 @@ class _LoginScreenState extends State<LoginScreen> {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: _isLoading.value ? null : _toggleMode,
-              child: Text(
-                _isLogin.value
-                    ? '¿Ya tienes cuenta? Inicia sesión'
-                    : '¿No tienes cuenta? Regístrate',
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'Demo: usa cualquier correo y contraseña',
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
