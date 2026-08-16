@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Historial de Pedidos - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#486b45",
+                        "secondary-container": "#c2eaba",
+                        "secondary-fixed": "#c5edbd",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#ffd9e2",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed-variant": "#005313",
+                        "surface-dim": "#d6dcd1",
+                        "secondary": "#446741",
+                        "surface-variant": "#dfe4d9",
+                        "surface-container-low": "#f0f5ea",
+                        "surface-container-high": "#e5eadf",
+                        "on-surface-variant": "#3f4a3d",
+                        "on-background": "#181d16",
+                        "inverse-on-surface": "#edf3e7",
+                        "background": "#f6fbf0",
+                        "surface-container": "#eaf0e4",
+                        "surface-bright": "#f6fbf0",
+                        "outline": "#6f7a6b",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "inverse-surface": "#2c322a",
+                        "surface-tint": "#006e1c",
+                        "on-primary-container": "#f7fff1",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "tertiary-container": "#c04c76",
+                        "inverse-primary": "#7ddc7a",
+                        "on-tertiary-fixed": "#3f001c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dfe4d9",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "outline-variant": "#bfcab9",
+                        "tertiary": "#a0335d",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#268630",
+                        "primary-fixed": "#98f994",
+                        "primary": "#006b1b",
+                        "on-tertiary-container": "#fffbff",
+                        "on-secondary-fixed": "#012104",
+                        "on-primary-fixed": "#002204",
+                        "surface": "#f6fbf0",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#181d16",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "on-error-container": "#93000a",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#2d4e2b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen antialiased flex flex-col pt-16 pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface-dim shadow-sm flex justify-between items-center px-4 h-16 max-w-md mx-auto left-0 right-0">
+<button class="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-100 text-primary dark:text-primary-fixed-dim">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline text-headline-sm font-bold text-on-surface text-lg truncate flex-1 text-center px-2">Historial de Pedidos</h1>
+<button class="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-100 text-primary dark:text-primary-fixed-dim">
+<span class="material-symbols-outlined">search</span>
+</button>
+</header>
+<main class="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-8 space-y-6">
+<!-- Status Filter Tabs -->
+<section class="overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
+<div class="flex space-x-2 w-max">
+<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-surface-container-high text-on-surface-variant">Todos</button>
+<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-primary text-on-primary shadow-sm">En camino</button>
+<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-surface-container-high text-on-surface-variant">Entregados</button>
+<button class="px-4 py-1.5 rounded-full text-sm font-medium transition-colors bg-surface-container-high text-on-surface-variant">Cancelados</button>
+</div>
+</section>
+<!-- Active Order Banner -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container-highest p-5 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/20 rounded-bl-full -z-10"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline font-bold text-lg text-on-surface">Pedido en curso</h2>
+<p class="text-sm text-on-surface-variant mt-1">Llega hoy 2:00 PM</p>
+</div>
+<div class="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span>
+<span>En camino</span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="py-4 px-2 mb-4">
+<div class="relative flex justify-between items-center w-full">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-surface-container-high -z-10 rounded-full"></div>
+<!-- Line filled to step 3 -->
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-[66%] h-1 bg-primary -z-10 rounded-full"></div>
+<!-- Step 1: Confirmed -->
+<div class="flex flex-col items-center group cursor-pointer relative">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<!-- Step 2: Preparing -->
+<div class="flex flex-col items-center group cursor-pointer relative">
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+</div>
+</div>
+<!-- Step 3: On the way (Active) -->
+<div class="flex flex-col items-center group cursor-pointer relative">
+<div class="w-8 h-8 rounded-full bg-primary-container border-2 border-primary flex items-center justify-center text-on-primary-container shadow-md ring-4 ring-surface-container-lowest -mt-1">
+<span class="material-symbols-outlined text-[16px]">local_shipping</span>
+</div>
+<span class="text-[10px] font-bold text-primary mt-2 absolute top-full whitespace-nowrap">En camino</span>
+</div>
+<!-- Step 4: Delivered -->
+<div class="flex flex-col items-center group cursor-pointer relative">
+<div class="w-6 h-6 rounded-full bg-surface-container-high border-2 border-outline-variant flex items-center justify-center text-outline shadow-sm ring-4 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-[14px]">home</span>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2.5 bg-secondary-container text-on-secondary-container rounded-lg font-medium text-sm flex items-center justify-center space-x-2 hover:bg-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>Rastrear pedido</span>
+</button>
+</section>
+<!-- Order List -->
+<section class="space-y-4">
+<h3 class="font-headline font-semibold text-base text-on-surface mt-2 mb-3">Historial</h3>
+<!-- Order Card 1 -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant/50 p-4 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-3 border-b border-surface-container pb-3">
+<div>
+<h4 class="font-bold text-on-surface">Pedido #8429</h4>
+<p class="text-xs text-on-surface-variant">12 Nov 2024</p>
+</div>
+<span class="bg-secondary-container/50 text-on-secondary-container px-2.5 py-0.5 rounded text-xs font-medium border border-secondary-container">
+                        Entregado
+                    </span>
+</div>
+<div class="flex items-center space-x-3 mb-4">
+<div class="flex -space-x-2">
+<img class="w-10 h-10 rounded-full border-2 border-surface-container-lowest object-cover" data-alt="A macro studio shot of fresh organic Roma tomatoes (Tomates Saladet) resting on a pristine white surface. The tomatoes are intensely vibrant red, exhibiting a plump, appetizing texture with delicate green stems attached. The lighting is high-key and soft, creating subtle natural shadows that emphasize their round form. The composition follows a clean, minimalist, light-mode Mexican grocery aesthetic with a focus on fresh produce." src="https://lh3.googleusercontent.com/aida/AP1WRLtfv76mtjHRlsmhMPFMJd_NKdyX79JINCMmfrTIHbVqN0hmCv32EJxmr0xHriLBL4MoX1u6ZOvpaJFIcy7QdgKFa8L6vEVVSa7QZ1YCiNNujCgcSGdPxHnPGClgCgapWPgfq3FNZQZiXDfPfERepC28GJK3_5GcGeb2z2b_0T150AjJB89y96XPhRBj0SkD0X8-R-SjHbNsmz-tCGNF9nCgzVtNKQWYDwX51H0jzoen_KZanQSAa-RH2w"/>
+<div class="w-10 h-10 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center overflow-hidden" data-alt="A macro shot of a single perfectly ripe Hass avocado, sliced in half to reveal its vibrant, creamy green interior and intact pit, set against a bright, minimalist white background. The image is brightly lit to evoke freshness and vitality, aligning with a warm, friendly Mexican grocery aesthetic. The lighting creates gentle, soft shadows that anchor the subject on the clean surface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAqUvCYiir3rskg_NybJhMje1P3LX2CpeFHK4NHuMySUaTrvlcl085xN2SrEsNxPc-gQYocZzDJj3AquZSlyswMGA-_jLFEgwJM8_MGTPtfKXK7rA9h3IMsGvo96UgEYN_vgBl3XiIfK4sEKyzpneTtUaMInl50s-8-dOrmiewuN8Kk7qd_4GYXNZ3D1y7fUW-2EPl9ofF3favy5bOe-ILxqXEFuzKBYQ_622B6PwAuyc1dONUY9xAtjYxneFkTGNLZolW6Lqtt7Ek')"></div>
+<div class="w-10 h-10 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center overflow-hidden" data-alt="A close-up studio photograph of a freshly baked artisanal Mexican bolillo bread roll on a stark white surface. The crust is golden brown and perfectly textured, indicating crispness, while suggesting a soft interior. The bright, even lighting highlights the bread's details and casts a very subtle shadow, reinforcing a clean, high-end marketplace aesthetic. The composition is focused entirely on the bread, maintaining a warm and appetizing mood." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCUghBWzks1QhfBugf3SEC53i89LuyqYmiPzaT0r79hIwi-PwDr_6f-4KuR6NF9voOK94YIGyB-weKkzOmksgH7Ue9cKh5pLl2fNHScos6V38abdw_vmePJXcTUnsGFzlRtLndY7VLhVIr_TOjWaP3TaQVMASIUL94yblIPcpHBNV8ZhuekYD4z1Be2i7VpPu6bsSF4ozItMG7locdxn-PpAKt5QpSJfy03e4W-AlZ6_bPM9KzxcXd47HMuYfpKZpHaXdvTUrxfwzE')"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">5 artículos</p>
+<p class="text-sm font-bold text-primary">$277.50</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<a class="text-sm font-medium text-primary hover:text-primary-container transition-colors px-2 py-1" href="#">Ver detalles</a>
+<button class="px-4 py-1.5 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary-container/10 transition-colors">
+                        Volver a pedir
+                    </button>
+</div>
+</article>
+<!-- Order Card 2 -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-variant/50 p-4 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-3 border-b border-surface-container pb-3">
+<div>
+<h4 class="font-bold text-on-surface">Pedido #7912</h4>
+<p class="text-xs text-on-surface-variant">05 Nov 2024</p>
+</div>
+<span class="bg-error-container/50 text-error px-2.5 py-0.5 rounded text-xs font-medium border border-error-container">
+                        Cancelado
+                    </span>
+</div>
+<div class="flex items-center space-x-3 mb-4">
+<div class="flex -space-x-2 opacity-75 grayscale-[20%]">
+<div class="w-10 h-10 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center overflow-hidden" data-alt="A studio shot of a classic glass bottle of fresh milk placed next to a small wedge of traditional Mexican queso fresco, set against a pristine, soft white background. The bright, high-key lighting creates a fresh, clean, morning marketplace mood. Subtle, diffuse shadows ground the items. The overall palette is muted whites and soft creams, fitting a minimalist e-commerce grocery context." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDKf-pNOtPExrpnReJ1kBlFlG-V_3RvakuPkRaZlYXZjI2x0H-L9gy5JHdMfKEBhGTJpurRCi21L0BAvmr0qVoANHeC59rr-WZl7m2qMiwofZnQ5TFhhegEcz0gCU1klgwJLArTHw6ZFGtesmsxUMloQ2Jb037-rUGAnvDU2jz-Vkn_vTfDl6uuj1I1qzi_ZAq4LXRDtWQK5eruoX56wURJWs92JM1ORyD8p8iwakMT9OISvcaWwCSLexM_7Y8jpWaur1pDZ3Z9FoI')"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">2 artículos</p>
+<p class="text-sm font-bold text-on-surface-variant">$115.00</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<a class="text-sm font-medium text-primary hover:text-primary-container transition-colors px-2 py-1" href="#">Ver detalles</a>
+</div>
+</article>
+</section>
+<!-- Empty State / Support -->
+<section class="text-center pt-6 pb-4">
+<p class="text-sm text-on-surface-variant">¿No encuentras un pedido?</p>
+<a class="inline-flex items-center space-x-1 text-sm font-bold text-primary mt-1 hover:underline" href="#">
+<span>Consultar soporte</span>
+<span class="material-symbols-outlined text-[16px]">help</span>
+</a>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 right-0 w-full flex justify-around items-center px-2 py-3 bg-surface-container dark:bg-surface-container-lowest shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-50 rounded-t-xl max-w-md mx-auto hidden md:hidden flex">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label text-[10px] font-medium mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+<span class="font-label text-[10px] font-medium mt-1">Categories</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_basket</span>
+<span class="font-label text-[10px] font-medium mt-1">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label text-[10px] font-medium mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="font-label text-[10px] font-medium mt-1">Profile</span>
+</a>
+</nav>
+<div class="fixed bottom-0 left-0 right-0 w-full flex justify-around items-center px-2 py-3 bg-surface-container dark:bg-surface-container-lowest shadow-[0_-2px_10px_rgba(0,0,0,0.05)] z-50 rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label text-[10px] font-medium mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+<span class="font-label text-[10px] font-medium mt-1">Categories</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_basket</span>
+<span class="font-label text-[10px] font-medium mt-1">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label text-[10px] font-medium mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="font-label text-[10px] font-medium mt-1">Profile</span>
+</a>
+</div>
+</body></html>

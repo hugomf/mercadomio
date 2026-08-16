@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/admin_inventory_service.dart';
+import '../widgets/navigation_drawer.dart' as custom;
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -109,37 +110,151 @@ class _InventoryScreenState extends State<InventoryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null && _products.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text('Could not load inventory'),
-            const SizedBox(height: 4),
-            Text(
-              _error!,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(onPressed: _load, child: const Text('Retry')),
-          ],
+      return Scaffold(
+        appBar: AppBar(title: const Text('Inventory')),
+        drawer: const custom.NavigationDrawer(),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              const Text('Could not load inventory'),
+              const SizedBox(height: 4),
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(onPressed: _load, child: const Text('Retry')),
+            ],
+          ),
         ),
       );
     }
     if (_products.isEmpty) {
-      return const Center(
-        child: Text('No products yet'),
+      return Scaffold(
+        appBar: AppBar(title: const Text('Inventory')),
+        drawer: const custom.NavigationDrawer(),
+        body: const Center(
+          child: Text('No products yet'),
+        ),
       );
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: _products.length,
-        itemBuilder: (context, index) => _buildProductCard(_products[index]),
+    final isDesktop = MediaQuery.of(context).size.width >= 800;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Inventory')),
+      drawer: const custom.NavigationDrawer(),
+      body: isDesktop
+          ? RefreshIndicator(
+              onRefresh: _load,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: _buildDesktopStockTable(context),
+                  ),
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _products.length,
+                itemBuilder: (context, index) => _buildProductCard(_products[index]),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildDesktopStockTable(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: DataTable(
+        headingRowHeight: 48,
+        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        dataRowMinHeight: 60,
+        dataRowMaxHeight: 72,
+        columns: const [
+          DataColumn(label: Text('Product')),
+          DataColumn(label: Text('Variant')),
+          DataColumn(label: Text('SKU')),
+          DataColumn(label: Text('Stock')),
+          DataColumn(label: Text('')),
+        ],
+        rows: [
+          for (final product in _products)
+            ...product.variants.isEmpty
+                ? [
+                    DataRow(
+                      cells: [
+                        DataCell(Text(product.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold))),
+                        const DataCell(Text('—')),
+                        DataCell(Text(product.sku)),
+                        const DataCell(Text('0')),
+                        const DataCell(SizedBox()),
+                      ],
+                    ),
+                  ]
+                : [
+                    for (final variant in product.variants)
+                      DataRow(
+                        cells: [
+                          DataCell(Text(product.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold))),
+                          DataCell(Text('Variant ${variant.variantId}',
+                              style: const TextStyle(fontSize: 14))),
+                          DataCell(Text(variant.sku.isEmpty ? '—' : variant.sku,
+                              style: const TextStyle(fontSize: 14))),
+                          DataCell(
+                            _stockBubble(variant.stock),
+                          ),
+                          DataCell(
+                            IconButton(
+                              tooltip: 'Edit stock',
+                              icon: const Icon(Icons.edit_outlined, size: 20),
+                              onPressed: () => _editStock(product, variant),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+        ],
+      ),
+    );
+  }
+
+  Widget _stockBubble(int stock) {
+    final lowStock = stock <= 5;
+    final color = stock <= 0
+        ? Colors.red
+        : lowStock
+            ? Colors.orange
+            : Colors.green;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '$stock',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: color,
+        ),
       ),
     );
   }

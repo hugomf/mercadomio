@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finalizar Compra - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "tertiary": "#a0335d",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#7ddc7a",
+                      "on-tertiary-fixed-variant": "#851c48",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed": "#ffd9e2",
+                      "outline-variant": "#bfcab9",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#f7fff1",
+                      "tertiary-fixed-dim": "#ffb1c7",
+                      "surface-container": "#eaf0e4",
+                      "secondary-fixed": "#c5edbd",
+                      "inverse-on-surface": "#edf3e7",
+                      "outline": "#6f7a6b",
+                      "surface-dim": "#d6dcd1",
+                      "secondary-container": "#c2eaba",
+                      "primary": "#006b1b",
+                      "surface-container-highest": "#dfe4d9",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#2c322a",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-container": "#fffbff",
+                      "background": "#f6fbf0",
+                      "secondary": "#446741",
+                      "surface-container-high": "#e5eadf",
+                      "secondary-fixed-dim": "#aad1a2",
+                      "primary-fixed": "#98f994",
+                      "surface-bright": "#f6fbf0",
+                      "primary-container": "#268630",
+                      "surface": "#f6fbf0",
+                      "on-secondary-fixed-variant": "#2d4e2b",
+                      "surface-variant": "#dfe4d9",
+                      "on-secondary-container": "#486b45",
+                      "on-primary-fixed-variant": "#005313",
+                      "on-background": "#181d16",
+                      "tertiary-container": "#c04c76",
+                      "surface-tint": "#006e1c",
+                      "inverse-primary": "#7ddc7a",
+                      "surface-container-low": "#f0f5ea",
+                      "on-surface-variant": "#3f4a3d",
+                      "on-secondary-fixed": "#012104",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#181d16",
+                      "on-tertiary-fixed": "#3f001c",
+                      "on-primary-fixed": "#002204"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Inter", "sans-serif"],
+                      "display": ["Inter", "sans-serif"],
+                      "body": ["Inter", "sans-serif"],
+                      "label": ["Public Sans", "sans-serif"]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body antialiased pb-28 selection:bg-primary selection:text-on-primary">
+<!-- Sticky Header -->
+<header class="w-full sticky top-0 z-50 bg-surface shadow-sm bg-surface-container-low flex items-center justify-between px-4 py-3 border-b border-outline-variant/20">
+<button aria-label="Volver" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-95 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline text-lg font-semibold text-on-surface tracking-tight">Finalizar Compra</h1>
+<div class="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-highest transition-colors active:scale-95 text-on-surface-variant cursor-pointer">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="absolute top-1.5 right-1.5 w-4 h-4 bg-primary text-on-primary text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-surface">5</span>
+</div>
+</header>
+<main class="max-w-2xl mx-auto p-4 space-y-6">
+<!-- Delivery Address Section -->
+<section class="space-y-3">
+<h2 class="font-headline text-base font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="local_shipping" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+                Entrega a domicilio
+            </h2>
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/30 flex items-start justify-between group hover:border-primary/50 transition-colors">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-on-surface-variant mt-0.5" data-icon="location_on">location_on</span>
+<div>
+<p class="font-medium text-sm text-on-surface">Calle Morelos 123</p>
+<p class="text-sm text-on-surface-variant mt-0.5">Polanco, CDMX</p>
+<p class="text-xs text-on-surface-variant mt-1 bg-surface-container inline-block px-2 py-0.5 rounded-md">Portón verde</p>
+</div>
+</div>
+<button class="text-primary text-sm font-medium hover:underline px-2 py-1 rounded-md hover:bg-primary-container/10 transition-colors">Editar</button>
+</div>
+<button class="w-full py-2.5 px-4 rounded-lg border border-dashed border-outline-variant text-on-surface-variant text-sm font-medium flex items-center justify-center gap-2 hover:bg-surface-container-lowest hover:border-primary/50 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+                Agregar nueva dirección
+            </button>
+</section>
+<!-- Order Summary Section -->
+<section class="space-y-3 pt-2">
+<h2 class="font-headline text-base font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="shopping_basket" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+                Resumen de tu pedido
+            </h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 overflow-hidden">
+<!-- Item 1 -->
+<div class="p-4 flex gap-4 border-b border-outline-variant/20">
+<div class="w-16 h-16 rounded-lg bg-surface-container overflow-hidden shrink-0">
+<img alt="Tomates Saladet" class="w-full h-full object-cover" data-alt="Close up photography of fresh bright red Saladet tomatoes in a rustic wooden bowl, natural sunlight casting soft shadows, professional food photography on a clean white background. High resolution, crisp details, appetizing look." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAA7bou-yRcQueYpzT5RIxB1UAPRzfjc_RLXMgBffR84wlRDg-daiiuHVfkBHb051QQFZdE_yI8V7jFYAVKWNV628RE6OrtqdRTbZKDh3_NG7yNEKIwrsZmjVxDu_msbZeVW26ILzji_icLNN8HLiejuRpHzRVS0q1OBGv1mUqW2kKro7GPGWDXmukV0SyWor33zK1KuFl6EJn7-gSPeD9svN0OfY7c2WNiefqTa_4x8Kt8zn1cHA3t4ICIl_REvM6RPEWvmE7yGys"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h3 class="font-medium text-sm text-on-surface line-clamp-2">Tomates Saladet Fresh</h3>
+<span class="font-medium text-sm text-on-surface ml-2">$45.00</span>
+</div>
+<p class="text-xs text-on-surface-variant">1 kg • $45.00/kg</p>
+<div class="flex items-center gap-1 mt-1 text-xs font-medium text-on-surface-variant">
+<span>Cant: 1</span>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 flex gap-4 border-b border-outline-variant/20">
+<div class="w-16 h-16 rounded-lg bg-surface-container overflow-hidden shrink-0">
+<img alt="Aguacate Hass" class="w-full h-full object-cover" data-alt="Halved fresh Hass avocado showing the creamy light green interior and pit, next to a whole avocado, arranged neatly on a crisp white marble surface. Bright natural light, high-end grocery store aesthetic, mouth-watering textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiAv9Ffc4ZtHiceq9YKhw34r10zhTVKYPi2te-sxrXFYzEbnN283c-D3sE0iLYF0rBXoGv0kbZjTTjy67eDlM7qPMJ5NsQeLmcb0rqg4QB8d_Afyiox3jLCFKXYjr7LysRWMHW1QLfWGiIqcWt15aR-CzYjulaf6QZ4RTTeZBxXVCCFD-Cqq7qHd0JhX5cq1RGG-_UiEkDQMtWp_mue5ZH06zUfLvLvWrw7JuotYAr7b1MJ_PohL7QKK5W9EcqxEkwhobL7nPYb2Y"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h3 class="font-medium text-sm text-on-surface line-clamp-2">Aguacate Hass Primera</h3>
+<span class="font-medium text-sm text-on-surface ml-2">$85.50</span>
+</div>
+<p class="text-xs text-on-surface-variant">0.5 kg • $171.00/kg</p>
+<div class="flex items-center gap-1 mt-1 text-xs font-medium text-on-surface-variant">
+<span>Cant: 1</span>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex gap-4 border-b border-outline-variant/20">
+<div class="w-16 h-16 rounded-lg bg-surface-container overflow-hidden shrink-0">
+<img alt="Leche Entera" class="w-full h-full object-cover" data-alt="Carton of premium whole milk with a clean, minimalist design, featuring subtle green accents. Placed on a pristine white background with a soft drop shadow. Professional e-commerce product photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqMbP6q_yhEVbMrps3MmMUsiD41MrMgdRlMlFw30ZVTlY8AMVt2VXDfPpqGRZjJOX2TPjBrOnHVeeNepSlD3KM5i1kIGDTD9l-TlD3fHmIRkj003Nbq_GP1eNa5VC-XjcfyfCHNCGCM-c01tuUq4G_p7Ln04a_nKgy6Yca3gAD8HiUNPT091_LU9mqZKTzXia4RXZ88ck0uPLgMy2kjG6so8pupF1t-umpTaVq23qnZCEKG0oD8B2uGImEDKkqZbs75YxErcHlCuI"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h3 class="font-medium text-sm text-on-surface line-clamp-2">Leche Entera Fresca</h3>
+<span class="font-medium text-sm text-on-surface ml-2">$54.00</span>
+</div>
+<p class="text-xs text-on-surface-variant">2 L • $27.00/L</p>
+<div class="flex items-center gap-1 mt-1 text-xs font-medium text-on-surface-variant">
+<span>Cant: 2</span>
+</div>
+</div>
+</div>
+<!-- Totals -->
+<div class="p-4 bg-surface-container-low/50 space-y-2">
+<div class="flex justify-between text-sm text-on-surface-variant">
+<span>Subtotal (4 productos)</span>
+<span>$287.50</span>
+</div>
+<div class="flex justify-between text-sm text-primary">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="local_offer">local_offer</span>
+<span>Descuento (CUPON10)</span>
+</div>
+<span>-$10.00</span>
+</div>
+<div class="flex justify-between text-sm text-on-surface-variant">
+<span>Envío</span>
+<span class="text-primary font-medium">Gratis</span>
+</div>
+<div class="pt-3 mt-3 border-t border-outline-variant/30 flex justify-between items-center">
+<span class="font-bold text-base text-on-surface">Total</span>
+<span class="font-bold text-lg text-on-surface">$277.50</span>
+</div>
+</div>
+</div>
+<button class="text-primary text-sm font-medium hover:underline flex items-center gap-1 pt-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="confirmation_number">confirmation_number</span>
+                Agregar cupón de descuento
+            </button>
+</section>
+<!-- Payment Section -->
+<section class="space-y-3 pt-2">
+<h2 class="font-headline text-base font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="payment" style="font-variation-settings: 'FILL' 1;">payment</span>
+                Método de pago
+            </h2>
+<div class="space-y-2">
+<!-- Option 1 (Selected) -->
+<label class="flex items-center justify-between p-4 rounded-xl border-2 border-primary bg-primary-container/5 cursor-pointer transition-colors relative overflow-hidden">
+<div class="flex items-center gap-3 relative z-10">
+<input checked="" class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment_method" type="radio"/>
+<div>
+<span class="font-medium text-sm text-on-surface block">Tarjeta de crédito/débito</span>
+<span class="text-xs text-on-surface-variant">Termina en •••• 4242</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-3xl relative z-10" data-icon="credit_card">credit_card</span>
+</label>
+<!-- Option 2 -->
+<label class="flex items-center justify-between p-4 rounded-xl border border-outline-variant/30 bg-surface-container-lowest hover:border-outline-variant cursor-pointer transition-colors">
+<div class="flex items-center gap-3">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment_method" type="radio"/>
+<span class="font-medium text-sm text-on-surface">Efectivo al recibir</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="payments">payments</span>
+</label>
+<!-- Option 3 -->
+<label class="flex items-center justify-between p-4 rounded-xl border border-outline-variant/30 bg-surface-container-lowest hover:border-outline-variant cursor-pointer transition-colors">
+<div class="flex items-center gap-3">
+<input class="text-primary focus:ring-primary w-5 h-5 border-outline-variant" name="payment_method" type="radio"/>
+<span class="font-medium text-sm text-on-surface">OXXO Pay</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="storefront">storefront</span>
+</label>
+</div>
+</section>
+<!-- Notes Section -->
+<section class="space-y-3 pt-2">
+<h2 class="font-headline text-base font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="edit_note">edit_note</span>
+                Notas adicionales
+            </h2>
+<textarea class="w-full rounded-xl border-outline-variant/50 focus:border-primary focus:ring-primary/20 bg-surface-container-lowest text-sm p-4 placeholder:text-on-surface-variant/70 resize-none h-24" placeholder="Nota para el repartidor (opcional) ej. Tocar fuerte el timbre."></textarea>
+</section>
+<!-- Reassurance Text (Mobile Only, usually hidden behind bottom bar on very small screens, placed here for flow) -->
+<p class="text-center text-xs text-on-surface-variant flex items-center justify-center gap-1 py-4">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span>
+            Pago 100% seguro y encriptado
+        </p>
+</main>
+<!-- Fixed Bottom Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 pb-safe">
+<div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-xs text-on-surface-variant font-medium">Total a pagar</span>
+<span class="font-bold text-xl text-on-surface">$277.50</span>
+<span class="text-[10px] text-primary">Envío gratis</span>
+</div>
+<button class="bg-primary text-on-primary font-medium text-base py-3 px-8 rounded-xl shadow-md hover:bg-primary/90 active:scale-95 transition-all flex-1 max-w-[220px] flex items-center justify-center gap-2">
+                Confirmar pedido
+                <span class="material-symbols-outlined text-[20px]" data-icon="check_circle">check_circle</span>
+</button>
+</div>
+<div class="w-full bg-surface-container text-center py-1.5 border-t border-outline-variant/10">
+<p class="text-[10px] text-on-surface-variant uppercase tracking-wider font-label font-medium">Regresa fácilmente si necesitas cambiar algo</p>
+</div>
+</div>
+</body></html>

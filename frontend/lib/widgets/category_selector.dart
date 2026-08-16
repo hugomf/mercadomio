@@ -58,6 +58,7 @@ class _CategorySelectorState extends State<CategorySelector> {
   }
 
   Widget _buildCategoryList() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 36,
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -84,18 +85,24 @@ class _CategorySelectorState extends State<CategorySelector> {
                   padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                   margin: const EdgeInsets.only(right: 4.0),
                   decoration: BoxDecoration(
-                    color: isAllSelected ? Colors.deepPurple : Colors.white,
+                    color: isAllSelected
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(16.0),
                     border: Border.all(
-                      color: isAllSelected ? Colors.deepPurple : Colors.grey[300]!,
+                      color: isAllSelected
+                          ? colorScheme.primary
+                          : colorScheme.outlineVariant,
                     ),
                   ),
                   child: Text(
-                    'All',
+                    'Todos',
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: isAllSelected ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      color: isAllSelected
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -120,18 +127,24 @@ class _CategorySelectorState extends State<CategorySelector> {
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.deepPurple : Colors.white,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.surfaceContainerLowest,
                   borderRadius: BorderRadius.circular(16.0),
                   border: Border.all(
-                    color: isSelected ? Colors.deepPurple : Colors.grey[300]!,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.outlineVariant,
                   ),
                 ),
                 child: Text(
                   category.name,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ),

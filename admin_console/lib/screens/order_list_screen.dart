@@ -90,6 +90,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
       return _buildError(context);
     }
 
+    if (MediaQuery.of(context).size.width >= 800) {
+      return _buildDesktopLayout(context);
+    }
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -276,6 +280,144 @@ class _OrderListScreenState extends State<OrderListScreen> {
                   child: Icon(Icons.more_vert),
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          child: _buildStats(),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+          child: _buildFilters(),
+        ),
+        Expanded(
+          child: _orders.isEmpty
+              ? _buildEmpty()
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: _buildOrdersTable(context),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOrdersTable(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: DataTable(
+        headingRowHeight: 48,
+        headingTextStyle: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        dataRowMinHeight: 60,
+        dataRowMaxHeight: 72,
+        columns: const [
+          DataColumn(label: Text('Order')),
+          DataColumn(label: Text('Date')),
+          DataColumn(label: Text('Items')),
+          DataColumn(label: Text('Total')),
+          DataColumn(label: Text('Status')),
+          DataColumn(label: Text('')),
+        ],
+        rows: [
+          for (final order in _orders)
+            DataRow(
+              cells: [
+                DataCell(
+                  Text(
+                    '#${order.shortId}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                DataCell(Text(order.formattedDate)),
+                DataCell(Text('${order.itemsCount} items')),
+                DataCell(
+                  Text(
+                    '\$${order.total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                DataCell(_buildStatusChip(context, order.status)),
+                DataCell(_buildDesktopStatusMenu(order)),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(BuildContext context, OrderStatus status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: status.statusColor.withAlpha(25),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(status.statusIcon, size: 15, color: status.statusColor),
+          const SizedBox(width: 6),
+          Text(
+            status.displayName,
+            style: TextStyle(
+              color: status.statusColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopStatusMenu(OrderResponse order) {
+    final availableTargets = OrderStatus.values
+        .where((status) => order.status.canTransitionTo(status))
+        .toList();
+    if (availableTargets.isEmpty) return const SizedBox.shrink();
+    return PopupMenuButton<OrderStatus>(
+      tooltip: 'Update status',
+      onSelected: (status) => _changeStatus(order, status),
+      itemBuilder: (context) => [
+        for (final status in availableTargets)
+          PopupMenuItem(
+            value: status,
+            child: Row(
+              children: [
+                Icon(status.statusIcon, color: status.statusColor, size: 20),
+                const SizedBox(width: 8),
+                Text(status.displayName),
+              ],
+            ),
+          ),
+      ],
+      child: const Padding(
+        padding: EdgeInsets.all(4),
+        child: Icon(Icons.more_vert),
       ),
     );
   }

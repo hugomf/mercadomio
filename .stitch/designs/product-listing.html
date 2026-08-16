@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Mercadomio - Frutas y Verduras</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#f6fbf0",
+                        "primary-container": "#268630",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "on-tertiary-container": "#fffbff",
+                        "surface-bright": "#f6fbf0",
+                        "outline": "#6f7a6b",
+                        "on-surface": "#181d16",
+                        "surface-container-highest": "#dfe4d9",
+                        "inverse-primary": "#7ddc7a",
+                        "surface-container-low": "#f0f5ea",
+                        "surface-variant": "#dfe4d9",
+                        "on-tertiary-fixed": "#3f001c",
+                        "on-primary-fixed-variant": "#005313",
+                        "inverse-on-surface": "#edf3e7",
+                        "tertiary-container": "#c04c76",
+                        "secondary": "#446741",
+                        "surface-tint": "#006e1c",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e5eadf",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "primary-fixed": "#98f994",
+                        "on-background": "#181d16",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2c322a",
+                        "background": "#f6fbf0",
+                        "tertiary": "#a0335d",
+                        "secondary-container": "#c2eaba",
+                        "outline-variant": "#bfcab9",
+                        "surface-container": "#eaf0e4",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffd9e2",
+                        "secondary-fixed": "#c5edbd",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "on-secondary-fixed": "#012104",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "on-primary-fixed": "#002204",
+                        "primary": "#006b1b",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#486b45",
+                        "on-surface-variant": "#3f4a3d",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#f7fff1",
+                        "surface-dim": "#d6dcd1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased pb-24">
+<!-- TopAppBar -->
+<header class="flex flex-col w-full px-4 pt-4 pb-2 sticky top-0 z-50 bg-surface dark:bg-surface-dim shadow-sm docked full-width top-0">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2 text-primary dark:text-primary-fixed">
+<span class="material-symbols-outlined font-bold">location_on</span>
+<div class="flex flex-col">
+<span class="text-xs text-on-surface-variant font-medium">Enviar a:</span>
+<span class="text-sm font-semibold text-on-surface">Polanco, CDMX</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative">
+<button class="p-2 rounded-full hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 transition-transform duration-150 text-on-surface-variant dark:text-outline">
+<span class="material-symbols-outlined">shopping_cart</span>
+</button>
+<span class="absolute top-1 right-1 bg-primary text-on-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">3</span>
+</div>
+</div>
+</div>
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary outline-none transition-shadow text-on-surface placeholder-on-surface-variant" placeholder="Buscar productos" type="text"/>
+</div>
+</header>
+<main class="px-4 pt-2">
+<!-- Category Navigation -->
+<div class="flex overflow-x-auto hide-scrollbar gap-2 py-3 -mx-4 px-4 snap-x">
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-semibold text-sm whitespace-nowrap snap-start shadow-sm flex-shrink-0 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">local_florist</span>
+                Frutas y Verduras
+            </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-medium text-sm whitespace-nowrap snap-start flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-sm">water_drop</span>
+                Lácteos
+            </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-medium text-sm whitespace-nowrap snap-start flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-sm">set_meal</span>
+                Carnicería
+            </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-medium text-sm whitespace-nowrap snap-start flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-sm">bakery_dining</span>
+                Panadería
+            </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-medium text-sm whitespace-nowrap snap-start flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-sm">kitchen</span>
+                Abarrotes
+            </button>
+<button class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-medium text-sm whitespace-nowrap snap-start flex-shrink-0 transition-colors">
+<span class="material-symbols-outlined text-sm">local_bar</span>
+                Bebidas
+            </button>
+</div>
+<style>
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+<!-- Promo Banner -->
+<div class="mt-4 mb-6 rounded-xl bg-secondary-container text-on-secondary-container p-4 flex items-center justify-between shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-secondary-fixed opacity-50 rounded-full blur-xl"></div>
+<div class="z-10">
+<h3 class="font-headline font-bold text-lg leading-tight">Aguacate Hass</h3>
+<p class="font-medium text-sm mt-1 text-primary">20% de descuento</p>
+</div>
+<div class="z-10 bg-surface rounded-full p-2 shadow-sm">
+<span class="material-symbols-outlined text-primary">local_offer</span>
+</div>
+</div>
+<div class="flex items-center justify-between mb-4">
+<h2 class="font-headline font-bold text-xl text-on-surface">Frutas y Verduras</h2>
+<button class="text-primary text-sm font-semibold flex items-center">
+                Filtros <span class="material-symbols-outlined text-[16px] ml-1">tune</span>
+</button>
+</div>
+<!-- Product Grid -->
+<div class="grid grid-cols-2 gap-3 md:gap-4">
+<!-- Product 1 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 p-3 flex flex-col relative group">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-variant/30 flex items-center justify-center">
+<img alt="Tomates Saladet" class="object-cover w-full h-full mix-blend-multiply hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AP1WRLtfv76mtjHRlsmhMPFMJd_NKdyX79JINCMmfrTIHbVqN0hmCv32EJxmr0xHriLBL4MoX1u6ZOvpaJFIcy7QdgKFa8L6vEVVSa7QZ1YCiNNujCgcSGdPxHnPGClgCgapWPgfq3FNZQZiXDfPfERepC28GJK3_5GcGeb2z2b_0T150AjJB89y96XPhRBj0SkD0X8-R-SjHbNsmz-tCGNF9nCgzVtNKQWYDwX51H0jzoen_KZanQSAa-RH2w"/>
+</div>
+<div class="flex flex-col flex-grow">
+<span class="text-[10px] font-label text-on-surface-variant uppercase tracking-wider mb-1">Verduras</span>
+<h3 class="font-semibold text-sm leading-tight text-on-surface mb-1">Tomates Saladet</h3>
+<p class="text-xs text-outline mb-2">1 kg</p>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex items-start">
+<span class="text-xs font-bold text-primary mt-0.5">$</span>
+<span class="font-headline font-bold text-lg text-primary leading-none">25<span class="text-xs">.50</span></span>
+</div>
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-surface-tint active:scale-90 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 2 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 p-3 flex flex-col relative group">
+<div class="absolute top-2 left-2 z-10 bg-error text-on-error text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    -28%
+                </div>
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-variant/30 flex items-center justify-center">
+<img class="object-cover w-full h-full mix-blend-multiply hover:scale-105 transition-transform duration-300" data-alt="High-quality macro studio photography of fresh Mexican Hass avocados on a clean white surface. One avocado is halved, revealing the creamy green flesh and the large brown pit. The lighting is soft and natural, creating a bright, appetizing light-mode aesthetic. The colors are vivid, contrasting the dark textured skin with the vibrant green interior." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZMHxMEGzEoVwNACqo9rNoNEbvWVqYiNHd86U61R5PxA-DIMrahE1j1cY7hO8isgjUwKh5lGEWU-nTSzLFF4tZnPrquQe2prR8tcNvjQdmDe-47uRY2F_ntOJHAjgHZwNmusdiTnGNea_TQh2fRAHJtKLj7yviAhrvZjyH5yXs8c8FItCXgiBkSBuDbCCeO5BbFagf-Prk5uCCYuh8ZyGxjViGQnGP9Db0oqflIAz_4--uon2g0eTL2JStBJqCVgy6DqNaEUcDksg"/>
+</div>
+<div class="flex flex-col flex-grow">
+<span class="text-[10px] font-label text-on-surface-variant uppercase tracking-wider mb-1">Frutas</span>
+<h3 class="font-semibold text-sm leading-tight text-on-surface mb-1">Aguacate Hass</h3>
+<p class="text-xs text-outline mb-2">1 kg</p>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] line-through text-outline mb-0.5">$62.50</span>
+<div class="flex items-start">
+<span class="text-xs font-bold text-primary mt-0.5">$</span>
+<span class="font-headline font-bold text-lg text-primary leading-none">45<span class="text-xs">.00</span></span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-surface-tint active:scale-90 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 3 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 p-3 flex flex-col relative group">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-variant/30 flex items-center justify-center">
+<img class="object-cover w-full h-full mix-blend-multiply hover:scale-105 transition-transform duration-300" data-alt="Clean studio product photography of a premium 1-liter carton of whole milk. The carton design is minimalist and modern, placed against a stark white background. High-key lighting eliminates harsh shadows, emphasizing the fresh, hygienic quality of the dairy product. The aesthetic is clean, bright, and suitable for a high-end grocery app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD6sgR8fMDaDwsnT4Bdj7k7T1VecdZjyf5UfA16WBbSNXPSzkwlM3PWEY_VZMXHLE4Jd9ONQZ4e2fY4M-P2zJCGkTNFK3ThedXKHBJ46IilK5dKdzBxSR8oW1qFi3kupY9p8qCuChhBVHHB4xrORY1URDtvaj6Sn6DIj-4B66i5H-h1EzmDXatbwI4ffMrVIZ_Rdc3kzyTP6jff-gOp2dAUKmoGDRhE8Lduer7XbSrTqtadvkBdysmNzXgIofil6rW2m8dkRHfzjs"/>
+</div>
+<div class="flex flex-col flex-grow">
+<span class="text-[10px] font-label text-on-surface-variant uppercase tracking-wider mb-1">Lácteos</span>
+<h3 class="font-semibold text-sm leading-tight text-on-surface mb-1">Leche Entera</h3>
+<p class="text-xs text-outline mb-2">1 L</p>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex items-start">
+<span class="text-xs font-bold text-primary mt-0.5">$</span>
+<span class="font-headline font-bold text-lg text-primary leading-none">24<span class="text-xs">.00</span></span>
+</div>
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-surface-tint active:scale-90 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product 4 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/20 p-3 flex flex-col relative group">
+<div class="relative w-full aspect-square mb-3 rounded-lg overflow-hidden bg-surface-variant/30 flex items-center justify-center">
+<img class="object-cover w-full h-full mix-blend-multiply hover:scale-105 transition-transform duration-300" data-alt="Artisanal white sandwich bread loaf, professionally photographed in a bright studio setting. The bread is partially sliced, revealing a soft, airy white interior and a perfectly golden crust. The background is pure white, with soft, directional lighting highlighting the texture of the bread. The mood is warm, inviting, and fresh." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2QepWacHXgouSHZJYeyZ3Z8khnDodm9HcuvfjdVmA9bXosRjzDzeX40PPSmHQqqqXqtWCAv3UlA3MmtKE5Mr7dYB1DMMLi5KChfuxEHzmYkCbdi-wgLMCOho8Eu9vEO2xhxIy59LERJEAxVCDuFzNiinD7dbQOYZWES0Px2j4I2qFDkIEDMWBc43KCoMGYMs0UZ0fbCB_y99AMHrqqY1MGYf0EAf-1kpu4DchM-4pVAeqrlsXvaT8K-CvDoAFUunHY_BjbxsZte0"/>
+</div>
+<div class="flex flex-col flex-grow">
+<span class="text-[10px] font-label text-on-surface-variant uppercase tracking-wider mb-1">Panadería</span>
+<h3 class="font-semibold text-sm leading-tight text-on-surface mb-1">Pan Blanco</h3>
+<p class="text-xs text-outline mb-2">680 g</p>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex items-start">
+<span class="text-xs font-bold text-primary mt-0.5">$</span>
+<span class="font-headline font-bold text-lg text-primary leading-none">38<span class="text-xs">.00</span></span>
+</div>
+<button class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-surface-tint active:scale-90 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-surface dark:bg-surface-container-lowest shadow-[0_-2px_10px_rgba(0,0,0,0.05)] rounded-t-xl pb-8 md:hidden">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1.5 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label text-[10px] uppercase tracking-wider mt-1">Inicio</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-on-primary-fixed-variant text-on-primary-container dark:text-primary-fixed rounded-xl px-3 py-1.5 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">category</span>
+<span class="font-label text-[10px] uppercase tracking-wider mt-1">Categorías</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1.5 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_basket</span>
+<span class="font-label text-[10px] uppercase tracking-wider mt-1">Carrito</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1.5 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">receipt_long</span>
+<span class="font-label text-[10px] uppercase tracking-wider mt-1">Pedidos</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline px-3 py-1.5 hover:bg-surface-variant/50 dark:hover:bg-surface-variant/20 active:scale-90 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label text-[10px] uppercase tracking-wider mt-1">Perfil</span>
+</button>
+<!-- iOS Home Indicator simulated area -->
+<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-on-surface/20 rounded-full"></div>
+</nav>
+</body></html>

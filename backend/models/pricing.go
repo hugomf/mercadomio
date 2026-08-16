@@ -39,30 +39,31 @@ const (
 // PriceConditions gate whether a PriceSet applies to a given pricing context.
 // All non-zero conditions must match (AND semantics).
 type PriceConditions struct {
-	CouponCode  string   `json:"couponCode,omitempty" bson:"couponCode,omitempty"`
-	MinSubtotal float64  `json:"minSubtotal,omitempty" bson:"minSubtotal,omitempty"`
-	MinQuantity int      `json:"minQuantity,omitempty" bson:"minQuantity,omitempty"`
-	CustomerTier string `json:"customerTier,omitempty" bson:"customerTier,omitempty"`
-	CustomerIDs []string `json:"customerIDs,omitempty" bson:"customerIDs,omitempty"`
+	CouponCode   string   `json:"couponCode,omitempty" bson:"couponCode,omitempty"`
+	MinSubtotal  float64  `json:"minSubtotal,omitempty" bson:"minSubtotal,omitempty"`
+	MinQuantity  int      `json:"minQuantity,omitempty" bson:"minQuantity,omitempty"`
+	CustomerTier string   `json:"customerTier,omitempty" bson:"customerTier,omitempty"`
+	CustomerIDs  []string `json:"customerIDs,omitempty" bson:"customerIDs,omitempty"`
 }
 
 // PriceSet is an ordered, condition-gated bundle of price rules.
 type PriceSet struct {
-	ID                primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name              string             `json:"name" bson:"name"`
-	Description       string             `json:"description,omitempty" bson:"description,omitempty"`
-	Priority          int                `json:"priority" bson:"priority"`
-	StopFurtherRules  bool               `json:"stopFurtherRules" bson:"stopFurtherRules"`
-	Conditions        PriceConditions    `json:"conditions" bson:"conditions"`
-	Rules             []PriceRule        `json:"rules" bson:"rules"`
-	MaxUses           int                `json:"maxUses,omitempty" bson:"maxUses,omitempty"`
-	UsedCount         int                `json:"usedCount" bson:"usedCount"`
-	MaxUsesPerCustomer int               `json:"maxUsesPerCustomer,omitempty" bson:"maxUsesPerCustomer,omitempty"`
-	Active            bool               `json:"active" bson:"active"`
-	StartsAt          *time.Time         `json:"startsAt,omitempty" bson:"startsAt,omitempty"`
-	EndsAt            *time.Time         `json:"endsAt,omitempty" bson:"endsAt,omitempty"`
-	CreatedAt         time.Time          `json:"createdAt" bson:"createdAt"`
-	UpdatedAt         time.Time          `json:"updatedAt" bson:"updatedAt"`
+	ID                 primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name               string             `json:"name" bson:"name"`
+	Description        string             `json:"description,omitempty" bson:"description,omitempty"`
+	Priority           int                `json:"priority" bson:"priority"`
+	StopFurtherRules   bool               `json:"stopFurtherRules" bson:"stopFurtherRules"`
+	Conditions         PriceConditions    `json:"conditions" bson:"conditions"`
+	Rules              []PriceRule        `json:"rules" bson:"rules"`
+	MaxUses            int                `json:"maxUses,omitempty" bson:"maxUses,omitempty"`
+	UsedCount          int                `json:"usedCount" bson:"usedCount"`
+	MaxUsesPerCustomer int                `json:"maxUsesPerCustomer,omitempty" bson:"maxUsesPerCustomer,omitempty"`
+	CustomerUsage      map[string]int     `json:"customerUsage,omitempty" bson:"customerUsage,omitempty"`
+	Active             bool               `json:"active" bson:"active"`
+	StartsAt           *time.Time         `json:"startsAt,omitempty" bson:"startsAt,omitempty"`
+	EndsAt             *time.Time         `json:"endsAt,omitempty" bson:"endsAt,omitempty"`
+	CreatedAt          time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt          time.Time          `json:"updatedAt" bson:"updatedAt"`
 }
 
 // PriceSchedule applies a time-based price formula to a scope (inflation/market).

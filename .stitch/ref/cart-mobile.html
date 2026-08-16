@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Carrito - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "on-primary-container": "#f7fff1",
+                        "inverse-surface": "#2c322a",
+                        "on-tertiary-fixed": "#3f001c",
+                        "surface-tint": "#006e1c",
+                        "primary": "#006b1b",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#dfe4d9",
+                        "secondary": "#446741",
+                        "on-tertiary-container": "#fffbff",
+                        "on-secondary-fixed": "#012104",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "background": "#f6fbf0",
+                        "surface": "#f6fbf0",
+                        "primary-container": "#268630",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#a0335d",
+                        "surface-dim": "#d6dcd1",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "tertiary-container": "#c04c76",
+                        "secondary-fixed": "#c5edbd",
+                        "on-background": "#181d16",
+                        "on-surface": "#181d16",
+                        "on-primary-fixed-variant": "#005313",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f0f5ea",
+                        "inverse-on-surface": "#edf3e7",
+                        "outline": "#6f7a6b",
+                        "surface-container-high": "#e5eadf",
+                        "surface-bright": "#f6fbf0",
+                        "on-surface-variant": "#3f4a3d",
+                        "on-primary-fixed": "#002204",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#dfe4d9",
+                        "outline-variant": "#bfcab9",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#eaf0e4",
+                        "on-secondary-container": "#486b45",
+                        "tertiary-fixed": "#ffd9e2",
+                        "inverse-primary": "#7ddc7a",
+                        "primary-fixed": "#98f994",
+                        "secondary-container": "#c2eaba"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen pb-40">
+<!-- Header -->
+<header class="fixed top-0 w-full z-50 bg-surface shadow-sm flex items-center px-4 py-3">
+<button aria-label="Back" class="p-2 text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="ml-4">
+<h1 class="font-headline text-lg font-bold">Mi Carrito</h1>
+<p class="font-label text-sm text-on-surface-variant">5 artículos</p>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-20 px-4 md:px-8 max-w-4xl mx-auto space-y-6">
+<!-- Cart Items -->
+<section aria-label="Cart Items" class="space-y-4">
+<!-- Item 1: Tomates -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex gap-4 relative items-center">
+<img alt="Tomates Saladet" class="w-20 h-20 object-cover rounded-lg bg-surface-variant" src="https://lh3.googleusercontent.com/aida/AP1WRLtfv76mtjHRlsmhMPFMJd_NKdyX79JINCMmfrTIHbVqN0hmCv32EJxmr0xHriLBL4MoX1u6ZOvpaJFIcy7QdgKFa8L6vEVVSa7QZ1YCiNNujCgcSGdPxHnPGClgCgapWPgfq3FNZQZiXDfPfERepC28GJK3_5GcGeb2z2b_0T150AjJB89y96XPhRBj0SkD0X8-R-SjHbNsmz-tCGNF9nCgzVtNKQWYDwX51H0jzoen_KZanQSAa-RH2w"/>
+<div class="flex-1">
+<h3 class="font-headline font-semibold text-on-surface">Tomates Saladet</h3>
+<p class="font-label text-sm text-on-surface-variant">1 kg</p>
+<p class="font-headline font-bold text-primary mt-1">$25.50</p>
+</div>
+<div class="flex flex-col items-end justify-between h-20">
+<button aria-label="Remove item" class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+<div class="flex items-center gap-3 bg-surface-container-low rounded-full px-2 py-1">
+<button aria-label="Decrease quantity" class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-variant text-on-surface">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-headline font-semibold text-sm w-4 text-center">1</span>
+<button aria-label="Increase quantity" class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Item 2: Aguacate -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex gap-4 relative items-center">
+<img class="w-20 h-20 object-cover rounded-lg bg-surface-variant" data-alt="Fresh, perfectly ripe Hass avocados, dark pebbly skin, some sliced open to reveal vibrant green, creamy flesh and large brown pit. Clean white background, studio lighting, Mexican grocery e-commerce style. Minimalist presentation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAooahnXqMgYCznumBzGP20Hziefvlt8oWe8kbjgkaoEtDqMpYsFju1D1ShfPeq9vSjaMfjQuEF7dEgC8Ul96YTXhbUW1l4K4s8TxHGps9zhVEeV8l9zAu7lCGV2_a9qpbUBtVSoYzkQPzhEkmPf3k-7TvEFPYXIWlJF3cNEgtBwfezAT6jKjKSX3ERwGkvGUhgNLFqiSOLmmfv1hO_l8husnezlUJNIjl-JYAhpZrqx_pk5maTLDx2aWQyYKAPvqqp3lxWIkScDvI"/>
+<div class="flex-1">
+<h3 class="font-headline font-semibold text-on-surface">Aguacate Hass</h3>
+<p class="font-label text-sm text-on-surface-variant">1 kg</p>
+<div class="flex items-baseline gap-2 mt-1">
+<p class="font-headline font-bold text-primary">$45.00</p>
+<p class="text-xs text-on-surface-variant line-through">$50.00</p>
+</div>
+</div>
+<div class="flex flex-col items-end justify-between h-20">
+<button aria-label="Remove item" class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+<div class="flex items-center gap-3 bg-surface-container-low rounded-full px-2 py-1">
+<button aria-label="Decrease quantity" class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-variant text-on-surface">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-headline font-semibold text-sm w-4 text-center">1</span>
+<button aria-label="Increase quantity" class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Item 3: Leche -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex gap-4 relative items-center">
+<img class="w-20 h-20 object-cover rounded-lg bg-surface-variant" data-alt="A clean, unbranded carton of whole milk (Leche Entera) on a white surface. Bright, fresh lighting. High-end product photography for a modern Mexican grocery app. Crisp details, slightly reflective carton surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG-mSFQLhbE1tPq82fZLjSnYTPb3XduiAwoivQ879FFNt4dW2xDUY3jmWfDAdVIq2ujTV6NlKaKjbeAqW5a3FMEMK9kkvpQ0KSiw2sljSHWEzNSFZc2ycfNz9kP-0BNTgO0Cv10by0vLvRPyvKR54t3qvW8i2gAVYclNM8GsQWU0OTrnR3XRGpvwquXdyRbWsWiQLULooMT0GDZdYSXx9qZRe14-YARL5Q5FJyXH2MBMB34_EsohmfLqBMZqZ2S6M7PBmOjeyXtFc"/>
+<div class="flex-1">
+<h3 class="font-headline font-semibold text-on-surface">Leche Entera</h3>
+<p class="font-label text-sm text-on-surface-variant">1 L</p>
+<p class="font-headline font-bold text-primary mt-1">$24.00</p>
+</div>
+<div class="flex flex-col items-end justify-between h-20">
+<button aria-label="Remove item" class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+<div class="flex items-center gap-3 bg-surface-container-low rounded-full px-2 py-1">
+<button aria-label="Decrease quantity" class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-variant text-on-surface">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-headline font-semibold text-sm w-4 text-center">1</span>
+<button aria-label="Increase quantity" class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Item 4: Pan Blanco -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex gap-4 relative items-center border border-transparent hover:border-surface-variant transition-colors">
+<img class="w-20 h-20 object-cover rounded-lg bg-surface-variant" data-alt="A loaf of sliced white bread (Pan Blanco) in clear, generic packaging, resting on a clean white background. Soft, natural-looking studio light highlighting the soft texture of the bread. Warm, inviting grocery aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR5LrTAf3ik_s3AHLIDDXB7cFecT7-CxXod9mrXevF36Y7aui_HQNPLi6qP6i-JZA2xikRdaFZyilEh8t8WLZpjMCGTxvLQ4FaKEqoLuUHeLLeTqKJVDHHiG9VXEgVw5kYyCZWcpM9Jv2MPMq1pqb9516z38CiAeVCrBCC3_7MP6mfIxc5xNe30uvOgUC5czWVuGYqfcv-yTSFg67qCWsqRdXjCw7eLDjBCpua5T527jQ5uBIsQhTwB8UNZAKz9-8PqyqqddzMt7Y"/>
+<div class="flex-1">
+<h3 class="font-headline font-semibold text-on-surface">Pan Blanco</h3>
+<p class="font-label text-sm text-on-surface-variant">680 g</p>
+<p class="font-headline font-bold text-primary mt-1">$38.00</p>
+<span class="inline-block mt-1 text-[10px] font-bold text-error bg-error-container px-2 py-0.5 rounded-full">¡Últimas 3!</span>
+</div>
+<div class="flex flex-col items-end justify-between h-20">
+<button aria-label="Remove item" class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+<div class="flex items-center gap-3 bg-surface-container-low rounded-full px-2 py-1">
+<button aria-label="Decrease quantity" class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-variant text-on-surface">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-headline font-semibold text-sm w-4 text-center">1</span>
+<button aria-label="Increase quantity" class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Item 5: Queso Oaxaca -->
+<article class="bg-surface-container-lowest rounded-xl shadow-sm p-4 flex gap-4 relative items-center">
+<img class="w-20 h-20 object-cover rounded-lg bg-surface-variant" data-alt="A beautifully braided ball of Queso Oaxaca, authentic Mexican string cheese, resting on a pristine white surface. Studio lighting emphasizing the smooth, slightly glossy texture and artisanal shape. E-commerce food photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTjGqhy7lemOcCI2Duaf-YAgkotuCQPxC9EUAfe1gumV0Cisb5lHS4O-OzyFnOELxi4aagyAUrAkyOiXIYodAsQC_eRHRgz_d0oXatcY32c2LhOXueUiIGBTn5AK7j6qY1mLH-GrprgDk1Ec23YX6QG6wG4Cfuo6NlCz7uEqfNKonwcSvdq-MKJEd4LoN35F60IT37plu2Or2u59P9Kqbwn51wVuBIbY9wYt80FdFciahovTXLV3Tcw8eQ4FX7yB_z0pTt79kT0bY"/>
+<div class="flex-1">
+<h3 class="font-headline font-semibold text-on-surface">Queso Oaxaca</h3>
+<p class="font-label text-sm text-on-surface-variant">400 g</p>
+<p class="font-headline font-bold text-primary mt-1">$62.00</p>
+</div>
+<div class="flex flex-col items-end justify-between h-20">
+<button aria-label="Remove item" class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+<div class="flex items-center gap-3 bg-surface-container-low rounded-full px-2 py-1">
+<button aria-label="Decrease quantity" class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-variant text-on-surface">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-headline font-semibold text-sm w-4 text-center">1</span>
+<button aria-label="Increase quantity" class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</article>
+</section>
+<!-- Coupon Section -->
+<section class="border-2 border-dashed border-outline-variant rounded-xl p-4 bg-surface-container-low/50">
+<div class="flex gap-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">loyalty</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body text-sm text-on-surface placeholder:text-on-surface-variant/70" placeholder="Código de descuento" type="text"/>
+</div>
+<button class="bg-secondary text-on-secondary px-4 py-2.5 rounded-lg font-headline font-semibold text-sm hover:bg-secondary/90 transition-colors">
+                    Aplicar
+                </button>
+</div>
+</section>
+<!-- Summary -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-5 space-y-4">
+<h2 class="font-headline font-bold text-lg border-b border-surface-variant pb-2">Resumen de compra</h2>
+<div class="space-y-2 text-sm font-body">
+<div class="flex justify-between text-on-surface">
+<span>Subtotal</span>
+<span>$287.50</span>
+</div>
+<div class="flex justify-between text-on-surface">
+<span>Costo de envío</span>
+<span class="text-primary font-semibold">Envío gratis</span>
+</div>
+<div class="flex justify-between text-tertiary">
+<span>Descuentos</span>
+<span>-$10.00</span>
+</div>
+</div>
+<div class="border-t border-surface-variant pt-3 flex justify-between items-center">
+<span class="font-headline font-bold text-lg">Total</span>
+<span class="font-headline font-bold text-xl text-primary">$277.50</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container rounded-lg p-3 flex items-center gap-2 mt-4">
+<span class="material-symbols-outlined text-secondary">savings</span>
+<p class="font-headline text-sm font-semibold">¡Ahorras $45.00 en esta compra!</p>
+</div>
+</section>
+</main>
+<!-- Checkout Bar (Mobile) -->
+<div class="fixed bottom-[72px] md:bottom-0 w-full bg-surface-container-lowest shadow-[0_-4px_15px_rgba(0,0,0,0.05)] p-4 flex justify-between items-center z-40 md:hidden">
+<div>
+<p class="font-label text-xs text-on-surface-variant">Total a pagar</p>
+<p class="font-headline font-bold text-xl text-primary">$277.50</p>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-full font-headline font-bold shadow-md hover:bg-primary/90 active:scale-95 transition-all">
+            Finalizar Compra
+        </button>
+</div>
+<!-- Checkout Bar (Desktop - hides bottom nav placeholder space) -->
+<div class="hidden md:flex fixed bottom-0 w-full bg-surface-container-lowest shadow-[0_-4px_15px_rgba(0,0,0,0.05)] p-4 justify-between items-center z-40 max-w-4xl left-1/2 -translate-x-1/2 rounded-t-xl">
+<div>
+<p class="font-label text-xs text-on-surface-variant">Total a pagar</p>
+<p class="font-headline font-bold text-xl text-primary">$277.50</p>
+</div>
+<button class="bg-primary text-on-primary px-8 py-3 rounded-full font-headline font-bold shadow-md hover:bg-primary/90 active:scale-95 transition-all text-lg">
+            Finalizar Compra
+        </button>
+</div>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full rounded-t-xl z-50 bg-surface-container-lowest dark:bg-surface-container-low shadow-[0_-2px_10px_rgba(0,0,0,0.05)] md:hidden">
+<div class="fixed bottom-0 w-full flex justify-around items-center px-2 py-3 bg-white">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high transition-all active:scale-90 duration-200 ease-out rounded-xl" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label text-[10px] font-medium tracking-wide mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high transition-all active:scale-90 duration-200 ease-out rounded-xl" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label text-[10px] font-medium tracking-wide mt-1">Categories</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-fixed-dim text-on-secondary-container dark:text-on-secondary-fixed rounded-full px-4 py-1.5 hover:bg-surface-container-high transition-all active:scale-90 duration-200 ease-out" href="#">
+<span class="material-symbols-outlined fill">shopping_cart</span>
+<span class="font-label text-[10px] font-medium tracking-wide mt-1">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high transition-all active:scale-90 duration-200 ease-out rounded-xl" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label text-[10px] font-medium tracking-wide mt-1">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 hover:bg-surface-container-high transition-all active:scale-90 duration-200 ease-out rounded-xl" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label text-[10px] font-medium tracking-wide mt-1">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

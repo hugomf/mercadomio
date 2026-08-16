@@ -38,8 +38,6 @@ class AuthStateListener extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Get.find<AuthService>();
-
     // Listen to auth state changes
     return Obx(() {
       // This widget rebuilds when auth state changes

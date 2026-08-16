@@ -51,6 +51,7 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 	total := 0.0
 
 	var priceInputs []PriceInput
+	var appliedSets []models.AppliedPriceRule
 
 	for _, cartItem := range cartItems {
 		if cartItem.Quantity <= 0 {
@@ -119,15 +120,16 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 		subtotal = result.Subtotal
 		discount = result.Discount
 		total = result.Total
+		appliedSets = result.AppliedSets
 
 		if discount > 0 {
 			pricingMap = map[string]interface{}{
-				"subtotal":       subtotal,
-				"discount":       discount,
-				"couponCode":     priceCtx.CouponCode,
-				"customerTier":   priceCtx.CustomerTier,
-				"appliedSets":    result.AppliedSets,
-				"schedules":      result.AppliedScheduleNames,
+				"subtotal":     subtotal,
+				"discount":     discount,
+				"couponCode":   priceCtx.CouponCode,
+				"customerTier": priceCtx.CustomerTier,
+				"appliedSets":  appliedSets,
+				"schedules":    result.AppliedScheduleNames,
 			}
 		}
 	}
@@ -164,6 +166,21 @@ func (s *OrderService) CreateOrderFromCart(ctx context.Context, userID string, c
 	_, err = s.collection.InsertOne(ctx, order)
 	if err != nil {
 		return nil, err
+	}
+
+	// Enforce usage caps: bump counters for every applied price set.
+	if len(appliedSets) > 0 && s.pricingService != nil {
+		seen := map[string]bool{}
+		var setIDs []string
+		for _, a := range appliedSets {
+			if !seen[a.SetID] {
+				seen[a.SetID] = true
+				setIDs = append(setIDs, a.SetID)
+			}
+		}
+		if err := s.pricingService.IncrementSetUsage(ctx, setIDs, userID); err != nil {
+			return nil, errors.New("failed to record set usage: " + err.Error())
+		}
 	}
 
 	return order, nil

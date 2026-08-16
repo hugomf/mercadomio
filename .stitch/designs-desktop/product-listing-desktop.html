@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Frutas y Verduras - Mercadomio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#2c322a",
+                        "inverse-on-surface": "#edf3e7",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#486b45",
+                        "on-tertiary-container": "#fffbff",
+                        "on-surface-variant": "#3f4a3d",
+                        "on-background": "#181d16",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#006e1c",
+                        "surface-bright": "#f6fbf0",
+                        "on-tertiary-fixed": "#3f001c",
+                        "background": "#f6fbf0",
+                        "surface-container-highest": "#dfe4d9",
+                        "primary-fixed-dim": "#7ddc7a",
+                        "on-secondary-fixed-variant": "#2d4e2b",
+                        "on-primary-container": "#f7fff1",
+                        "primary": "#006b1b",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#012104",
+                        "tertiary-fixed": "#ffd9e2",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#002204",
+                        "secondary": "#446741",
+                        "on-primary-fixed-variant": "#005313",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#dfe4d9",
+                        "secondary-fixed-dim": "#aad1a2",
+                        "primary-fixed": "#98f994",
+                        "secondary-fixed": "#c5edbd",
+                        "on-surface": "#181d16",
+                        "primary-container": "#268630",
+                        "on-tertiary-fixed-variant": "#851c48",
+                        "tertiary-fixed-dim": "#ffb1c7",
+                        "tertiary-container": "#c04c76",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#bfcab9",
+                        "error": "#ba1a1a",
+                        "surface-container": "#eaf0e4",
+                        "outline": "#6f7a6b",
+                        "surface-container-high": "#e5eadf",
+                        "surface-container-low": "#f0f5ea",
+                        "secondary-container": "#c2eaba",
+                        "tertiary": "#a0335d",
+                        "surface-dim": "#d6dcd1",
+                        "inverse-primary": "#7ddc7a",
+                        "surface": "#f6fbf0",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    },
+                    "fontSize": {}
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col antialiased">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-container text-primary dark:text-primary-fixed font-body text-label-md sticky full-width top-0 border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none z-50">
+<div class="flex flex-col w-full max-w-7xl mx-auto px-6 py-3">
+<div class="flex justify-between items-center w-full">
+<!-- Left: Logo & Search -->
+<div class="flex items-center gap-8 flex-1">
+<a class="text-2xl font-bold text-primary dark:text-primary-fixed tracking-tight hover:opacity-90 transition-opacity" href="#">
+                        Mercadomio
+                    </a>
+<div class="hidden md:flex flex-1 max-w-md relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Buscar productos..." type="text"/>
+</div>
+</div>
+<!-- Center/Right: Navigation -->
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant dark:text-outline-variant pb-1 hover:text-primary-container dark:hover:text-primary-fixed-dim transition-colors scale-95 duration-100 hover:scale-100" href="#">Inicio</a>
+<a class="text-primary dark:text-primary-fixed border-b-2 border-primary dark:border-primary-fixed pb-1 font-bold scale-95 duration-100 hover:scale-100" href="#">Categorías</a>
+<a class="text-on-surface-variant dark:text-outline-variant pb-1 hover:text-primary-container dark:hover:text-primary-fixed-dim transition-colors scale-95 duration-100 hover:scale-100" href="#">Pedidos</a>
+<a class="text-on-surface-variant dark:text-outline-variant pb-1 hover:text-primary-container dark:hover:text-primary-fixed-dim transition-colors scale-95 duration-100 hover:scale-100" href="#">Perfil</a>
+</nav>
+<!-- Right: Trailing Actions -->
+<div class="flex items-center gap-4 ml-8">
+<button class="relative p-2 text-on-surface hover:text-primary hover:bg-surface-container rounded-full transition-colors group">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-1 right-1 bg-error text-on-error text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border border-surface group-hover:border-surface-container transition-colors">3</span>
+</button>
+<button class="p-2 text-on-surface hover:text-primary hover:bg-surface-container rounded-full transition-colors hidden md:block">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="flex-grow w-full max-w-[1440px] mx-auto px-6 py-8 flex flex-col">
+<!-- Breadcrumbs -->
+<nav aria-label="Breadcrumb" class="flex text-sm text-on-surface-variant mb-6 font-label">
+<ol class="inline-flex items-center space-x-1 md:space-x-2">
+<li class="inline-flex items-center">
+<a class="inline-flex items-center hover:text-primary transition-colors" href="#">
+                        Inicio
+                    </a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Categorías</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-on-surface font-medium">Frutas y Verduras</span>
+</div>
+</li>
+</ol>
+</nav>
+<!-- Page Header & Controls -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-outline-variant pb-6">
+<div>
+<h1 class="font-headline text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight mb-2">
+                    Frutas y Verduras
+                </h1>
+<p class="text-on-surface-variant font-label">124 productos disponibles</p>
+</div>
+<div class="flex items-center gap-4 text-sm font-label">
+<div class="flex items-center gap-2">
+<label class="text-on-surface-variant" for="sort">Ordenar por:</label>
+<select class="bg-surface-container-lowest border border-outline-variant rounded-md py-1.5 pl-3 pr-8 text-on-surface focus:ring-primary focus:border-primary text-sm transition-colors cursor-pointer hover:border-outline" id="sort">
+<option>Recomendados</option>
+<option>Precio: Menor a Mayor</option>
+<option>Precio: Mayor a Menor</option>
+<option>Popularidad</option>
+</select>
+</div>
+<div class="hidden sm:flex items-center gap-2 border-l border-outline-variant pl-4">
+<label class="text-on-surface-variant" for="per_page">Mostrar:</label>
+<select class="bg-surface-container-lowest border border-outline-variant rounded-md py-1.5 pl-3 pr-8 text-on-surface focus:ring-primary focus:border-primary text-sm transition-colors cursor-pointer hover:border-outline" id="per_page">
+<option>24</option>
+<option>48</option>
+<option>72</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Content Layout: Sidebar + Grid -->
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<!-- Sidebar Filters -->
+<aside class="w-full lg:w-64 flex-shrink-0 space-y-8 sticky top-24">
+<!-- Categorías -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container shadow-sm">
+<h3 class="font-headline font-bold text-on-surface mb-4 flex items-center justify-between">
+                        Categorías
+                        <span class="material-symbols-outlined text-sm text-on-surface-variant">expand_less</span>
+</h3>
+<ul class="space-y-3 font-label text-sm">
+<li>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface font-medium group-hover:text-primary transition-colors">Verduras</span>
+<span class="ml-auto text-on-surface-variant text-xs">(45)</span>
+</label>
+</li>
+<li>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface font-medium group-hover:text-primary transition-colors">Frutas</span>
+<span class="ml-auto text-on-surface-variant text-xs">(52)</span>
+</label>
+</li>
+<li>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface-variant group-hover:text-primary transition-colors">Orgánicos</span>
+<span class="ml-auto text-on-surface-variant text-xs">(18)</span>
+</label>
+</li>
+<li>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface-variant group-hover:text-primary transition-colors">Ofertas</span>
+<span class="ml-auto text-on-surface-variant text-xs">(9)</span>
+</label>
+</li>
+</ul>
+</div>
+<!-- Rango de Precio -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container shadow-sm">
+<h3 class="font-headline font-bold text-on-surface mb-4 flex items-center justify-between">
+                        Precio
+                        <span class="material-symbols-outlined text-sm text-on-surface-variant">expand_less</span>
+</h3>
+<div class="space-y-4">
+<input class="w-full h-1 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary" max="500" min="0" type="range" value="250"/>
+<div class="flex items-center justify-between gap-4 font-label">
+<div class="flex items-center gap-1 bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant w-full">
+<span class="text-on-surface-variant text-xs">$</span>
+<input class="w-full bg-transparent border-none p-0 text-sm focus:ring-0 text-on-surface" type="number" value="10"/>
+</div>
+<span class="text-on-surface-variant">-</span>
+<div class="flex items-center gap-1 bg-surface-container px-2 py-1.5 rounded-md border border-outline-variant w-full">
+<span class="text-on-surface-variant text-xs">$</span>
+<input class="w-full bg-transparent border-none p-0 text-sm focus:ring-0 text-on-surface" type="number" value="500"/>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Product Grid -->
+<div class="flex-1 w-full">
+<!-- Applied Filters Tag (Optional UX enhancement) -->
+<div class="flex flex-wrap gap-2 mb-6 font-label text-sm">
+<span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-container text-on-primary-container rounded-full">
+                        Verduras
+                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px] leading-none">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-container text-on-primary-container rounded-full">
+                        Frutas
+                        <button class="hover:text-primary transition-colors"><span class="material-symbols-outlined text-[16px] leading-none">close</span></button>
+</span>
+<button class="text-primary hover:text-primary-fixed-dim hover:underline px-2 py-1 text-sm font-medium transition-colors">Limpiar filtros</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Product Card 1 (with provided image) -->
+<div class="group bg-surface-container-lowest rounded-2xl border border-surface-container overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full relative">
+<div class="absolute top-3 left-3 z-10">
+<span class="bg-error text-on-error text-xs font-bold px-2 py-1 rounded-md shadow-sm">-20%</span>
+</div>
+<button class="absolute top-3 right-3 z-10 p-1.5 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<div class="aspect-square bg-surface-container-low overflow-hidden relative">
+<img alt="Tomate Saladet" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida/AP1WRLtfv76mtjHRlsmhMPFMJd_NKdyX79JINCMmfrTIHbVqN0hmCv32EJxmr0xHriLBL4MoX1u6ZOvpaJFIcy7QdgKFa8L6vEVVSa7QZ1YCiNNujCgcSGdPxHnPGClgCgapWPgfq3FNZQZiXDfPfERepC28GJK3_5GcGeb2z2b_0T150AjJB89y96XPhRBj0SkD0X8-R-SjHbNsmz-tCGNF9nCgzVtNKQWYDwX51H0jzoen_KZanQSAa-RH2w"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-bold text-on-surface leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">Tomate Saladet Fresco</h3>
+<p class="text-on-surface-variant text-sm font-label mb-3">1 kg</p>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<p class="text-on-surface-variant text-xs line-through mb-0.5">$35.00</p>
+<p class="font-headline font-extrabold text-lg text-on-surface leading-none">$28.00</p>
+</div>
+<button class="bg-primary text-on-primary h-10 w-10 rounded-full flex items-center justify-center hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm active:scale-95">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 (Placeholder) -->
+<div class="group bg-surface-container-lowest rounded-2xl border border-surface-container overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full relative">
+<button class="absolute top-3 right-3 z-10 p-1.5 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<div class="aspect-square bg-surface-container-low overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A bright, fresh, close-up studio shot of perfectly ripe Hass avocados on a clean white surface. High key lighting, organic food photography, modern light-mode grocery aesthetic, green primary color accents implicit in the fruit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEfAgSDOWEPLdbjXqa0B2EpDhjhSXk5keJw2XmTDYoyHplluoWqHTAlJBRfm_b-3h1flDMsolsuD4Yz7Dckq0xbtkMxCPs8ynR3RinrNlbcHiguG2AVrQlX6ZAHmlJRZyasTpi53364MPQhTlG5U_o4-70hbJqvC7OwAcWl6PL9FXcnG1DppL97Z22-J0AhWwnLk5z5Ee0rL1pyBkD1-kd_CGdipMdDAyEn74WsQVusvVSjV_BEELKsM-KOQOeeRQ9YgteTsPp2Dc"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-bold text-on-surface leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">Aguacate Hass Primera</h3>
+<p class="text-on-surface-variant text-sm font-label mb-3">Pieza aprox. 250g</p>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<p class="font-headline font-extrabold text-lg text-on-surface leading-none">$85.00 <span class="text-sm font-normal text-on-surface-variant">/ kg</span></p>
+</div>
+<button class="bg-primary-container text-on-primary-container h-10 w-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors shadow-sm active:scale-95 border border-primary/20">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 (Placeholder) -->
+<div class="group bg-surface-container-lowest rounded-2xl border border-surface-container overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full relative">
+<div class="absolute top-3 left-3 z-10">
+<span class="bg-secondary text-on-secondary text-xs font-bold px-2 py-1 rounded-md shadow-sm">Orgánico</span>
+</div>
+<button class="absolute top-3 right-3 z-10 p-1.5 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<div class="aspect-square bg-surface-container-low overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Crisp, fresh, bright green celery stalks standing upright in a subtle, clean white environment. Studio lighting, sharp focus, highlighting the vibrant green texture of the vegetables. Modern grocery e-commerce style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxgQbXWngW0xBSV_6N9zsGbSeiGI8Do_DoE8jqp33OG9gIA6H4HzjQsLwBxlEe8yqzwpmwzeYr1-4r61DX2WTKx5T7Htrt9SQD7QHbhYV0IsR4fPdKG-ZgeYwk95LSU3PsYPRCD0KZ5uqDsVbq9W2VhBpvXI1Cdujv1ZtAY5k_gUd4BOIlnY_INpr43bKphHcEpYshXo7JWvF0fF2dp_5dlzvvVg87ifpDxBGII_NHWJSsFf-Z_1nUUnX7YL9jRSvN_YauVb25FBA"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-bold text-on-surface leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">Apio Orgánico</h3>
+<p class="text-on-surface-variant text-sm font-label mb-3">Manojo</p>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<p class="font-headline font-extrabold text-lg text-on-surface leading-none">$24.50</p>
+</div>
+<button class="bg-primary-container text-on-primary-container h-10 w-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors shadow-sm active:scale-95 border border-primary/20">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 (Placeholder) -->
+<div class="group bg-surface-container-lowest rounded-2xl border border-surface-container overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full relative">
+<button class="absolute top-3 right-3 z-10 p-1.5 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface-variant hover:text-tertiary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</button>
+<div class="aspect-square bg-surface-container-low overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A bunch of bright yellow, perfectly ripe bananas on a stark white background. Studio lit to show clean lines and appetizing color. Clean, modern, high-end supermarket aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcIFAYuVDa9bYb1tVtftM3TspAKdqggmy5YvOgtOcwffeYz5pHppiAOCIoh9t0n4P20aNKXgzVy0QgeUph-uAjp95kdtyXlFiM0ejkZb9ARRyFws5rrBQMDByqlbgIUHSlLSF7Wbg_F6tsxRiy81tfRCGfC3qPR1Wos3CCfHI2NZMHbK3QRJY8572Wr1Errm7qN2BwL3I8upjGTqor9t3gBh5yCZJMJ_OzveaosNWE9O_LDl4NesBtIKPttSP8WT61DsuRzkze7eA"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-bold text-on-surface leading-tight mb-1 group-hover:text-primary transition-colors line-clamp-2">Plátano Tabasco</h3>
+<p class="text-on-surface-variant text-sm font-label mb-3">1 kg</p>
+<div class="mt-auto flex items-end justify-between">
+<div>
+<p class="font-headline font-extrabold text-lg text-on-surface leading-none">$22.00</p>
+</div>
+<button class="bg-primary-container text-on-primary-container h-10 w-10 rounded-full flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors shadow-sm active:scale-95 border border-primary/20">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="flex justify-center items-center mt-12 gap-2 font-label">
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container disabled:opacity-50 transition-colors" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-1">
+<button class="w-10 h-10 rounded-lg bg-primary text-on-primary font-bold shadow-sm flex items-center justify-center">1</button>
+<button class="w-10 h-10 rounded-lg text-on-surface hover:bg-surface-container transition-colors flex items-center justify-center">2</button>
+<button class="w-10 h-10 rounded-lg text-on-surface hover:bg-surface-container transition-colors flex items-center justify-center">3</button>
+<span class="w-10 h-10 flex items-center justify-center text-on-surface-variant">...</span>
+<button class="w-10 h-10 rounded-lg text-on-surface hover:bg-surface-container transition-colors flex items-center justify-center">6</button>
+</div>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-highest text-primary dark:text-primary-fixed-dim font-label text-label-sm full-width border-t border-outline-variant dark:border-outline flat no shadows transition-opacity duration-200 mt-auto">
+<div class="w-full max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="text-lg font-bold text-primary dark:text-primary-fixed">
+                Mercadomio
+            </div>
+<div class="text-on-surface-variant dark:text-outline-variant">
+                © 2024 Mercadomio. Todos los derechos reservados.
+            </div>
+<nav class="flex gap-6">
+<a class="text-on-surface-variant dark:text-outline-variant hover:underline" href="#">Privacidad</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:underline" href="#">Términos</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:underline" href="#">Contacto</a>
+<a class="text-on-surface-variant dark:text-outline-variant hover:underline" href="#">Ayuda</a>
+</nav>
+</div>
+</footer>
+</body></html>

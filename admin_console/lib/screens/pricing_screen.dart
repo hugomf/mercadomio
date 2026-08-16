@@ -78,6 +78,9 @@ class _PricingScreenState extends State<PricingScreen> {
         ),
       );
     }
+    if (MediaQuery.of(context).size.width >= 800) {
+      return _buildDesktopLayout(context);
+    }
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -97,6 +100,250 @@ class _PricingScreenState extends State<PricingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Price Schedules',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold)),
+                  FilledButton.icon(
+                    onPressed: _createSchedule,
+                    icon: const Icon(Icons.add),
+                    label: const Text('New schedule'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildSchedulesTable(context),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Price Sets',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold)),
+                  FilledButton.icon(
+                    onPressed: _createSet,
+                    icon: const Icon(Icons.add),
+                    label: const Text('New price set'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildSetsTable(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSchedulesTable(BuildContext context) {
+    if (_schedules.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No price schedules yet. Create one to adjust '
+            'prices over time (e.g. inflation, seasonal).'),
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: DataTable(
+        headingRowHeight: 48,
+        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        dataRowMinHeight: 60,
+        dataRowMaxHeight: 72,
+        columns: const [
+          DataColumn(label: Text('Name')),
+          DataColumn(label: Text('Scope')),
+          DataColumn(label: Text('Mode')),
+          DataColumn(label: Text('Effective')),
+          DataColumn(label: Text('Status')),
+          DataColumn(label: Text('')),
+        ],
+        rows: _schedules.map((s) {
+          final isActive = _scheduleActive(s);
+          return DataRow(
+            cells: [
+              DataCell(Text(s.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold))),
+              DataCell(Text(s.scope.name, style: const TextStyle(fontSize: 14))),
+              DataCell(Text(_scheduleModeText(s), style: const TextStyle(fontSize: 14))),
+              DataCell(
+                Text('${_fmtDate(s.effectiveFrom)}'
+                    '${s.effectiveTo != null ? ' → ${_fmtDate(s.effectiveTo!)}' : ''}',
+                    style: const TextStyle(fontSize: 13)),
+              ),
+              DataCell(
+                isActive
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withAlpha(25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.trending_up, size: 15, color: Colors.green),
+                            SizedBox(width: 6),
+                            Text('Active',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withAlpha(25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.schedule, size: 15, color: Colors.grey),
+                            SizedBox(width: 6),
+                            Text('Inactive',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+              ),
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      tooltip: 'Edit',
+                      onPressed: () => _editSchedule(s),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      tooltip: 'Delete',
+                      onPressed: () => _deleteSchedule(s),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSetsTable(BuildContext context) {
+    if (_sets.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No price sets yet. Create one for a coupon, '
+            'loyalty tier, or special customer pricing.'),
+      );
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: DataTable(
+        headingRowHeight: 48,
+        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        dataRowMinHeight: 60,
+        dataRowMaxHeight: 72,
+        columns: const [
+          DataColumn(label: Text('Name')),
+          DataColumn(label: Text('Rules')),
+          DataColumn(label: Text('Conditions')),
+          DataColumn(label: Text('Uses')),
+          DataColumn(label: Text('Status')),
+          DataColumn(label: Text('')),
+        ],
+        rows: _sets.map((s) {
+          final condText = _setCondText(s);
+          return DataRow(
+            cells: [
+              DataCell(Text(s.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold))),
+              DataCell(Text(_setRuleText(s),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13))),
+              DataCell(Text(condText.isEmpty ? '—' : condText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13))),
+              DataCell(Text(s.maxUses > 0 ? '${s.usedCount}/${s.maxUses}' : '∞',
+                  style: const TextStyle(fontSize: 14))),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (s.active ? Colors.deepPurple : Colors.grey).withAlpha(25),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        s.active ? Icons.local_offer : Icons.local_offer_outlined,
+                        size: 15,
+                        color: s.active ? Colors.deepPurple : Colors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(s.active ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: s.active ? Colors.deepPurple : Colors.grey)),
+                    ],
+                  ),
+                ),
+              ),
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      tooltip: 'Edit',
+                      onPressed: () => _editSet(s),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      tooltip: 'Delete',
+                      onPressed: () => _deleteSet(s),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -132,15 +379,41 @@ class _PricingScreenState extends State<PricingScreen> {
     );
   }
 
+  bool _scheduleActive(PriceSchedule s) =>
+      s.active &&
+      !DateTime.now().isBefore(s.effectiveFrom) &&
+      (s.effectiveTo == null || !DateTime.now().isAfter(s.effectiveTo!));
+
+  String _scheduleModeText(PriceSchedule s) => switch (s.mode) {
+        ScheduleMode.percentage => '${s.value > 0 ? '+' : ''}${s.value}%',
+        ScheduleMode.absolute => s.value > 0 ? '+${s.value}' : '${s.value}',
+        ScheduleMode.fixed => '= ${s.value}',
+      };
+
+  String _setRuleText(PriceSet s) => s.rules
+      .map((r) => switch (r.kind) {
+            PriceRuleKind.percentage => '${r.amount}% off',
+            PriceRuleKind.absolute => '-\$${r.amount}',
+            PriceRuleKind.override => '=\$${r.amount}',
+          })
+      .join(', ');
+
+  String _setCondText(PriceSet s) => [
+        if (s.conditions.couponCode.isNotEmpty)
+          'code ${s.conditions.couponCode}',
+        if (s.conditions.minSubtotal > 0)
+          'min \$${s.conditions.minSubtotal}',
+        if (s.conditions.minQuantity > 0)
+          'min qty ${s.conditions.minQuantity}',
+        if (s.conditions.customerTier.isNotEmpty)
+          'tier ${s.conditions.customerTier}',
+        if (s.conditions.customerIds.isNotEmpty)
+          'customers ${s.conditions.customerIds.length}',
+      ].join(' · ');
+
   Widget _buildScheduleCard(PriceSchedule s) {
-    final isActive = s.active &&
-        !DateTime.now().isBefore(s.effectiveFrom) &&
-        (s.effectiveTo == null || !DateTime.now().isAfter(s.effectiveTo!));
-    final modeText = switch (s.mode) {
-      ScheduleMode.percentage => '${s.value > 0 ? '+' : ''}${s.value}%',
-      ScheduleMode.absolute => s.value > 0 ? '+${s.value}' : '${s.value}',
-      ScheduleMode.fixed => '= ${s.value}',
-    };
+    final isActive = _scheduleActive(s);
+    final modeText = _scheduleModeText(s);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -244,24 +517,8 @@ class _PricingScreenState extends State<PricingScreen> {
   }
 
   Widget _buildSetCard(PriceSet s) {
-    final ruleText = s.rules
-        .map((r) => switch (r.kind) {
-              PriceRuleKind.percentage => '${r.amount}% off',
-              PriceRuleKind.absolute => '-\$${r.amount}',
-              PriceRuleKind.override => '=\$${r.amount}',
-            })
-        .join(', ');
-    final condText = [
-      if (s.conditions.couponCode.isNotEmpty) 'code ${s.conditions.couponCode}',
-      if (s.conditions.minSubtotal > 0)
-        'min \$${s.conditions.minSubtotal}',
-      if (s.conditions.minQuantity > 0)
-        'min qty ${s.conditions.minQuantity}',
-      if (s.conditions.customerTier.isNotEmpty)
-        'tier ${s.conditions.customerTier}',
-      if (s.conditions.customerIds.isNotEmpty)
-        'customers ${s.conditions.customerIds.length}',
-    ].join(' · ');
+    final ruleText = _setRuleText(s);
+    final condText = _setCondText(s);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(

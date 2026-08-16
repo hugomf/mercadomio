@@ -10,13 +10,12 @@ import (
 
 // SetupCartRoutes configures all cart-related routes with authentication
 func SetupCartRoutes(app *fiber.App, cartHandlers *handlers.CartHandlers, authService *services.AuthService) {
-	// Public routes (guest carts)
+	// Public routes (guest carts): reads and writes work off the cartId alone,
+	// so authentication is optional. When a valid token is present, userID is
+	// still populated in Locals for handlers that want it.
 	app.Get("/api/cart/:cartId", middleware.OptionalAuthMiddleware(authService), cartHandlers.GetCart)
-
-	// Protected routes (require authentication)
-	auth := app.Group("/api/cart", middleware.AuthMiddleware(authService))
-	auth.Post("/:cartId/items", cartHandlers.AddToCart)
-	auth.Put("/:cartId/items/:productId", cartHandlers.UpdateCartItem)
-	auth.Delete("/:cartId/items/:productId", cartHandlers.RemoveFromCart)
-	auth.Post("/merge", cartHandlers.MergeCarts)
+	app.Post("/api/cart/:cartId/items", middleware.OptionalAuthMiddleware(authService), cartHandlers.AddToCart)
+	app.Put("/api/cart/:cartId/items/:productId", middleware.OptionalAuthMiddleware(authService), cartHandlers.UpdateCartItem)
+	app.Delete("/api/cart/:cartId/items/:productId", middleware.OptionalAuthMiddleware(authService), cartHandlers.RemoveFromCart)
+	app.Post("/api/cart/merge", middleware.OptionalAuthMiddleware(authService), cartHandlers.MergeCarts)
 }

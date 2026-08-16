@@ -1,0 +1,76 @@
+{
+  "name": "projects/9322283502076035827",
+  "projectId": "9322283502076035827",
+  "title": "Mercadomio",
+  "visibility": "PRIVATE",
+  "createTime": "2026-08-15T10:13:18.189856Z",
+  "projectType": "PROJECT_DESIGN",
+  "origin": "STITCH",
+  "deviceType": "MOBILE",
+  "designSystem": "assets/14132221149110130373",
+  "designTheme": {
+    "colorMode": "LIGHT",
+    "font": "INTER",
+    "headlineFont": "INTER",
+    "bodyFont": "INTER",
+    "labelFont": "PUBLIC_SANS",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#43A047",
+    "colorVariant": "FIDELITY",
+    "designMd": "Warm, friendly Mexican grocery marketplace. Green primary accent, clean white surfaces, subtle shadows, generous spacing, fresh produce photography. Mobile-first e-commerce with clear hierarchy."
+  },
+  "metadata": {
+    "userRole": "OWNER"
+  },
+  "screens": {
+    "login": {
+      "id": "5c8c659d19cb4989b3b8aa77e29531a0",
+      "sourceScreen": "projects/9322283502076035827/screens/5c8c659d19cb4989b3b8aa77e29531a0",
+      "title": "Mercadomio Login",
+      "width": 780,
+      "height": 2226
+    },
+    "storefront": {
+      "id": "692c2602053641e7ae6a7481b9401457",
+      "sourceScreen": "projects/9322283502076035827/screens/692c2602053641e7ae6a7481b9401457",
+      "title": "Mercadomio Storefront",
+      "width": 780,
+      "height": 2440
+    },
+    "product_detail": {
+      "id": "77038d6bb2f24f15b8017219da4ab607",
+      "sourceScreen": "projects/9322283502076035827/screens/77038d6bb2f24f15b8017219da4ab607",
+      "title": "Product Detail: Tomates Saladet",
+      "width": 780,
+      "height": 3080
+    },
+    "product_listing": {
+      "id": "f3e3dec05db84f5eb6c294f596dc972e",
+      "sourceScreen": "projects/9322283502076035827/screens/f3e3dec05db84f5eb6c294f596dc972e",
+      "title": "Mercadomio: Frutas y Verduras",
+      "width": 780,
+      "height": 2056
+    },
+    "cart": {
+      "id": "69cfd97341e54573bfd70b7db8627e05",
+      "sourceScreen": "projects/9322283502076035827/screens/69cfd97341e54573bfd70b7db8627e05",
+      "title": "Mi Carrito - Mercadomio",
+      "width": 780,
+      "height": 2692
+    },
+    "checkout": {
+      "id": "adfe17daab524066bead73ce0b98ac47",
+      "sourceScreen": "projects/9322283502076035827/screens/adfe17daab524066bead73ce0b98ac47",
+      "title": "Finalizar Compra - Mercadomio",
+      "width": 780,
+      "height": 2998
+    },
+    "order_history": {
+      "id": "8b3691b434a3420cb4e244ff9efd88a9",
+      "sourceScreen": "projects/9322283502076035827/screens/8b3691b434a3420cb4e244ff9efd88a9",
+      "title": "Historial de Pedidos - Mercadomio",
+      "width": 780,
+      "height": 2134
+    }
+  }
+}

@@ -1,34 +1,41 @@
-version: '3.3'
+name: mercadomio-qa
+
 services:
   backend:
-    build: ./backend
+    build: ../backend
     ports:
-      - "8080:8080"
+      - "8083:8080"
     environment:
       - MONGO_URI=mongodb://mongo:27017/mercadomio
       - REDIS_URI=redis://redis:6379
     env_file:
-      - ./backend/.env
+      - path: ../backend/.env
+        required: false
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
-    build: ./frontend
+    build: ../frontend
     ports:
-      - "3000:80"
+      - "8084:80"
     depends_on:
       - backend
+
   mongo:
     image: mongo:7
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
+      - qa_mongo_data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 10s
       retries: 5
+
   postgres:
     image: postgres:15
     environment:
@@ -36,16 +43,28 @@ services:
       POSTGRES_USER: admin
       POSTGRES_DB: mercadomio
     volumes:
-      - postgres_data:/data/postgresql/db
+      - qa_postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d mercadomio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis/redis-stack:latest
     ports:
       - "6379:6379"
       - "8001:8001" # RedisInsight
     volumes:
-      - redis_data:/data/redis/db
+      - qa_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   directus:
     image: directus/directus:latest
     ports:
@@ -62,17 +81,14 @@ services:
       - ADMIN_EMAIL=admin@mercadomio.mx
       - ADMIN_PASSWORD=admin123
       - CORS_ENABLED=true
-      - CORS_ORIGIN="*"
-      - CORS_CREDENTIALS=true
-      - CORS_METHODS=GET,POST,PATCH,DELETE
-      - CORS_ALLOWED_HEADERS=Content-Type,Authorization
-      - FILES_PUBLIC_ACCESS=true
-      - PUBLIC_URL=http://192.168.1.218:8055
+      - PUBLIC_URL=http://192.168.1.88:8055
       - ASSETS_REQUIRE_AUTHENTICATION=false
       - ASSETS_CACHE_TTL=30d
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
 volumes:
-  mongo_data: 
-  postgres_data:
-  redis_data:
+  qa_mongo_data:
+  qa_postgres_data:
+  qa_redis_data:

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tomates Saladet - Mercado Verde</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=Public+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#e5eadf",
+                      "on-surface-variant": "#3f4a3d",
+                      "on-tertiary-fixed": "#3f001c",
+                      "surface": "#f6fbf0",
+                      "tertiary": "#a0335d",
+                      "tertiary-container": "#c04c76",
+                      "tertiary-fixed-dim": "#ffb1c7",
+                      "on-tertiary-fixed-variant": "#851c48",
+                      "on-error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#2d4e2b",
+                      "inverse-surface": "#2c322a",
+                      "surface-container-highest": "#dfe4d9",
+                      "error": "#ba1a1a",
+                      "outline-variant": "#bfcab9",
+                      "background": "#f6fbf0",
+                      "secondary-container": "#c2eaba",
+                      "on-secondary": "#ffffff",
+                      "on-surface": "#181d16",
+                      "primary-fixed": "#98f994",
+                      "on-tertiary": "#ffffff",
+                      "secondary": "#446741",
+                      "surface-bright": "#f6fbf0",
+                      "inverse-on-surface": "#edf3e7",
+                      "secondary-fixed": "#c5edbd",
+                      "surface-dim": "#d6dcd1",
+                      "primary-container": "#268630",
+                      "tertiary-fixed": "#ffd9e2",
+                      "on-secondary-fixed": "#012104",
+                      "on-primary-container": "#f7fff1",
+                      "surface-tint": "#006e1c",
+                      "surface-container-low": "#f0f5ea",
+                      "primary-fixed-dim": "#7ddc7a",
+                      "on-primary-fixed-variant": "#005313",
+                      "surface-container": "#eaf0e4",
+                      "on-background": "#181d16",
+                      "outline": "#6f7a6b",
+                      "on-tertiary-container": "#fffbff",
+                      "error-container": "#ffdad6",
+                      "primary": "#006b1b",
+                      "surface-container-lowest": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "on-error": "#ffffff",
+                      "surface-variant": "#dfe4d9",
+                      "on-primary-fixed": "#002204",
+                      "inverse-primary": "#7ddc7a",
+                      "secondary-fixed-dim": "#aad1a2",
+                      "on-secondary-container": "#486b45"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Inter"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Public Sans"
+                      ]
+              },
+              "fontSize": {}
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-label { font-family: 'Public Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopNavBar Component -->
+<nav class="bg-surface shadow-sm flex justify-between items-center px-6 py-3 w-full sticky top-0 z-50">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-xl font-headline font-bold text-primary cursor-pointer active:scale-95 transition-transform">
+                Mercado Verde
+            </div>
+<div class="hidden md:flex items-center bg-surface-container-lowest border border-outline-variant rounded-full px-4 py-2 w-64 focus-within:border-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant mr-2 text-sm">search</span>
+<input class="bg-transparent border-none outline-none text-sm w-full font-body text-on-surface focus:ring-0 p-0 placeholder-on-surface-variant" placeholder="Buscar productos..." type="text"/>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-8 font-body text-label-md">
+<a class="text-primary border-b-2 border-primary font-bold pb-1 cursor-pointer active:scale-95 transition-transform hover:bg-surface-container-low px-2 rounded-t-sm" href="#">Produce</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition-transform hover:bg-surface-container-low px-2 py-1 rounded-sm" href="#">Bakery</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition-transform hover:bg-surface-container-low px-2 py-1 rounded-sm" href="#">Pantry</a>
+<a class="text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition-transform hover:bg-surface-container-low px-2 py-1 rounded-sm" href="#">Dairy</a>
+</div>
+<div class="flex items-center gap-4 text-primary">
+<button class="flex flex-col items-center justify-center p-2 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">location_on</span>
+</button>
+<button class="flex items-center gap-1 p-2 rounded-full hover:bg-surface-container-low transition-colors cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">person</span>
+<span class="hidden md:block text-sm font-label font-medium">Account</span>
+</button>
+<button class="flex items-center gap-1 p-2 rounded-full bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary transition-colors cursor-pointer active:scale-95 shadow-sm">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="hidden md:block text-sm font-label font-medium">Cart</span>
+</button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" class="flex text-sm font-body text-on-surface-variant mb-8">
+<ol class="inline-flex items-center space-x-1 md:space-x-2">
+<li class="inline-flex items-center">
+<a class="hover:text-primary transition-colors" href="#">Inicio</a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Frutas y Verduras</a>
+</div>
+</li>
+<li aria-current="page">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<span class="text-on-surface font-medium">Tomates Saladet</span>
+</div>
+</li>
+</ol>
+</nav>
+<!-- Product Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<!-- Left: Image Gallery -->
+<div class="flex flex-col gap-4">
+<div class="w-full aspect-square bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant relative flex items-center justify-center p-8">
+<img alt="Tomates Saladet" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AP1WRLtfv76mtjHRlsmhMPFMJd_NKdyX79JINCMmfrTIHbVqN0hmCv32EJxmr0xHriLBL4MoX1u6ZOvpaJFIcy7QdgKFa8L6vEVVSa7QZ1YCiNNujCgcSGdPxHnPGClgCgapWPgfq3FNZQZiXDfPfERepC28GJK3_5GcGeb2z2b_0T150AjJB89y96XPhRBj0SkD0X8-R-SjHbNsmz-tCGNF9nCgzVtNKQWYDwX51H0jzoen_KZanQSAa-RH2w"/>
+</div>
+<!-- Thumbnails -->
+<div class="grid grid-cols-4 gap-4">
+<div class="aspect-square bg-surface-container-lowest rounded-lg overflow-hidden border-2 border-primary cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-resolution photograph of freshly washed Roma tomatoes resting on a rustic wooden cutting board. Water droplets glisten on the smooth, vibrant red skin of the tomatoes. The lighting is soft and natural, coming from a nearby window, creating a warm and inviting light-mode aesthetic typical of a high-end grocery marketplace. The background is slightly blurred to focus on the fresh produce." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-K0ZuLxH-TMSr6LIwHQ1Kd_54GSxKoDOPWJ0WCIdbDJgIex3IMq59fdGuaXF6BuYDTqlVObTOwJLSynpbN5u9VWGT3cblZDlnoQX7iKbVLngMN3t7WrhDoMjShHfmofVTiwno1NZLqvl4iII9FOZPFEHZx-dFzU4kxXJKzSc0WHp0n9tiaZPzDjpHR8IaAPr1yf25GpbTKN5YDRtwMs6OlIuHKIZOzERMkKUTJwLUYWndOXEcjnpbpSo6kmAjcVfBNYom99U8K5Q"/>
+</div>
+<div class="aspect-square bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant cursor-pointer hover:border-primary transition-colors opacity-70 hover:opacity-100">
+<img class="w-full h-full object-cover" data-alt="A top-down view of a modern, clean white ceramic bowl filled with bright red Roma tomatoes. The setting is a bright kitchen counter illuminated by stark, daylight-balanced studio lighting, emphasizing the freshness and premium quality of the produce. The minimalist composition highlights the organic shapes and vibrant color palette of green stems against the red fruit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6e-n_ZPBgmX2JFdO827k_bRlbb8AaWLYkkA2AyMceOlttQefs40i1AxGciFqA64NEeyZwn7-rg3YhgZoxphvcmOPfEDzIV7De1waVtW3aQCyahmunoFY5ia6iRQJvEzySk2ui4HApYiboyat5tT4fmHjGUJvw9rUcQLF1i-lkloifJauJYzBM_oHSSpfW2E748pntWtUhWiHxO45JhuqCmbuhTpRLKjrvXB-ObZD1cpln_uSKWm6yg148aMjjsuVUL3kQjq8mwB0"/>
+</div>
+<div class="aspect-square bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant cursor-pointer hover:border-primary transition-colors opacity-70 hover:opacity-100">
+<img class="w-full h-full object-cover" data-alt="A detailed macro shot showing a slice of a perfectly ripe Roma tomato. The internal structure, seeds, and juicy texture are visible in crisp detail. The lighting is bright and crisp, highlighting the translucent quality of the tomato flesh. The overall aesthetic is fresh, hygienic, and appetizing, fitting for a modern digital grocery catalog." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD29AD89tJCuRE30jR5p6FCxRaRzYkSzv9UWGxFBA51MxTFL34b4ATUZU3UW6R2zdQ2YWpUDbeoXejbO8nE3FjgQ4CMhKE4Kltz2fvfKyJYM4vTTwJxHIwcFkixGTrGdgiB4UNp_UVwMBxUOHBPcdVttY31exMAxRDXsxZfU1PWT9FuHinpEWYdS6pwXz247u3KF2zsFz91JKTc6V5ZFgrWOykAvPH1P_5sTgmuY8wlyvkg89wTfMcA1ctfKoZjTA9OHVmz31VS434"/>
+</div>
+<div class="aspect-square bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant cursor-pointer hover:border-primary transition-colors opacity-70 hover:opacity-100 flex items-center justify-center bg-surface-container-low text-on-surface-variant font-label text-sm font-medium">
+                        +2
+                    </div>
+</div>
+</div>
+<!-- Right: Info Panel -->
+<div class="flex flex-col">
+<div class="mb-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold font-label bg-secondary-container text-on-secondary-container tracking-wide uppercase">
+                        Orgánico
+                    </span>
+</div>
+<h1 class="text-4xl font-headline font-bold text-on-surface mb-3 tracking-tight">Tomate Saladet Fresco</h1>
+<div class="flex items-center gap-2 mb-6">
+<div class="flex text-amber-400">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined">star_half</span>
+</div>
+<span class="text-sm font-body text-on-surface-variant font-medium">4.8 (120 reseñas)</span>
+</div>
+<div class="flex items-end gap-3 mb-8">
+<span class="text-3xl font-headline font-bold text-primary">$25.50</span>
+<span class="text-lg font-body text-on-surface-variant line-through mb-1">$30.00</span>
+<span class="text-sm font-body text-on-surface-variant mb-1">/ kg</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-sm mb-8">
+<div class="flex flex-col sm:flex-row items-center gap-4">
+<!-- Stepper -->
+<div class="flex items-center border border-outline rounded-full bg-surface">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-l-full active:bg-surface-container-high">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<input class="w-12 text-center border-none bg-transparent font-headline font-semibold text-on-surface focus:ring-0 p-0" readonly="" type="text" value="1"/>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-r-full active:bg-surface-container-high">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- Add Button -->
+<button class="flex-grow flex items-center justify-center gap-2 bg-primary text-on-primary font-label font-semibold text-lg px-8 py-3 rounded-full hover:bg-surface-tint shadow-md transition-all active:scale-95 w-full sm:w-auto">
+<span class="material-symbols-outlined">shopping_cart</span>
+                            Agregar al carrito
+                        </button>
+</div>
+</div>
+<!-- Quick Info -->
+<div class="bg-surface-container-low rounded-xl p-5 mb-8">
+<ul class="space-y-3 font-body text-sm text-on-surface-variant">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">eco</span>
+<span><strong>Origen:</strong> Producción Local</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">local_shipping</span>
+<span><strong>Entrega hoy:</strong> Si pides antes de las 2 PM</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">verified</span>
+<span><strong>Calidad Premium:</strong> Selección a mano</span>
+</li>
+</ul>
+</div>
+<!-- Accordions -->
+<div class="border-t border-outline-variant divide-y divide-outline-variant font-body">
+<div class="py-4">
+<button class="flex items-center justify-between w-full text-left font-headline font-semibold text-on-surface hover:text-primary transition-colors group">
+                            Descripción
+                            <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">expand_more</span>
+</button>
+<div class="mt-3 text-sm text-on-surface-variant leading-relaxed">
+                            El tomate Saladet (o Roma) es conocido por su forma ovalada, pulpa carnosa y menor cantidad de semillas y agua en comparación con otras variedades. Ideal para salsas, guisos y ensaladas. Cultivados bajo estrictos estándares orgánicos para garantizar el mejor sabor y nutrición para tu familia.
+                        </div>
+</div>
+<div class="py-4">
+<button class="flex items-center justify-between w-full text-left font-headline font-semibold text-on-surface hover:text-primary transition-colors group">
+                            Información Nutrimental
+                            <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">expand_more</span>
+</button>
+</div>
+<div class="py-4">
+<button class="flex items-center justify-between w-full text-left font-headline font-semibold text-on-surface hover:text-primary transition-colors group">
+                            Consejos de Conservación
+                            <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Related Products -->
+<section class="mt-20">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-2xl font-headline font-bold text-on-surface">Productos Similares</h2>
+<a class="text-primary font-label font-medium hover:underline flex items-center gap-1" href="#">Ver más <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer">
+<div class="aspect-[4/3] bg-surface-container-low relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A pristine, brightly lit studio shot of fresh, vibrant green jalapeño peppers piled together. The peppers have a smooth, glossy skin reflecting soft light. They sit against a pure white background, embodying a modern, clean grocery store aesthetic. The overall mood is fresh and spicy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdnjTBrCiJuAeJRprJrVtHGgIeBn-VWzM6IDAW-k3nchQZyN7tLEtzv2h30U_n005NIfsuSkgQx3TGd9a_E3yR9BmAMsx1QnUBJX64xQ3VYg6MmldYUtWZpCa7tmq4C4LcOKCTOhh6vhhRivIWVGYbZO84Yo6j2tJi8910RrBvbKVb6V3LhU4bWNA_Ir3GhHEgrFfpoc_yzfveT7HHGyZIw4E9PBfleQGa-ZrwKfBUcwFdHokDhmY1iupZPwaucwRVvyP9wPraazg"/>
+<button class="absolute top-3 right-3 p-1.5 bg-surface/80 backdrop-blur-sm rounded-full text-on-surface hover:text-error transition-colors">
+<span class="material-symbols-outlined text-xl">favorite</span>
+</button>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-semibold text-on-surface line-clamp-1 mb-1 group-hover:text-primary transition-colors">Chile Jalapeño</h3>
+<p class="text-xs font-body text-on-surface-variant mb-3">500g</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-bold text-lg text-primary">$18.90</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer">
+<div class="aspect-[4/3] bg-surface-container-low relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="High-resolution image of a single, perfectly round white onion with its papery dry skin intact. The onion is placed on a minimalist, light gray marble surface. The lighting is high-key and diffused, creating soft shadows and a pristine, hygienic feel suitable for an upscale online market." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0FW4AKGgGpqUX48x0cn1lGq007Gu1i-wR48YqUgZONw5FNyQvc0b1QqTCjWkcFHqlGduVX26PoBWBAqyurAj8Swm0rG5hSce8yWvq3D5j4SN9srwblibTYxBpc21YYa0qB-Wgg6R6j-w-0LovLmVKCAC7A7Sw3JqTHC01l6fxCqgN1TApHQMdQpXoEbEC6udYVqIiwuNAxoABqh56yjvLofPWQtkhienZ866gjAbw7AQ327GqFD9K4RjHYa88fM6jNahuP1u_9zI"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-semibold text-on-surface line-clamp-1 mb-1 group-hover:text-primary transition-colors">Cebolla Blanca</h3>
+<p class="text-xs font-body text-on-surface-variant mb-3">1 kg</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-bold text-lg text-primary">$22.00</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer">
+<div class="aspect-[4/3] bg-surface-container-low relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A lush bunch of fresh green cilantro tied loosely with a rustic twine. The cilantro leaves are crisp and vibrant, showing intricate leaf details. The background is a soft, out-of-focus light tone to make the bright green herb pop. Photographed under clear daylight to emphasize freshness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1OLxMBBktZP4fasyNd9jt46NMVMgVwzA2tX3BKwXVMa-dXbrJitNN1uTmj_fLLAQu_hzBDiKbuuO-uAueJ-xxGrfu4MTyJJG71UtuPj7cZLlWZBppUtsTHu9cUFazMfALxdPVF_xzAMsa7A-FGN5Erm2ja63y3mYj-lzU6prGj7ylVYp4wKjsHZZLf6suO9q3VKW26nPdenZ7Iw4FN4bJ0qSkuyDC3UEGbTFQX_KSBCAza48KiRLelDaTvm2h1xtdVKgmRHIb-dM"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-semibold text-on-surface line-clamp-1 mb-1 group-hover:text-primary transition-colors">Cilantro Fresco</h3>
+<p class="text-xs font-body text-on-surface-variant mb-3">Manojo</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-bold text-lg text-primary">$8.50</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer hidden md:flex">
+<div class="aspect-[4/3] bg-surface-container-low relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A macro view of fresh, unpeeled garlic bulbs showcasing their textured, papery white and slightly purple-streaked skins. They are arranged casually on a clean, light-colored wooden table. The lighting highlights the organic contours and earthy yet clean aesthetic appropriate for a premium grocery listing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5-jy2Uc_AqlOGOjKinYVM67oQnIlKgzAoC5bEAhqpf29TzjYUBt-xMKzTRNEFr47rvAIc7cG91fCjjhB5oFiJiwzZXEYJUtF1JsVmZudT3qeoglDt8oWekHYbRl1yADBgh_JOYomD8h7OxJs-basOSa-RmYpICu0phbkHFfrSSme975OulaizZjZesq8dJ7Xe797-CCeMuaODJ1tsICd6tFnDb3Te6X26Mvp3cojg0b4WGCm4V-tTE3w_0hBzTfZjuwPvMXExrXE"/>
+</div>
+<div class="p-4 flex flex-col flex-grow">
+<h3 class="font-headline font-semibold text-on-surface line-clamp-1 mb-1 group-hover:text-primary transition-colors">Ajo Entero</h3>
+<p class="text-xs font-body text-on-surface-variant mb-3">3 cabezas</p>
+<div class="mt-auto flex items-center justify-between">
+<span class="font-bold text-lg text-primary">$15.00</span>
+<button class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center hover:bg-primary hover:text-on-primary transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant w-full px-8 py-12 flex flex-col items-center gap-6 mt-12">
+<div class="text-lg font-headline font-black text-secondary">
+            Mercado Verde
+        </div>
+<div class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">About Us</a>
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">Contact</a>
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">Shipping Info</a>
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">Returns</a>
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">Privacy Policy</a>
+<a class="font-body text-body-sm text-on-surface-variant hover:text-secondary hover:underline underline-offset-4 transition-all duration-200" href="#">Terms of Service</a>
+</div>
+<div class="font-body text-body-sm text-secondary mt-4 text-center">
+            © 2024 Mercado Verde. Freshly picked Mexican flavors delivered to your door.
+        </div>
+</footer>
+</body></html>

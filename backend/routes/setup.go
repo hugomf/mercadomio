@@ -9,11 +9,13 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 // SetupRoutes configures all application routes
 func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	// Setup middleware
+	app.Use(logger.New())
 	app.Use(middleware.SetupCORS())
 
 	// Serve static images with CORS support
@@ -33,7 +35,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	})
 
 	// Initialize handlers
-	productHandlers := handlers.NewProductHandlers(deps.ProductService, deps.SearchService, deps.AnalyticsService)
+	productHandlers := handlers.NewProductHandlers(deps.ProductService, deps.SearchService, deps.AnalyticsService, deps.PricingService)
 	cartHandlers := handlers.NewCartHandlers(deps.CartService)
 	analyticsHandlers := handlers.NewAnalyticsHandlers(deps.AnalyticsService)
 

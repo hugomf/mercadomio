@@ -7,7 +7,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o server ./main.go
 
 FROM alpine:3.21.3
-RUN apk --no-cache add ca-certificates tzdata && \
+RUN apk --no-cache add ca-certificates tzdata curl && \
     apk upgrade --no-cache && \
     rm -rf /var/cache/apk/*
 WORKDIR /app

@@ -35,6 +35,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   // Coupon code
   final _couponController = TextEditingController();
+  final _notesController = TextEditingController();
+  bool _showCouponField = false;
+  int _selectedPayment = 0;
 
   @override
   void dispose() {
@@ -48,6 +51,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _zipCodeController.dispose();
     _countryController.dispose();
     _couponController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -64,13 +68,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _processOrder() async {
+    final colorScheme = Get.theme.colorScheme;
+
     if (!_formKey.currentState!.validate()) return;
     if (!_acceptTerms) {
       Get.snackbar(
-        'Required',
-        'Please accept the terms and conditions',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        'Obligatorio',
+        'Debes aceptar los términos y condiciones',
+        backgroundColor: colorScheme.error,
+        colorText: colorScheme.onError,
+        margin: const EdgeInsets.all(20),
+        borderRadius: 8,
       );
       return;
     }
@@ -122,10 +130,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (!launched) {
           Get.snackbar(
-            'Checkout',
-            'Payment page could not be opened. Your order #${orderResponse.id} is pending payment.',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
+            'Pago pendiente',
+            'No se pudo abrir la página de pago. Tu pedido #${orderResponse.id} queda pendiente de pago.',
+            backgroundColor: colorScheme.tertiary,
+            colorText: colorScheme.onTertiary,
+            margin: const EdgeInsets.all(20),
+            borderRadius: 8,
           );
         } else {
           Get.offAllNamed('/');
@@ -134,11 +144,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     } catch (e) {
       Get.snackbar(
-        'Checkout Failed',
+        'Error al finalizar la compra',
         e.toString(),
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        backgroundColor: colorScheme.error,
+        colorText: colorScheme.onError,
         duration: const Duration(seconds: 5),
+        margin: const EdgeInsets.all(20),
+        borderRadius: 8,
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -149,15 +161,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Checkout'),
-        elevation: 0,
+        title: const Text('Finalizar Pago'),
       ),
       body: Obx(() {
         final cartController = Get.find<CartController>();
         final cart = cartController.cart.value;
 
         if (cart == null) {
-          return const Center(child: Text('Cart not found'));
+          return Center(
+            child: Text(
+              'Carrito no encontrado',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          );
+        }
+
+        if (MediaQuery.of(context).size.width >= 800) {
+          return Form(
+            key: _formKey,
+            child: _buildDesktopLayout(cart),
+          );
         }
 
         return Form(
@@ -206,18 +229,737 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Widget _buildDesktopLayout(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final itemCount =
+        cart.items.fold<int>(0, (sum, item) => sum + item.quantity);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Transactional header (brand + payment trust, Stitch style).
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1400),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shopping_basket,
+                          color: colorScheme.primary, size: 26),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Mercadomio',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_outline,
+                          size: 16, color: colorScheme.outline),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Pago Seguro',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1400),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Breadcrumb.
+                    Row(
+                      children: [
+                        Text(
+                          'Inicio',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            size: 16, color: colorScheme.onSurfaceVariant),
+                        Text(
+                          'Carrito',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            size: 16, color: colorScheme.onSurfaceVariant),
+                        Text(
+                          'Finalizar Compra',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Finalizar Compra',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$itemCount ${itemCount == 1 ? 'producto' : 'productos'} en tu carrito',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildDesktopDeliverySection(),
+                              const SizedBox(height: 20),
+                              _buildDesktopPaymentSection(),
+                              const SizedBox(height: 20),
+                              _buildDesktopTermsCard(),
+                              const SizedBox(height: 20),
+                              _buildDesktopSecurityBadge(colorScheme),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 28),
+                        SizedBox(
+                          width: 400,
+                          child: _buildDesktopCheckoutButton(cart),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopDeliverySection() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _buildDesktopSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_shipping, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Entrega a domicilio',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildShippingFields(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopPaymentSection() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _buildDesktopSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.credit_card, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Método de pago',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildDesktopPaymentOptions(),
+          const SizedBox(height: 24),
+          Text(
+            'Notas adicionales (opcional)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notesController,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText:
+                  'Ej. Tocar el timbre dos veces, dejar con el portero...',
+              filled: true,
+              fillColor: colorScheme.surfaceContainerLowest,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopSecurityBadge(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shield, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            'Pago 100% seguro y encriptado',
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopSectionCard({required Widget child}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildDesktopOrderItems(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        for (final item in cart.items) ...[
+          Row(
+            children: [
+              Stack(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                      image: item.product?.imageUrl.isNotEmpty == true
+                          ? DecorationImage(
+                              image: NetworkImage(item.product!.imageUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: item.product?.imageUrl.isEmpty == true
+                        ? Icon(Icons.shopping_bag,
+                            size: 24, color: colorScheme.outline)
+                        : null,
+                  ),
+                  // Quantity badge.
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '${item.quantity}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.product?.name ?? 'Producto',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${_currentUnitPrice(item).toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDesktopPaymentOptions() {
+    final colorScheme = Theme.of(context).colorScheme;
+    const options = [
+      (Icons.payments, 'Tarjeta de Crédito/Débito', 'Termina en •••• 4242'),
+      (Icons.money, 'Efectivo al recibir', null),
+      (Icons.storefront, 'OXXO Pay', null),
+    ];
+    return Column(
+      children: [
+        for (var i = 0; i < options.length; i++) ...[
+          InkWell(
+            onTap: () => setState(() => _selectedPayment = i),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: i == _selectedPayment
+                    ? colorScheme.surfaceContainerLow
+                    : colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: i == _selectedPayment
+                      ? colorScheme.primary
+                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    options[i].$1,
+                    color: i == _selectedPayment
+                        ? colorScheme.secondary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          options[i].$2,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        if (options[i].$3 != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            options[i].$3!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    i == _selectedPayment
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: i == _selectedPayment
+                        ? colorScheme.primary
+                        : colorScheme.outline,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (i != options.length - 1) const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDesktopTermsCard() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: CheckboxListTile(
+        value: _acceptTerms,
+        onChanged: (value) => setState(() => _acceptTerms = value ?? false),
+        title: const Text('Acepto los términos y condiciones'),
+        subtitle: const Text('Consulta los términos de servicio y la política de privacidad'),
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  Widget _buildDesktopCheckoutButton(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Pricing shown from the product catalog enrichment (same as the cart).
+    double originalTotal = 0;
+    double effectiveTotal = 0;
+    for (final item in cart.items) {
+      final qty = item.quantity;
+      originalTotal += _originalUnitPrice(item) * qty;
+      effectiveTotal += _currentUnitPrice(item) * qty;
+    }
+    final savings = originalTotal - effectiveTotal;
+    final hasDiscount = savings > 0.001;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Resumen de tu pedido',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+          _buildDesktopOrderItems(cart),
+          // Coupon toggle.
+          InkWell(
+            onTap: () => setState(() => _showCouponField = !_showCouponField),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.local_offer, size: 18, color: colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _showCouponField
+                        ? 'Ocultar cupón'
+                        : 'Agregar cupón de descuento',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showCouponField) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _couponController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                hintText: 'Código de cupón',
+                prefixIcon: const Icon(Icons.local_offer_outlined),
+                isDense: true,
+                filled: true,
+                fillColor: colorScheme.surfaceContainerLowest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Subtotal',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '\$${originalTotal.toStringAsFixed(2)}',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Descuento',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                hasDiscount ? '-\$${savings.toStringAsFixed(2)}' : '\$0.00',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: hasDiscount
+                      ? colorScheme.tertiary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Envío',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                'Gratis',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                '\$${effectiveTotal.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _processOrder,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 1,
+            ),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.arrow_forward),
+            label: Text(
+              _isLoading ? 'Procesando...' : 'Confirmar pedido',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.undo, size: 14, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Regresa fácilmente si necesitas cambiar algo',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _currentUnitPrice(CartItem item) {
+    final attrs = item.product?.customAttributes;
+    final raw = attrs?['effectivePrice'];
+    if (raw is num && raw > 0) return raw.toDouble();
+    return item.product?.basePrice ?? 0.0;
+  }
+
+  double _originalUnitPrice(CartItem item) {
+    return item.product?.basePrice ?? 0.0;
+  }
+
   Widget _buildOrderSummary(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Order Summary',
+            Text(
+              'Resumen del Pedido',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -235,7 +977,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
+                      color: colorScheme.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(8),
                       image: product?.imageUrl.isNotEmpty == true
                           ? DecorationImage(
@@ -245,11 +987,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           : null,
                     ),
                     child: product?.imageUrl.isEmpty == true
-                        ? const Icon(Icons.shopping_bag, size: 20, color: Colors.grey)
+                        ? Icon(Icons.shopping_bag, size: 20, color: colorScheme.outline)
                         : null,
                   ),
-                  title: Text(product?.name ?? 'Product'),
-                  subtitle: Text('Qty: ${item.quantity}'),
+                  title: Text(product?.name ?? 'Producto'),
+                  subtitle: Text('Cant: ${item.quantity}'),
                   trailing: Text('\$${total.toStringAsFixed(2)}'),
                 );
               },
@@ -258,16 +1000,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Total:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 Text(
                   '\$${cart.total.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: colorScheme.primary,
                   ),
                 ),
               ],
@@ -285,120 +1031,161 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Shipping Address',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            _buildDesktopSectionHeader(
+              icon: Icons.location_on_outlined,
+              title: 'Entrega a domicilio',
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _fullNameController,
-              decoration: const InputDecoration(labelText: 'Full Name'),
-              validator: (value) => value?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value?.isEmpty == true) return 'Required';
-                if (!value!.contains('@')) return 'Invalid email';
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Phone Number'),
-              keyboardType: TextInputType.phone,
-              validator: (value) => value?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _addressLine1Controller,
-              decoration: const InputDecoration(labelText: 'Address Line 1'),
-              validator: (value) => value?.isEmpty == true ? 'Required' : null,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _addressLine2Controller,
-              decoration: const InputDecoration(labelText: 'Address Line 2 (Optional)'),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _cityController,
-                    decoration: const InputDecoration(labelText: 'City'),
-                    validator: (value) => value?.isEmpty == true ? 'Required' : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _stateController,
-                    decoration: const InputDecoration(labelText: 'State'),
-                    validator: (value) => value?.isEmpty == true ? 'Required' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _zipCodeController,
-                    decoration: const InputDecoration(labelText: 'ZIP Code'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) => value?.isEmpty == true ? 'Required' : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _countryController,
-                    decoration: const InputDecoration(labelText: 'Country'),
-                    validator: (value) => value?.isEmpty == true ? 'Required' : null,
-                  ),
-                ),
-              ],
-            ),
+            _buildShippingFields(),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildShippingFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _fullNameController,
+          decoration: const InputDecoration(labelText: 'Nombre completo'),
+          validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _emailController,
+          decoration: const InputDecoration(labelText: 'Correo electrónico'),
+          keyboardType: TextInputType.emailAddress,
+          validator: (value) {
+            if (value?.isEmpty == true) return 'Requerido';
+            if (!value!.contains('@')) return 'Correo inválido';
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _phoneController,
+          decoration: const InputDecoration(labelText: 'Teléfono'),
+          keyboardType: TextInputType.phone,
+          validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _addressLine1Controller,
+          decoration: const InputDecoration(labelText: 'Calle y número'),
+          validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _addressLine2Controller,
+          decoration: const InputDecoration(
+            labelText: 'Dirección línea 2 (opcional)',
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _cityController,
+                decoration: const InputDecoration(labelText: 'Ciudad'),
+                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _stateController,
+                decoration: const InputDecoration(labelText: 'Estado'),
+                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _zipCodeController,
+                decoration: const InputDecoration(labelText: 'Código postal'),
+                keyboardType: TextInputType.number,
+                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _countryController,
+                decoration: const InputDecoration(labelText: 'País'),
+                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopSectionHeader({required IconData icon, required String title}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: colorScheme.onPrimaryContainer),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCouponSection() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Promo Code',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              'Código de Promoción',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _couponController,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
-                hintText: 'Enter coupon code (e.g. SAVE10)',
+                hintText: 'Ingresa tu código (ej. SAVE10)',
                 prefixIcon: Icon(Icons.local_offer_outlined),
-                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Discounts from coupons are applied at checkout.',
-              style: TextStyle(fontSize: 13, color: Colors.black54),
+            Text(
+              'Los descuentos por cupón se aplican al finalizar.',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -407,39 +1194,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPaymentSection() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Payment',
+            Text(
+              'Pago',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.lock_outline, color: Colors.green),
+                Icon(Icons.lock_outline, color: colorScheme.primary),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Secure hosted checkout',
+                      const Text(
+                        'Pago seguro en línea',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        'After placing your order you will be redirected to our secure payment page '
-                        'to pay by card, OXXO or bank transfer (SPEI). Your card details are never '
-                        'processed by this app.',
-                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                        'Al confirmar tu pedido serás redirigido a nuestra página segura de pago '
+                        'para pagar con tarjeta, OXXO o transferencia (SPEI). Tu tarjeta nunca '
+                        'se procesa en esta app.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
@@ -453,7 +1245,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               children: const [
                 _PaymentMethodChip(
                   icon: Icons.credit_card,
-                  label: 'Card',
+                  label: 'Tarjeta',
                 ),
                 _PaymentMethodChip(
                   icon: Icons.storefront,
@@ -480,15 +1272,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             CheckboxListTile(
               value: _acceptTerms,
               onChanged: (value) => setState(() => _acceptTerms = value ?? false),
-              title: const Text('I accept the terms and conditions'),
-              subtitle: const Text('Review our terms of service and privacy policy'),
+              title: const Text('Acepto los términos y condiciones'),
+              subtitle: const Text('Consulta los términos de servicio y la política de privacidad'),
               controlAffinity: ListTileControlAffinity.leading,
             ),
             TextButton(
               onPressed: () {
                 // TODO: Navigate to terms & conditions
               },
-              child: const Text('View Terms & Conditions'),
+              child: const Text('Ver Términos y Condiciones'),
             ),
           ],
         ),
@@ -497,33 +1289,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildCheckoutButton(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: colorScheme.surfaceContainerLowest,
+        border: Border(
+          top: BorderSide(color: colorScheme.outlineVariant),
+        ),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Total:',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               Text(
                 '\$${cart.total.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: colorScheme.primary,
                 ),
               ),
             ],
@@ -533,21 +1326,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _isLoading ? null : _processOrder,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : const Text(
-                      'Complete Order',
+                      'Confirmar Pedido',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
                       ),
                     ),
             ),
@@ -565,9 +1357,10 @@ class OrderConfirmationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Confirmation'),
+        title: const Text('Confirmación del Pedido'),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -575,24 +1368,25 @@ class OrderConfirmationScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle,
               size: 80,
-              color: Colors.green,
+              color: colorScheme.primary,
             ),            const SizedBox(height: 16),
-            const Text(
-              'Order Placed Successfully!',
+            Text(
+              '¡Pedido Realizado!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Order #${order.id}',
+              'Pedido #${order.id}',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.grey[600],
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 32),
@@ -602,20 +1396,21 @@ class OrderConfirmationScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Order Summary',
+                    Text(
+                      'Resumen del Pedido',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('Status: ${order.status.displayName}'),
-                    Text('Items: ${order.items.length}'),
+                    Text('Estado: ${order.status.displayName}'),
+                    Text('Artículos: ${order.items.length}'),
                     Text('Total: \$${order.total.toStringAsFixed(2)}'),
                     if (order.trackingNumber != null) ...[
                       const SizedBox(height: 8),
-                      Text('Tracking: ${order.trackingNumber}'),
+                      Text('Seguimiento: ${order.trackingNumber}'),
                     ],
                   ],
                 ),
@@ -628,10 +1423,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                 onPressed: () {
                   Get.offAllNamed('/');
                 },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Continue Shopping'),
+                child: const Text('Seguir Comprando'),
               ),
             ),
           ],
@@ -649,19 +1441,27 @@ class _PaymentMethodChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.black54),
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 13)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

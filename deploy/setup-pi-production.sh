@@ -120,29 +120,29 @@ setup_environment_files() {
     log "🔐 Setting up production environment files..."
 
     # Production environment file
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/.env.production << EOF
+    sudo -u deploy tee "$DEPLOY_PATH/.env.production" > /dev/null << EOF
 # Database connections
 MONGO_URI=mongodb://mongo:27017/mercadomio
 REDIS_ADDR=redis:6379
 
 # Application settings
 NODE_ENV=production
-API_URL=https://$CLOUDFLARE_SUBDOMAIN.trycloudflare.com
+API_URL=https://${CLOUDFLARE_SUBDOMAIN}.trycloudflare.com
 
 # Cloudinary (if using)
-CLOUDINARY_CLOUD_NAME=\${CLOUDINARY_CLOUD_NAME}
-CLOUDINARY_API_KEY=\${CLOUDINARY_API_KEY}
-CLOUDINARY_API_SECRET=\${CLOUDINARY_API_SECRET}
+CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
 
 # Directus database
 POSTGRES_DB=directus
 POSTGRES_USER=admin
-POSTGRES_PASSWORD=\${POSTGRES_PASSWORD:-changeme123}
-DIRECTUS_KEY=pi4-directus-\$(date +%s)
-DIRECTUS_SECRET=super-secret-\$(openssl rand -hex 32)
-DIRECTUS_ADMIN_EMAIL=admin@\${DOMAIN:-localhost}
-DIRECTUS_ADMIN_PASSWORD=\${DIRECTUS_ADMIN_PASSWORD:-admin123}
-EOF"
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme123}
+DIRECTUS_KEY=pi4-directus-$(date +%s)
+DIRECTUS_SECRET=super-secret-$(openssl rand -hex 32)
+DIRECTUS_ADMIN_EMAIL=admin@${DOMAIN:-localhost}
+DIRECTUS_ADMIN_PASSWORD=${DIRECTUS_ADMIN_PASSWORD:-admin123}
+EOF
 
     # SSH key instructions
     cat > "$DEPLOY_PATH/SSH_SETUP_README.md" << 'EOF'
@@ -285,7 +285,11 @@ EOF
 create_production_compose() {
     log "🐳 Creating production Docker Compose configuration..."
 
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/docker-compose.prod.yml << EOF
+    local IMG_ORG
+    IMG_ORG=$(git config --get remote.origin.url 2>/dev/null | sed 's/.*github.com[:/]\([^.]*\).*/\1/')
+    IMG_ORG=${IMG_ORG:-hugomf}
+
+    sudo -u deploy tee "$DEPLOY_PATH/docker-compose.prod.yml" > /dev/null << EOF
 version: '3.8'
 
 services:
@@ -294,8 +298,8 @@ services:
     image: nginx:alpine
     restart: unless-stopped
     ports:
-      - \"80:80\"
-      - \"443:443\"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
@@ -307,7 +311,7 @@ services:
 
   # Go backend API
   backend:
-    image: ghcr.io/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/mercadomio/backend:latest
+    image: ghcr.io/${IMG_ORG}/mercadomio/backend:latest
     restart: unless-stopped
     environment:
       - MONGO_URI=mongodb://mongo:27017/mercadomio
@@ -322,7 +326,7 @@ services:
       - redis
       - postgres
     healthcheck:
-      test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/api/health\"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -330,7 +334,7 @@ services:
 
   # Flutter web frontend
   frontend:
-    image: ghcr.io/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/mercadomio/frontend:latest
+    image: ghcr.io/${IMG_ORG}/mercadomio/frontend:latest
     restart: unless-stopped
     networks:
       - app_network
@@ -346,7 +350,7 @@ services:
       - ./data/mongo:/data/db:rw
     environment:
       MONGO_INITDB_DATABASE: mercadomio
-    command: --storageEngine wiredTiger --smallfiles
+    command: --storageEngine wiredTiger
     networks:
       - db_network
     deploy:
@@ -372,7 +376,7 @@ services:
     environment:
       POSTGRES_DB: directus
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: \"\\\${POSTGRES_PASSWORD:-changeme123}\"
+      POSTGRES_PASSWORD: "\${POSTGRES_PASSWORD:-changeme123}"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     networks:
@@ -387,17 +391,17 @@ services:
     image: directus/directus:latest
     restart: unless-stopped
     environment:
-      KEY: \"\\\${DIRECTUS_KEY}\"
-      SECRET: \"\\\${DIRECTUS_SECRET}\"
+      KEY: "\${DIRECTUS_KEY}"
+      SECRET: "\${DIRECTUS_SECRET}"
       DB_CLIENT: pg
       DB_HOST: postgres
       DB_PORT: 5432
       DB_DATABASE: directus
       DB_USER: admin
-      DB_PASSWORD: \"\\\${POSTGRES_PASSWORD:-changeme123}\"
-      ADMIN_EMAIL: \"\\\${DIRECTUS_ADMIN_EMAIL:-admin@localhost}\"
-      ADMIN_PASSWORD: \"\\\${DIRECTUS_ADMIN_PASSWORD:-admin123}\"
-      PUBLIC_URL: \"https://$CLOUDFLARE_SUBDOMAIN.trycloudflare.com/cms\"
+      DB_PASSWORD: "\${POSTGRES_PASSWORD:-changeme123}"
+      ADMIN_EMAIL: "\${DIRECTUS_ADMIN_EMAIL:-admin@localhost}"
+      ADMIN_PASSWORD: "\${DIRECTUS_ADMIN_PASSWORD:-admin123}"
+      PUBLIC_URL: "https://${CLOUDFLARE_SUBDOMAIN}.trycloudflare.com/cms"
     networks:
       - db_network
     depends_on:
@@ -412,10 +416,10 @@ networks:
 volumes:
   mongo_data:
   postgres_data:
-EOF"
+EOF
 
     # Create nginx configuration
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/nginx.conf << 'EOF'
+    sudo -u deploy tee "$DEPLOY_PATH/nginx.conf" > /dev/null << 'EOF'
 events {
     worker_connections 1024;
 }
@@ -470,10 +474,10 @@ http {
         # API routes
         location /api/ {
             proxy_pass http://backend_app/;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
             # CORS for API
             add_header Access-Control-Allow-Origin *;
@@ -484,13 +488,13 @@ http {
         # Frontend routes
         location / {
             proxy_pass http://frontend_app/;
-            proxy_set_header Host \$host;
-            proxy_set_header X-Real-IP \$remote_addr;
-            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
             # Try files for SPA
-            try_files \$uri \$uri/ /index.html;
+            try_files $uri $uri/ /index.html;
         }
 
         # Cache static assets
@@ -501,7 +505,7 @@ http {
         }
     }
 }
-EOF"
+EOF
 
     log "✅ Production Docker Compose and Nginx configurations created"
 }
@@ -511,7 +515,7 @@ setup_monitoring() {
     log "📊 Setting up monitoring scripts..."
 
     # Health check script
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/health-check.sh << 'EOF'
+    sudo -u deploy tee "$DEPLOY_PATH/health-check.sh" > /dev/null << 'EOF'
 #!/bin/bash
 echo "🏥 Production Health Check - $(date)"
 
@@ -551,17 +555,17 @@ echo "Disk: $(df -h / | awk 'NR==2{print $5}') used"
 echo "Load: $(uptime | awk -F'load average:' '{ print $2 }' | cut -d, -f1 | xargs)"
 
 echo -e "\n✨ Health check completed"
-EOF"
+EOF
 
     # Backup script
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/backup.sh << 'EOF'
+    sudo -u deploy tee "$DEPLOY_PATH/backup.sh" > /dev/null << 'EOF'
 #!/bin/bash
-BACKUP_DIR=\"./backup\"
+BACKUP_DIR="./backup"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-mkdir -p \"\$BACKUP_DIR\"
+mkdir -p "$BACKUP_DIR"
 
-echo \"💾 Creating production backup...\"
+echo "💾 Creating production backup..."
 
 # Database backup
 docker exec $(docker ps -q -f name=mongo) mongodump --db mercadomio --out /tmp/backup
@@ -569,16 +573,16 @@ docker cp $(docker ps -q -f name=mongo):/tmp/backup ./backup/mongo_backup_$TIMES
 docker exec $(docker ps -q -f name=mongo) rm -rf /tmp/backup
 
 # Compress
-cd \"\$BACKUP_DIR\" && tar -czf mongo_backup_$TIMESTAMP.tar.gz mongo_backup_$TIMESTAMP
+cd "$BACKUP_DIR" && tar -czf mongo_backup_$TIMESTAMP.tar.gz mongo_backup_$TIMESTAMP
 rm -rf mongo_backup_$TIMESTAMP
 
-echo \"✅ Backup completed: \$BACKUP_DIR/mongo_backup_$TIMESTAMP.tar.gz\"
-EOF"
+echo "✅ Backup completed: $BACKUP_DIR/mongo_backup_$TIMESTAMP.tar.gz"
+EOF
 
     # Update scripts
-    sudo -u deploy bash -c "cat > $DEPLOY_PATH/update.sh << 'EOF'
+    sudo -u deploy tee "$DEPLOY_PATH/update.sh" > /dev/null << 'EOF'
 #!/bin/bash
-echo \"🔄 Updating production deployment...\"
+echo "🔄 Updating production deployment..."
 
 # Pull latest images
 docker-compose -f docker-compose.prod.yml pull
@@ -589,14 +593,14 @@ docker-compose -f docker-compose.prod.yml up -d
 # Health check
 sleep 30
 if curl -s --max-time 15 http://localhost/api/health > /dev/null; then
-    echo \"✅ Update successful\"
+    echo "✅ Update successful"
     # Cleanup old images
     docker image prune -f > /dev/null
 else
-    echo \"❌ Update failed - check logs\"
+    echo "❌ Update failed - check logs"
     exit 1
 fi
-EOF"
+EOF
 
     # Make scripts executable
     sudo chmod +x "$DEPLOY_PATH/health-check.sh"
