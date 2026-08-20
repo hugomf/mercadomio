@@ -489,221 +489,12 @@ child: Card(
     );
   }
 
-  /// Unit label (e.g. "1 kg") resolved by the backend pricing engine and
-  /// attached to the product's customAttributes on every catalog read.
-  /// Returns null when the product has no unit.
-  String? _productUnit(Product product) {
-    final attrs = product.customAttributes;
-    final raw = attrs?['unit'];
-    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
-    return null;
-  }
-
-  /// Discount percent computed by the backend pricing engine from the
-  /// difference between base price and resolved (schedule+set) price.
-  /// Only present when a real discount applies.
-  double? _productDiscount(Product product) {
-    final attrs = product.customAttributes;
-    final raw = attrs?['discountPercent'];
-    if (raw is num && raw > 0) return raw.toDouble();
-    return null;
-  }
-
   Widget _buildDesktopProductCard(Product product) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final unit = _productUnit(product);
-    final discount = _productDiscount(product);
-
-    return GestureDetector(
+    return _DesktopProductCard(
+      product: product,
       onTap: () => _navigateToProductDetail(product.id),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.surfaceContainerHighest),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image: flexible so the body below always keeps its natural height
-            // (square tiles on narrow columns can't fit a full square image
-            // plus the text block).
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: colorScheme.surfaceContainer,
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: colorScheme.surfaceContainer,
-                        child: Icon(
-                          Icons.image,
-                          size: 48,
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (discount != null)
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: colorScheme.error,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '-${discount.round()}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onError,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Material(
-                      color: colorScheme.surface.withValues(alpha: 0.85),
-                      shape: const CircleBorder(),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.favorite_border,
-                          size: 20,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        onPressed: () => Get.snackbar(
-                          'Favoritos',
-                          '${product.name} se agregó a tu lista de deseos',
-                          backgroundColor: colorScheme.tertiary,
-                          colorText: colorScheme.onTertiary,
-                          margin: const EdgeInsets.all(20),
-                          borderRadius: 8,
-                          duration: const Duration(milliseconds: 1200),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Body
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (unit != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      unit,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (discount != null) ...[
-                              Text(
-                                '\$${product.basePrice.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  decoration: TextDecoration.lineThrough,
-                                  color: colorScheme.outline,
-                                ),
-                              ),
-                              const SizedBox(height: 1),
-                            ],
-                            Text(
-                              '\$${_discountedPrice(product).toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                height: 1,
-                              ),
-                            ),
-                            // Stitch shows the unit inline on regular-priced
-                            // cards: '$85.00 / kg'.
-                            if (discount == null && unit != null)
-                              Text(
-                                '/ $unit',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.normal,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      // Stitch add button: filled primary when the product is
-                      // discounted, primary-container otherwise.
-                      Material(
-                        color: discount != null
-                            ? colorScheme.primary
-                            : colorScheme.primaryContainer,
-                        shape: CircleBorder(
-                          side: discount != null
-                              ? BorderSide.none
-                              : BorderSide(
-                                  color: colorScheme.primary.withValues(
-                                      alpha: 0.2),
-                                ),
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.add,
-                            color: discount != null
-                                ? colorScheme.onPrimary
-                                : colorScheme.onPrimaryContainer,
-                          ),
-                          onPressed: () => _addToCart(product),
-                          tooltip: 'Agregar al carrito',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      onAddToCart: () => _addToCart(product),
     );
-  }
-
-  double _discountedPrice(Product product) {
-    final discount = _productDiscount(product);
-    if (discount == null) return product.basePrice;
-    return product.basePrice * (1 - discount / 100);
   }
 
   StreamSubscription<CategorySelectionEvent>? _categorySub;
@@ -1390,6 +1181,271 @@ child: Card(
           return _buildMobileLayout();
         }
       },
+    );
+  }
+}
+
+/// Desktop product card matching the Stitch landing grid: hover shadow,
+/// image zoom, favorite revealed on hover, and a circular add button.
+class _DesktopProductCard extends StatefulWidget {
+  const _DesktopProductCard({
+    required this.product,
+    required this.onTap,
+    required this.onAddToCart,
+  });
+
+  final Product product;
+  final VoidCallback onTap;
+  final VoidCallback onAddToCart;
+
+  @override
+  State<_DesktopProductCard> createState() => _DesktopProductCardState();
+}
+
+class _DesktopProductCardState extends State<_DesktopProductCard> {
+  bool _hovered = false;
+
+  String? _getUnit() {
+    final raw = widget.product.customAttributes?['unit'];
+    if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+    return null;
+  }
+
+  double? _getDiscount() {
+    final raw = widget.product.customAttributes?['discountPercent'];
+    if (raw is num && raw > 0) return raw.toDouble();
+    return null;
+  }
+
+  double _getDiscountedPrice(double discount) {
+    return widget.product.basePrice * (1 - discount / 100);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final unit = _getUnit();
+    final discount = _getDiscount();
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.surfaceContainer),
+            // Stitch "hover:shadow-lg": a soft lift only while hovering.
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: colorScheme.shadow.withValues(alpha: 0.14),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image: flexible so the body below always keeps its natural
+              // height. Zooms slightly while hovering (group-hover:scale-105).
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: AnimatedScale(
+                        scale: _hovered ? 1.05 : 1.0,
+                        duration: const Duration(milliseconds: 400),
+                        child: CachedNetworkImage(
+                          imageUrl: widget.product.imageUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: colorScheme.surfaceContainerLow,
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: colorScheme.surfaceContainerLow,
+                            child: Icon(
+                              Icons.image,
+                              size: 48,
+                              color: colorScheme.outline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (discount != null)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.error,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '-${discount.round()}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onError,
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Favorite: only revealed on hover, like the Stitch
+                    // group-hover:opacity-100 treatment.
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: _hovered ? 1.0 : 0.0,
+                        child: Material(
+                          color: colorScheme.surface.withValues(alpha: 0.85),
+                          shape: const CircleBorder(),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.favorite_border,
+                              size: 20,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            onPressed: () => Get.snackbar(
+                              'Favoritos',
+                              '${widget.product.name} se agregó a tu lista de deseos',
+                              backgroundColor: colorScheme.tertiary,
+                              colorText: colorScheme.onTertiary,
+                              margin: const EdgeInsets.all(20),
+                              borderRadius: 8,
+                              duration: const Duration(milliseconds: 1200),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Body
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.product.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                        // Stitch group-hover:text-primary.
+                        color: _hovered
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (unit != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        unit,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (discount != null) ...[
+                                Text(
+                                  '\$${widget.product.basePrice.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    decoration: TextDecoration.lineThrough,
+                                    color: colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                              ],
+                              Text(
+                                '\$${(discount != null ? _getDiscountedPrice(discount) : widget.product.basePrice).toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              // Stitch shows the unit inline on regular-priced
+                              // cards: '$85.00 / kg'.
+                              if (discount == null && unit != null)
+                                Text(
+                                  '/ $unit',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.normal,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        // Stitch add button: filled primary when discounted,
+                        // primary-container otherwise.
+                        Material(
+                          color: discount != null
+                              ? colorScheme.primary
+                              : colorScheme.primaryContainer,
+                          shape: CircleBorder(
+                            side: discount != null
+                                ? BorderSide.none
+                                : BorderSide(
+                                    color: colorScheme.primary.withValues(
+                                        alpha: 0.2),
+                                  ),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.add,
+                              color: discount != null
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onPrimaryContainer,
+                            ),
+                            onPressed: widget.onAddToCart,
+                            tooltip: 'Agregar al carrito',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
