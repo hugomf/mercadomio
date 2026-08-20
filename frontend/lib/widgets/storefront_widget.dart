@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/category.dart';
@@ -11,6 +12,12 @@ import '../services/category_service.dart';
 /// in [ProductListingWidget].
 class StorefrontWidget extends StatefulWidget {
   const StorefrontWidget({super.key});
+
+  /// Hero background photo of fresh vegetables (matches the Stitch mock's
+  /// produce imagery). Uses Unsplash's stable CDN URL.
+  static const String _heroImageUrl =
+      'https://images.unsplash.com/photo-1547592180-85f173990554'
+      '?auto=format&fit=crop&w=1200&q=60';
 
   @override
   State<StorefrontWidget> createState() => _StorefrontWidgetState();
@@ -47,6 +54,37 @@ class _StorefrontWidgetState extends State<StorefrontWidget> {
           ),
         ),
         const SizedBox(height: 32),
+        _buildOffersHeader(context),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  /// "Ofertas de la semana" section header matching the Stitch design:
+  /// a fire icon, the title and a "Ver todas" action.
+  Widget _buildOffersHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(Icons.local_fire_department, color: colorScheme.tertiary),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            'Ofertas de la semana',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: _categoryService.clearSelectedCategories,
+          child: const Text('Ver todas'),
+        ),
       ],
     );
   }
@@ -77,15 +115,39 @@ class _HeroBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 300,
+      height: 360,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Stack(
         children: [
-          // Decorative gradient overlay for visual depth (kept asset-free).
+          // Hero background photo, softly blending into the primary container
+          // (matches the mock's `opacity-80 mix-blend-overlay` image layer).
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.55,
+              child: CachedNetworkImage(
+                imageUrl: StorefrontWidget._heroImageUrl,
+                fit: BoxFit.cover,
+                color: colorScheme.primaryContainer,
+                colorBlendMode: BlendMode.overlay,
+                errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                placeholder: (_, __) =>
+                    const ColoredBox(color: Colors.transparent),
+              ),
+            ),
+          ),
+          // Gradient overlay fading out towards the right so the text stays
+          // readable while the image peeks through on the far side.
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -93,9 +155,9 @@ class _HeroBanner extends StatelessWidget {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    colorScheme.primaryContainer.withValues(alpha: 0.9),
-                    colorScheme.primaryContainer.withValues(alpha: 0.7),
-                    colorScheme.primaryContainer.withValues(alpha: 0.4),
+                    colorScheme.primaryContainer,
+                    colorScheme.primaryContainer.withValues(alpha: 0.75),
+                    colorScheme.primaryContainer.withValues(alpha: 0.25),
                   ],
                 ),
               ),
@@ -105,59 +167,62 @@ class _HeroBanner extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: FittedBox(
-                // Never overflow the banner: scale the stacked content down
-                // when the available space is tighter than its natural size.
-                fit: BoxFit.scaleDown,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.tertiaryContainer,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        'OFERTA ESPECIAL',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: colorScheme.onTertiaryContainer,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '20% de descuento en\nFrutas y Verduras',
-                      style: TextStyle(
-                        fontSize: 34,
-                        height: 1.15,
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: onSeeOffers,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.surfaceContainerLowest,
-                        foregroundColor: colorScheme.primary,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: FittedBox(
+                  // Never overflow the banner: scale the stacked content down
+                  // when the available space is tighter than its natural size.
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        shape: const StadiumBorder(),
+                        decoration: BoxDecoration(
+                          color: colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'OFERTA ESPECIAL',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: colorScheme.onTertiaryContainer,
+                          ),
+                        ),
                       ),
-                      icon: const Icon(Icons.arrow_forward, size: 20),
-                      label: const Text('Ver ofertas'),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Text(
+                        '20% de descuento en\nFrutas y Verduras',
+                        style: TextStyle(
+                          fontSize: 40,
+                          height: 1.1,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: onSeeOffers,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.surfaceContainerLowest,
+                          foregroundColor: colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          shape: const StadiumBorder(),
+                        ),
+                        icon: const Icon(Icons.arrow_forward, size: 20),
+                        label: const Text('Ver ofertas'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -190,13 +255,16 @@ class _CategoryTilesState extends State<_CategoryTiles> {
   Widget build(BuildContext context) {
     final visible = widget.categories.take(7).toList();
 
-    return Row(
-      children: [
-        for (var i = 0; i < visible.length; i++) ...[
-          if (i > 0) const SizedBox(width: 24),
-          _buildTile(context, visible[i], i),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var i = 0; i < visible.length; i++) ...[
+            if (i > 0) const SizedBox(width: 24),
+            _buildTile(context, visible[i], i),
+          ],
         ],
-      ],
+      ),
     );
   }
 

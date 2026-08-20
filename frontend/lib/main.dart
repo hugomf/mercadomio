@@ -97,120 +97,41 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  // Desktop nav indices (single source of truth): 0 Inicio, 1 Categorías,
+  // 2 Carrito, 3 Pedidos, 4 Perfil. The mobile bottom bar only exposes
+  // Inicio/Carrito/Pedidos, mapping those to desktop indices via
+  // [_mobileTabToIndex].
+  static const List<int> _mobileTabToIndex = [0, 2, 3];
+
+  // Derive which mobile bottom-bar tab corresponds to the current selection,
+  // clamping desktop-only indices (Categorías, Perfil) to Inicio so the bar
+  // never builds with an out-of-range currentIndex.
+  int _bottomNavIndex() {
+    switch (_selectedIndex) {
+      case 2:
+        return 1; // Carrito
+      case 3:
+        return 2; // Pedidos
+      default:
+        return 0; // Inicio (also Categorías and Perfil)
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
-      appBar: AppBar(
-        title: LayoutBuilder(
-          builder: (context, constraints) {
-            final isSmallScreen = constraints.maxWidth < 400;
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.shopping_bag,
-                  size: isSmallScreen ? 24 : 28,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Mercadomio',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isSmallScreen ? 19 : 21,
-                    letterSpacing: 0.2,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
-            onPressed: () {
-              _onItemTapped(0);
-            },
-          ),
-          const CartIcon(),
-          const SizedBox(width: 4),
-          // User profile/logout
-          AuthOptional(
-            authenticatedChild: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'logout') {
-                  Get.find<AuthService>().logout();
-                } else if (value == 'profile') {
-                  // TODO: Show profile dialog
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'profile',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person, size: 18, color: colorScheme.primary),
-                      const SizedBox(width: 8),
-                      const Text('Perfil'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout, size: 18, color: colorScheme.primary),
-                      const SizedBox(width: 8),
-                      const Text('Cerrar sesión'),
-                    ],
-                  ),
-                ),
-              ],
-              child: Obx(() {
-                final user = Get.find<AuthService>().currentUser;
-                return Row(
-                  children: [
-                    if (user != null) ...[
-                      Text(
-                        user.name.split(' ').first,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    Icon(
-                      Icons.account_circle,
-                      color: colorScheme.primary,
-                    ),
-                  ],
-                );
-              }),
-            ),
-            unauthenticatedChild: TextButton(
-              onPressed: () => Get.to(() => const AuthGuard(child: SizedBox())),
-              child: const Text('Iniciar sesión'),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: isDesktop ? _buildDesktopHeader() : _buildMobileAppBar(),
       body: isDesktop
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDesktopSidebar(),
-                const VerticalDivider(width: 1, thickness: 1),
-                Expanded(child: _buildDesktopContent()),
-              ],
+          ? Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1280),
+                child: _buildContent(),
+              ),
             )
-          : _buildMobileContent(),
+          : _buildContent(),
       bottomNavigationBar: isDesktop
           ? null
           : BottomNavigationBar(
@@ -229,194 +150,315 @@ class _MainScreenState extends State<MainScreen> {
                   label: 'Pedidos',
                 ),
               ],
-              currentIndex: _selectedIndex,
+              currentIndex: _bottomNavIndex(),
               selectedItemColor: colorScheme.primary,
               unselectedItemColor: colorScheme.onSurfaceVariant,
-              onTap: _onItemTapped,
+              onTap: (index) => _onItemTapped(_mobileTabToIndex[index]),
             ),
     );
   }
 
-  Widget _buildMobileContent() {
+  Widget _buildContent() {
     switch (_selectedIndex) {
-      case 1:
-        return const CartScreen();
       case 2:
-        return _buildOrdersScreen();
-      default:
-        return const HomeScreen();
-    }
-  }
-
-  Widget _buildDesktopContent() {
-    switch (_selectedIndex) {
-      case 1:
         return const CartScreen();
-      case 2:
+      case 3:
         return _buildOrdersScreen();
       case 4:
         return _ProfileView(
-          onOrdersTap: () => _onItemTapped(2),
+          onOrdersTap: () => _onItemTapped(3),
         );
       default:
         return const HomeScreen();
     }
   }
 
-  Widget _buildDesktopSidebar() {
+  // Mobile top bar: brand title, search shortcut, cart and account actions.
+  AppBar _buildMobileAppBar() {
     final colorScheme = Theme.of(context).colorScheme;
-    final navItems = <_DesktopNavItem>[
-      _DesktopNavItem(
-        icon: Icons.home_outlined,
-        iconSelected: Icons.home,
-        label: 'Inicio',
-      ),
-      _DesktopNavItem(
-        icon: Icons.category_outlined,
-        iconSelected: Icons.category,
-        label: 'Categorías',
-      ),
-      _DesktopNavItem(
-        icon: Icons.shopping_cart_outlined,
-        iconSelected: Icons.shopping_cart,
-        label: 'Carrito',
-      ),
-      _DesktopNavItem(
-        icon: Icons.receipt_long_outlined,
-        iconSelected: Icons.receipt_long,
-        label: 'Pedidos',
-      ),
-      _DesktopNavItem(
-        icon: Icons.person_outline,
-        iconSelected: Icons.person,
-        label: 'Perfil',
-      ),
-    ];
-
-    return Container(
-      width: 232,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border(
-          right: BorderSide(color: colorScheme.outlineVariant),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Row(
-              children: [
-                Icon(Icons.shopping_bag, size: 24, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Mercadomio',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: colorScheme.primary,
-                    ),
-                  ),
+    return AppBar(
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 400;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.shopping_bag,
+                size: isSmallScreen ? 24 : 28,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Mercadomio',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: isSmallScreen ? 19 : 21,
+                  letterSpacing: 0.2,
+                  color: colorScheme.primary,
                 ),
-              ],
-            ),
+              ),
+            ],
+          );
+        },
+      ),
+      centerTitle: false,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+          onPressed: () {
+            _onItemTapped(0);
+          },
+        ),
+        const CartIcon(),
+        const SizedBox(width: 4),
+        // User profile/logout
+        AuthOptional(
+          authenticatedChild: PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                Get.find<AuthService>().logout();
+              } else if (value == 'profile') {
+                _onProfileItemTapped();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, size: 18, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text('Perfil'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 18, color: colorScheme.primary),
+                    const SizedBox(width: 8),
+                    const Text('Cerrar sesión'),
+                  ],
+                ),
+              ),
+            ],
+            child: Obx(() {
+              final user = Get.find<AuthService>().currentUser;
+              return Row(
+                children: [
+                  if (user != null) ...[
+                    Text(
+                      user.name.split(' ').first,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Icon(
+                    Icons.account_circle,
+                    color: colorScheme.primary,
+                  ),
+                ],
+              );
+            }),
           ),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _DesktopLocationChip(),
+          unauthenticatedChild: TextButton(
+            onPressed: () => Get.to(() => const AuthGuard(child: SizedBox())),
+            child: const Text('Iniciar sesión'),
           ),
-          const SizedBox(height: 16),
-          ...navItems.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final selected = _selectedIndex == index;
-            final isProfile = item.label == 'Perfil';
-            final isProfileActive = isProfile &&
-                (Get.find<AuthService>().isAuthenticated ||
-                    _selectedIndex == 4);
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              child: Material(
-                color: selected
-                    ? colorScheme.primaryContainer
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    if (isProfile) {
-                      _onProfileItemTapped();
-                    } else {
-                      _onItemTapped(index);
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    child: Row(
-                      children: [
-                        Icon(
-                          selected
-                              ? item.iconSelected
-                              : item.icon,
-                          size: 22,
-                          color: selected
-                              ? colorScheme.onPrimaryContainer
-                              : isProfileActive
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
+  // Desktop top navigation bar matching the Stitch mock's TopNav: a first row
+  // with brand, zone pill, search field and cart/account actions, and a second
+  // row with the section links. Replaces the legacy left sidebar (no mock
+  // uses a sidebar).
+  PreferredSizeWidget _buildDesktopHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(112),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          border: Border(
+            bottom: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1280),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.shopping_bag,
+                          size: 28, color: colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Mercadomio',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: colorScheme.primary,
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight:
-                                  selected ? FontWeight.bold : FontWeight.w500,
-                              color: selected
-                                  ? colorScheme.onPrimaryContainer
-                                  : colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 24),
+                      SizedBox(width: 190, child: _DesktopLocationChip()),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: TextField(
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (_) => _onItemTapped(0),
+                            decoration: InputDecoration(
+                              hintText: 'Buscar productos, marcas y más...',
+                              prefixIcon: const Icon(Icons.search),
+                              filled: true,
+                              fillColor: colorScheme.surfaceContainerLowest,
+                              contentPadding: EdgeInsets.zero,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(999),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(999),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outlineVariant,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(999),
+                                borderSide: BorderSide(
+                                  color: colorScheme.primary,
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 16),
+                      const CartIcon(),
+                      AuthOptional(
+                        authenticatedChild: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'logout') {
+                              Get.find<AuthService>().logout();
+                            } else if (value == 'profile') {
+                              _onProfileItemTapped();
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem<String>(
+                              value: 'profile',
+                              child: Text('Perfil'),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'logout',
+                              child: Text('Cerrar sesión'),
+                            ),
+                          ],
+                          child: Icon(
+                            Icons.account_circle,
+                            color: colorScheme.primary,
+                            size: 28,
+                          ),
+                        ),
+                        unauthenticatedChild: IconButton(
+                          icon: Icon(
+                            Icons.account_circle,
+                            color: colorScheme.onSurfaceVariant,
+                            size: 28,
+                          ),
+                          tooltip: 'Iniciar sesión',
+                          onPressed: () => Get.to(
+                            () => const AuthGuard(child: SizedBox()),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildNavLinks(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Section links shown in the second row of the desktop header (Inicio,
+  // Categorías, Pedidos, Perfil), matching the mock's active underline style.
+  Widget _buildNavLinks() {
+    final colorScheme = Theme.of(context).colorScheme;
+    const links = <(int, String)>[
+      (0, 'Inicio'),
+      (1, 'Categorías'),
+      (3, 'Pedidos'),
+      (4, 'Perfil'),
+    ];
+    return Row(
+      children: links.map((link) {
+        final (index, label) = link;
+        final selected = _selectedIndex == index;
+        return Padding(
+          padding: const EdgeInsets.only(right: 28),
+          child: InkWell(
+            onTap: () {
+              if (index == 4) {
+                _onProfileItemTapped();
+              } else {
+                _onItemTapped(index);
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                border: selected
+                    ? Border(
+                        bottom: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
+                      )
+                    : null,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                    color: selected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
-            );
-          }),
-          const Spacer(),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Icon(Icons.support_agent,
-                    size: 18, color: colorScheme.onSurfaceVariant),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Ayuda y soporte',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
@@ -428,18 +470,6 @@ class _MainScreenState extends State<MainScreen> {
       Get.to(() => const AuthGuard(child: SizedBox()));
     }
   }
-}
-
-class _DesktopNavItem {
-  final IconData icon;
-  final IconData iconSelected;
-  final String label;
-
-  const _DesktopNavItem({
-    required this.icon,
-    required this.iconSelected,
-    required this.label,
-  });
 }
 
 class _DesktopLocationChip extends StatefulWidget {
@@ -694,9 +724,9 @@ class HomeScreen extends StatelessWidget {
       );
     } else {
       // Desktop/tablet layout: storefront hero + category tiles above the
-      // flexible product listing. The storefront is capped at half the panel
-      // height (scrolling internally if needed) so it never starves the
-      // listing on short windows.
+      // flexible product listing. The storefront never starves the listing:
+      // it is capped at half the panel height AND leaves at least 320px of
+      // vertical space for the listing (scrolling internally if needed).
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -707,7 +737,8 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight * 0.5,
+                      maxHeight: (constraints.maxHeight - 320)
+                          .clamp(0.0, constraints.maxHeight * 0.5),
                     ),
                     child: const SingleChildScrollView(
                       child: StorefrontWidget(),

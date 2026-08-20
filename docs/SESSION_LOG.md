@@ -1,6 +1,50 @@
 # Session Log
 
-## 2026-08-15 — Desktop login screen aligned to Stitch design
+## 2026-08-16 — Product images wired for the full catalog
+
+Request: "todavia no muestra imagenes de los otros productos".
+
+Root cause: only 5 of the seeded products had an `imageUrl` set (the 4 ComfyUI featured shots + Nupec); the other 32 (and one added later, 38 total) had `imageUrl=''`, so their cards rendered the empty-state placeholder.
+
+Changes:
+- Verified an absolute-image URL pattern that loads reliably (GET 200): `https://images.unsplash.com/photo-<id>?auto=format&fit=crop&w=600&q=60` (Unsplash rejects HEAD requests — probing must use GET).
+- Backfilled `imageUrl` on 27 products with matching Unsplash photos (produce, meat, dairy, pantry, beverages, cleaning) via `PUT /api/products/:id` (partial update → 204).
+- Generated the 6 catalog items with no good Unsplash match — Arroz Premium, Azucar, Bolillo, Concha, Jabon de Trastes, Jabon Liquido — using the existing ComfyUI pipeline (`comfyui/run_product_shot.py`), uploaded them to Cloudinary (unsigned preset `ml-default`) and wired each `secure_url` into its product.
+- Verified: `GET /api/products?limit=100` → total 38, products without imageUrl: 0.
+
+No git. `flutter analyze`/`flutter test` not required (no Dart changes).
+
+## 2026-08-16 — Desktop: replaced legacy left sidebar with Stitch TopNav
+
+Requests: "why are you keep shwoing the left side menu? why you are not fixing the desktop design?" and "no se parece en nada la aplicacion a los mocks de google stitch".
+
+Root cause: the app-level left sidebar (`_buildDesktopSidebar`) in `frontend/lib/main.dart` — with 5 nav items — appeared in none of the 7 desktop Stitch mocks. Every mock uses a top navigation bar (logo + search + location + actions, then a nav-links row), so the sidebar made the app diverge visibly from the designs.
+
+Changes:
+- Removed `_buildDesktopSidebar()` and the now-unused `_DesktopNavItem` class from `frontend/lib/main.dart`.
+- Desktop now renders the TopNav-inspired `_buildDesktopHeader()` (sticky, surface bg, border-b outlineVariant, max-width 1280): top row = logo `Mercadomio` + `_DesktopLocationChip` ('Polanco, CDMX', zone picker) + rounded search field (placeholder "Buscar productos, marcas y más...") + `CartIcon` + account (login / profile popup); second row = nav links Inicio / Categorías / Pedidos / Perfil with active primary underline.
+- Mobile keeps the original AppBar via extracted `_buildMobileAppBar()`.
+- Content for desktop is now centered `ConstrainedBox(maxWidth: 1280)` (matching the mock `max-w-7xl`) instead of sitting beside a sidebar.
+- HomeScreen desktop storefront ConstrainedBox now uses `(maxHeight - 320).clamp(0.0, maxHeight * 0.5)` so the product listing always keeps ≥320px (fixed a 70px overflow on short windows).
+- Removed dead pricing helpers (`_productUnit`/`_productDiscount`/`_discountedPrice`) from `product_listing_widget.dart` (logic now lives in `_DesktopProductCard`).
+
+Verified: `flutter analyze` → No issues found; `flutter test` → 'App renders without crashing' + All tests passed.
+
+## 2026-08-15 — Database recovered and re-seeded with grocery catalog
+
+Request: "you didnt seed or I don't know why we ar elosing the seeded products" (products disappearing from the app) and earlier "everything is so bad, the screen doesnt even match with the mocks".
+
+Root cause: MongoDB and Redis were not running, so the backend returned 500 / connection-refused on every catalog request → all screens rendered empty/error. Local services were down because `scripts/start-backend.sh` relies on Docker (unavailable on this Mac) to auto-start Mongo/Redis.
+
+Changes:
+- Started local services manually: Redis via `brew services start redis`; mongod via `/opt/homebrew/bin/mongod --dbpath /opt/homebrew/var/mongodb --bind_ip 127.0.0.1 --port 27017` in background (mongod does not support `--fork` on macOS).
+- Confirmed the `mercadomio` DB was genuinely empty (0 categories, 0 products) — all previously seeded data had been lost.
+- Investigated the seed scripts: `seed/seed_categories_and_products.sh` and `generate-products.sh` were broken against the current API — they POST `price` but the API (services.Product) expects `basePrice`, and they seeded electronics/clothing that doesn't match the grocery domain.
+- Rewrote seeding as `seed/seed_grocery.sh` (new): creates the 7 storefront root categories (Frutas y Verduras, Carniceria, Panaderia, Lacteos y Huevos, Abarrotes, Bebidas, Limpieza y Hogar — accents omitted from names since the backend category filter is regex-on-name), then 37 grocery products using the correct POST shape (`basePrice`, `type: "physical"`, `category` name string, `categories: [ObjectID]`, `sku`, `customAttributes.unit`).
+- Fixed a jq/aargjson quoting bug in the seed script (product `categories` array) and re-ran cleanly: final state **7 categories, 37 products**.
+- Verified live: `GET /api/products?category=Frutas y Verduras` returns the 6 fruit products; `GET /api/products` returns the full catalog with price enrichment (customAttributes `effectivePrice`/`discountPercent`/`unit`) attached.
+
+Verified: mongosh counts cats=7 prods=37; product category filter returns correct subset; catalog endpoint returns enriched products.
 
 Request: user said "next" (continuing the desktop Stitch alignment; cuarto design remaining in `.stitch/designs-desktop/`). Target `.stitch/designs-desktop/login-desktop.html`.
 
