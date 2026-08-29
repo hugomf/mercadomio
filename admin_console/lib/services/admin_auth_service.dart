@@ -27,10 +27,19 @@ class AdminAuthService {
   bool get isAdmin => _isAdmin;
 
   OidcConfig get _config {
-    return const OidcConfig(
-      issuer: 'http://localhost:8090',
-      clientId: 'mercadomio-admin',
-      redirectUri: 'http://localhost:3100/auth/callback',
+    return OidcConfig(
+      issuer: String.fromEnvironment(
+        'USERBREW_ISSUER',
+        defaultValue: 'http://localhost:8090',
+      ),
+      clientId: String.fromEnvironment(
+        'USERBREW_CLIENT_ID',
+        defaultValue: 'mercadomio-admin',
+      ),
+      redirectUri: String.fromEnvironment(
+        'USERBREW_REDIRECT_URI',
+        defaultValue: 'http://localhost:3100/auth/callback',
+      ),
     );
   }
 
