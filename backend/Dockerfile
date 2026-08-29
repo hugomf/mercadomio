@@ -1,10 +1,10 @@
 
-FROM golang:1.24.5-alpine3.21 AS builder
+FROM golang:1.25.0-alpine3.21 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
-RUN go mod download && go mod verify
+COPY vendor/ vendor/
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-w -s" -o server ./main.go
+RUN CGO_ENABLED=0 go build -mod=vendor -a -installsuffix cgo -ldflags="-w -s" -o server ./main.go
 
 FROM alpine:3.21.3
 RUN apk --no-cache add ca-certificates tzdata curl && \
