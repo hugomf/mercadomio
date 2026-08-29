@@ -1,0 +1,12 @@
+.env
+.env.*
+*.local
+server
+*.test
+bin/
+dist/
+coverage.out
+coverage.html
+.git
+.gitignore
+*.md
