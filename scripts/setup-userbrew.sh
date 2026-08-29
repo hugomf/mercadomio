@@ -4,20 +4,68 @@
 #   2. Creates the mercadomio-admin role and assigns it to the admin user
 #   3. Registers the OAuth clients used by storefront and admin console
 #
-# Usage: scripts/setup-userbrew.sh
+# Usage: scripts/setup-userbrew.sh [--env {local|dev|qa|prod}]
 #
-# Environment:
+# Environment (can be overridden per env):
 #   USERBREW_URL            Base URL of the IdP        (default http://localhost:8090)
+#   STOREFRONT_REDIRECT     Storefront OAuth redirect  (env-specific default)
+#   ADMIN_REDIRECT          Admin console OAuth redirect (env-specific default)
 #   USERBREW_ADMIN_EMAIL    Bootstrap admin email      (default admin@mercadomio.mx)
 #   USERBREW_ADMIN_PASSWORD Bootstrap admin password   (default changeme123!)
 set -euo pipefail
 
-USERBREW_URL="${USERBREW_URL:-http://localhost:8090}"
+ENV="local"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --env)
+      ENV="$2"
+      shift 2
+      ;;
+    --env=*)
+      ENV="${1#--env=}"
+      shift
+      ;;
+    *)
+      echo "unknown flag: $1"
+      exit 1
+      ;;
+  esac
+done
+
+case "$ENV" in
+  local)
+    USERBREW_URL="${USERBREW_URL:-http://localhost:8090}"
+    STOREFRONT_REDIRECT="${STOREFRONT_REDIRECT:-http://localhost:3000/auth/callback}"
+    ADMIN_REDIRECT="${ADMIN_REDIRECT:-http://localhost:3100/auth/callback}"
+    APP_ORIGIN="http://localhost:3000"
+    ;;
+  dev)
+    USERBREW_URL="${USERBREW_URL:-https://userbrew.dev.sonnora.mx}"
+    STOREFRONT_REDIRECT="${STOREFRONT_REDIRECT:-https://mercadomio.dev.sonnora.mx/auth/callback}"
+    ADMIN_REDIRECT="${ADMIN_REDIRECT:-https://mercadomio.dev.sonnora.mx/admin/auth/callback}"
+    APP_ORIGIN="https://mercadomio.dev.sonnora.mx"
+    ;;
+  qa)
+    USERBREW_URL="${USERBREW_URL:-https://userbrew.qa.sonnora.mx}"
+    STOREFRONT_REDIRECT="${STOREFRONT_REDIRECT:-https://mercadomio.qa.sonnora.mx/auth/callback}"
+    ADMIN_REDIRECT="${ADMIN_REDIRECT:-https://mercadomio.qa.sonnora.mx/admin/auth/callback}"
+    APP_ORIGIN="https://mercadomio.qa.sonnora.mx"
+    ;;
+  prod)
+    USERBREW_URL="${USERBREW_URL:-https://userbrew.sonnora.mx}"
+    STOREFRONT_REDIRECT="${STOREFRONT_REDIRECT:-https://mercadomio.sonnora.mx/auth/callback}"
+    ADMIN_REDIRECT="${ADMIN_REDIRECT:-https://mercadomio.sonnora.mx/admin/auth/callback}"
+    APP_ORIGIN="https://mercadomio.sonnora.mx"
+    ;;
+  *)
+    echo "invalid --env: $ENV (use local|dev|qa|prod)"
+    exit 1
+    ;;
+esac
+
 ADMIN_EMAIL="${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}"
 ADMIN_PASSWORD="${USERBREW_ADMIN_PASSWORD:-changeme123!}"
 ADMIN_USERNAME="mercadomio-admin"
-STOREFRONT_REDIRECT="${STOREFRONT_REDIRECT:-http://localhost:3000/auth/callback}"
-ADMIN_REDIRECT="${ADMIN_REDIRECT:-http://localhost:3100/auth/callback}"
 
 json() { python3 -c "import sys,json;d=json.load(sys.stdin);print(d$1)"; }
 req() {
@@ -87,7 +135,7 @@ echo "==> Assigning role to admin user..."
 req POST "$USERBREW_URL/admin/users/$ADMIN_EMAIL/roles/mercadomio-admin" "" "$TOKEN" >/dev/null || true
 
 create_client() {
-  local name="$1" redirect="$2" origin="$3"
+  local name="$1" redirect="$2"
   local clients existing_id
   clients=$(req GET "$USERBREW_URL/admin/oauth-clients" "" "$TOKEN")
   existing_id=$(echo "$clients" | CLIENT_NAME="$name" python3 -c "
@@ -97,7 +145,7 @@ items = clients if isinstance(clients, list) else clients.get('clients') or clie
 match = [c for c in items if c.get('name') == os.environ['CLIENT_NAME']]
 print(match[0].get('id') or match[0].get('client_id') if match else '')
 ")
-  local body="{\"name\":\"$name\",\"redirect_uris\":[\"$redirect\"],\"allowed_origins\":[\"$origin\"],\"require_pkce\":true,\"is_public\":true,\"scopes\":[\"openid\",\"profile\",\"email\",\"offline_access\"]}"
+  local body="{\"name\":\"$name\",\"redirect_uris\":[\"$redirect\"],\"allowed_origins\":[\"$APP_ORIGIN\"],\"require_pkce\":true,\"is_public\":true,\"scopes\":[\"openid\",\"profile\",\"email\",\"offline_access\"]}"
   if [[ -z "$existing_id" ]]; then
     local resp
     resp=$(req POST "$USERBREW_URL/admin/oauth-clients" "$body" "$TOKEN")
@@ -108,8 +156,9 @@ print(match[0].get('id') or match[0].get('client_id') if match else '')
 }
 
 echo "==> Registering OAuth clients..."
-create_client "mercadomio-storefront" "$STOREFRONT_REDIRECT" "http://localhost:3000"
-create_client "mercadomio-admin"      "$ADMIN_REDIRECT"      "http://localhost:3100"
+APP_ORIGIN="$APP_ORIGIN"
+create_client "mercadomio-storefront" "$STOREFRONT_REDIRECT"
+create_client "mercadomio-admin"      "$ADMIN_REDIRECT"
 
 echo ""
 echo "Setup complete."
