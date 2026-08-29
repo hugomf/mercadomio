@@ -352,9 +352,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ),
                     const SizedBox(height: 28),
+                    // Two-column layout: form left, sticky order summary right
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Left column (2/3)
                         Expanded(
                           flex: 2,
                           child: Column(
@@ -371,9 +373,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         const SizedBox(width: 28),
+                        // Right column (1/3) - Sticky Order Summary
                         SizedBox(
-                          width: 400,
-                          child: _buildDesktopCheckoutButton(cart),
+                          width: 420,
+                          child: _buildDesktopOrderSummarySticky(cart),
                         ),
                       ],
                     ),
@@ -501,6 +504,328 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  /// Sticky desktop order summary sidebar (matches Stitch desktop mock exactly)
+  Widget _buildDesktopOrderSummarySticky(Cart cart) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Calculate pricing
+    double originalTotal = 0;
+    double effectiveTotal = 0;
+    for (final item in cart.items) {
+      final qty = item.quantity;
+      originalTotal += _originalUnitPrice(item) * qty;
+      effectiveTotal += _currentUnitPrice(item) * qty;
+    }
+    final savings = originalTotal - effectiveTotal;
+    final hasDiscount = savings > 0.001;
+
+    return Container(
+      // Sticky positioning via CSS would be ideal, but we use a regular container
+      // The parent SingleChildScrollView will handle scrolling
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Resumen de tu pedido',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+          // Order Items with image + quantity badge
+          ...cart.items.map((item) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(8),
+                          image: item.product?.imageUrl.isNotEmpty == true
+                              ? DecorationImage(
+                                  image: NetworkImage(item.product!.imageUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: item.product?.imageUrl.isEmpty == true
+                            ? Icon(Icons.shopping_bag,
+                                size: 20, color: colorScheme.outline)
+                            : null,
+                      ),
+                      // Quantity badge
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '${item.quantity}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.product?.name ?? 'Producto',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '\$${_currentUnitPrice(item).toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          // Coupon Button
+          InkWell(
+            onTap: () => setState(() => _showCouponField = !_showCouponField),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.local_offer, size: 18, color: colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _showCouponField
+                        ? 'Ocultar cupón'
+                        : 'Agregar cupón de descuento',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showCouponField) ...[
+            const SizedBox(height: 10),
+            TextField(
+              controller: _couponController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                hintText: 'Código de cupón',
+                prefixIcon: const Icon(Icons.local_offer_outlined),
+                isDense: true,
+                filled: true,
+                fillColor: colorScheme.surfaceContainerLowest,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: colorScheme.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 12),
+          // Financial Breakdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Subtotal',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '\$${originalTotal.toStringAsFixed(2)}',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Descuento',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                hasDiscount ? '-\$${savings.toStringAsFixed(2)}' : '\$0.00',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: hasDiscount
+                      ? colorScheme.tertiary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Envío',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                'Gratis',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(height: 1, color: colorScheme.outlineVariant),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                '\$${effectiveTotal.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Confirmar pedido button (rounded-lg, full width)
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _processOrder,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 1,
+            ),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.arrow_forward),
+            label: Text(
+              _isLoading ? 'Procesando...' : 'Confirmar pedido',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.undo, size: 14, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Regresa fácilmente si necesitas cambiar algo',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDesktopSectionCard({required Widget child}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -512,98 +837,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: child,
-    );
-  }
-
-  Widget _buildDesktopOrderItems(Cart cart) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        for (final item in cart.items) ...[
-          Row(
-            children: [
-              Stack(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                      image: item.product?.imageUrl.isNotEmpty == true
-                          ? DecorationImage(
-                              image: NetworkImage(item.product!.imageUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: item.product?.imageUrl.isEmpty == true
-                        ? Icon(Icons.shopping_bag,
-                            size: 24, color: colorScheme.outline)
-                        : null,
-                  ),
-                  // Quantity badge.
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        '${item.quantity}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.product?.name ?? 'Producto',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '\$${_currentUnitPrice(item).toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-      ],
     );
   }
 
@@ -701,236 +934,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         title: const Text('Acepto los términos y condiciones'),
         subtitle: const Text('Consulta los términos de servicio y la política de privacidad'),
         controlAffinity: ListTileControlAffinity.leading,
-      ),
-    );
-  }
-
-  Widget _buildDesktopCheckoutButton(Cart cart) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    // Pricing shown from the product catalog enrichment (same as the cart).
-    double originalTotal = 0;
-    double effectiveTotal = 0;
-    for (final item in cart.items) {
-      final qty = item.quantity;
-      originalTotal += _originalUnitPrice(item) * qty;
-      effectiveTotal += _currentUnitPrice(item) * qty;
-    }
-    final savings = originalTotal - effectiveTotal;
-    final hasDiscount = savings > 0.001;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Resumen de tu pedido',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(height: 1, color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          _buildDesktopOrderItems(cart),
-          // Coupon toggle.
-          InkWell(
-            onTap: () => setState(() => _showCouponField = !_showCouponField),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.local_offer, size: 18, color: colorScheme.primary),
-                  const SizedBox(width: 6),
-                  Text(
-                    _showCouponField
-                        ? 'Ocultar cupón'
-                        : 'Agregar cupón de descuento',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_showCouponField) ...[
-            const SizedBox(height: 10),
-            TextField(
-              controller: _couponController,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                hintText: 'Código de cupón',
-                prefixIcon: const Icon(Icons.local_offer_outlined),
-                isDense: true,
-                filled: true,
-                fillColor: colorScheme.surfaceContainerLowest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: colorScheme.outlineVariant),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Container(height: 1, color: colorScheme.outlineVariant),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Subtotal',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                '\$${originalTotal.toStringAsFixed(2)}',
-                style:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Descuento',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                hasDiscount ? '-\$${savings.toStringAsFixed(2)}' : '\$0.00',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: hasDiscount
-                      ? colorScheme.tertiary
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Envío',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                'Gratis',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(height: 1, color: colorScheme.outlineVariant),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                '\$${effectiveTotal.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _processOrder,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              elevation: 1,
-            ),
-            icon: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : const Icon(Icons.arrow_forward),
-            label: Text(
-              _isLoading ? 'Procesando...' : 'Confirmar pedido',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.undo, size: 14, color: colorScheme.onSurfaceVariant),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  'Regresa fácilmente si necesitas cambiar algo',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

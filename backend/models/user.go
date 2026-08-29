@@ -18,8 +18,9 @@ const (
 type User struct {
 	ID               primitive.ObjectID     `bson:"_id,omitempty" json:"id,omitempty"`
 	Email            string                 `bson:"email" json:"email" validate:"required,email"`
-	PasswordHash     string                 `bson:"passwordHash" json:"-" validate:"required"`
+	PasswordHash     string                 `bson:"passwordHash,omitempty" json:"-"`
 	Name             string                 `bson:"name" json:"name" validate:"required"`
+	UserbrewSub      string                 `bson:"userbrewSub,omitempty" json:"userbrewSub,omitempty"`
 	OrderHistory     []primitive.ObjectID   `bson:"orderHistory" json:"orderHistory,omitempty"`
 	RebateCredits    float64                `bson:"rebateCredits" json:"rebateCredits,omitempty"`
 	Type             UserType               `bson:"type" json:"type" validate:"required,oneof=individual wholesale"`

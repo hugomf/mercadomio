@@ -63,12 +63,12 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 
 	// Setup routes
 	SetupProductRoutes(app, productHandlers)
-	SetupCartRoutes(app, cartHandlers, deps.AuthService)
+	SetupCartRoutes(app, cartHandlers, deps.OidcService)
 	SetupAnalyticsRoutes(app, analyticsHandlers)
 	SetupImageRoutes(app, imageHandlers, cloudinaryHandlers, directusHandlers)
 	SetupCategoryRoutes(app, categoryHandlers)
-	SetupAuthRoutes(app, authHandlers)
-	SetupOrderRoutes(app, orderHandlers, deps.AuthService)
+	SetupAuthRoutes(app, authHandlers, deps.OidcService)
+	SetupOrderRoutes(app, orderHandlers, deps.OidcService)
 	SetupPaymentRoutes(app, paymentRoutes)
 	SetupPricingRoutes(app, pricingHandlers)
 
@@ -89,6 +89,7 @@ type RouteDependencies struct {
 	AnalyticsService services.AnalyticsService
 	CategoryService  services.CategoryService
 	AuthService      *services.AuthService
+	OidcService      *services.OidcService
 	OrderService     *services.OrderService
 	PaymentService   *services.PaymentService
 	PricingService   *services.PricingService

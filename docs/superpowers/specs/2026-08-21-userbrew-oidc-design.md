@@ -65,9 +65,9 @@ Puntos clave:
   - Deps: se mantiene `golang-jwt/jwt/v5`; se agrega `github.com/MicahParks/keyfunc/v3` (JWKS + refresco automático).
   - Issuer/audience desde env: `USERBREW_ISSUER` (default `http://localhost:8090`), audience = client_id de la app correspondiente.
   - Validación: firma RS256, `exp`, `iss`, `aud`. `kid` desconocido → un refetch de JWKS antes de rechazar.
-- **Claims → identidad**: `sub` (id userbrew), `email`, `name`, grupos.
+- **Claims → identidad**: `sub` (id userbrew), `email`, `name`, `roles` (los tokens de userbrew exponen roles resueltos, no grupos).
 - **Upsert transparente** (`services/auth_service.go`): si `sub` nuevo → buscar usuario local por `email`; si existe, vincular (`userbrewSub` nuevo campo en colección `users`); si no, crear usuario. Preserva órdenes/carritos históricos.
-- **Admin**: middleware adicional que exige claim del grupo `mercadomio-admin`.
+- **Admin**: middleware adicional que exige el rol `mercadomio-admin` en el claim `roles`.
 - **Endpoints eliminados**: `POST /api/auth/register`, `POST /api/auth/login`. Se conserva `GET /api/auth/profile` (ahora responde desde claims + upsert).
 
 ### 4.3 Storefront Flutter

@@ -9,9 +9,9 @@ import (
 )
 
 // SetupOrderRoutes configures all order-related routes
-func SetupOrderRoutes(app *fiber.App, orderHandlers *handlers.OrderHandlers, authService *services.AuthService) {
+func SetupOrderRoutes(app *fiber.App, orderHandlers *handlers.OrderHandlers, oidc *services.OidcService) {
 	// Admin routes (must be registered before /api/orders/:id to avoid conflicts)
-	admin := app.Group("/api/orders/admin", middleware.AuthMiddleware(authService))
+	admin := app.Group("/api/orders/admin", middleware.AdminMiddleware(oidc))
 	admin.Get("/", orderHandlers.GetOrdersAdmin)
 	admin.Get("/stats", orderHandlers.GetOrderStats)
 

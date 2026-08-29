@@ -30,78 +30,19 @@ func (h *AuthHandlers) AuthService() *services.AuthService {
 	return h.authService
 }
 
-// Register handles user registration
-func (h *AuthHandlers) Register(c *fiber.Ctx) error {
-	var req models.UserRegisterRequest
-	if err := c.BodyParser(&req); err != nil {
-		return middleware.BadRequest("Invalid request body")
-	}
+// resolveUser maps the OIDC identity attached by the middleware to the local
+// user document, linking or creating it when needed.
+func (h *AuthHandlers) resolveUser(c *fiber.Ctx) (*models.User, error) {
+	sub := c.Locals("userID").(string)
+	email, _ := c.Locals("userEmail").(string)
+	name, _ := c.Locals("userName").(string)
 
-	// Validate request
-	if err := validate.Struct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Validation failed",
-			"errors":  err.Error(),
-		})
-	}
-
-	user, err := h.authService.Register(&req)
-	if err != nil {
-		// Check for duplicate email
-		if err.Error() == "user with this email already exists" {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"success": false,
-				"message": err.Error(),
-			})
-		}
-
-		return middleware.InternalError("Internal server error")
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"success": true,
-		"message": "User registered successfully",
-		"user":    user.ToResponse(),
-	})
-}
-
-// Login handles user authentication
-func (h *AuthHandlers) Login(c *fiber.Ctx) error {
-	var req models.UserLoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return middleware.BadRequest("Invalid request body")
-	}
-
-	// Validate request
-	if err := validate.Struct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Validation failed",
-			"errors":  err.Error(),
-		})
-	}
-
-	authResponse, err := h.authService.Login(&req)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false,
-			"message": err.Error(),
-		})
-	}
-
-	return c.JSON(fiber.Map{
-		"success": true,
-		"message": "Login successful",
-		"data":    authResponse,
-	})
+	return h.authService.SyncUser(sub, email, name)
 }
 
 // GetProfile handles retrieving user profile
 func (h *AuthHandlers) GetProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-
-	user, err := h.authService.GetUserByID(userID)
+	user, err := h.resolveUser(c)
 	if err != nil {
 		return middleware.InternalError("Failed to retrieve user profile")
 	}
@@ -114,7 +55,10 @@ func (h *AuthHandlers) GetProfile(c *fiber.Ctx) error {
 
 // UpdateProfile handles updating user profile
 func (h *AuthHandlers) UpdateProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	user, err := h.resolveUser(c)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user profile")
+	}
 
 	var updates map[string]interface{}
 	if err := c.BodyParser(&updates); err != nil {
@@ -123,15 +67,16 @@ func (h *AuthHandlers) UpdateProfile(c *fiber.Ctx) error {
 
 	// Remove sensitive fields that shouldn't be updated via this endpoint
 	delete(updates, "passwordHash")
-	delete(updates, "email") // Email changes should be handled separately
+	delete(updates, "email")       // Email changes should be handled separately
+	delete(updates, "userbrewSub") // Identity is managed by userbrew
 
-	err := h.authService.UpdateUser(userID, updates)
+	err = h.authService.UpdateUser(user.ID.Hex(), updates)
 	if err != nil {
 		return middleware.InternalError("Failed to update profile")
 	}
 
 	// Get updated user
-	user, err := h.authService.GetUserByID(userID)
+	user, err = h.authService.GetUserByID(user.ID.Hex())
 	if err != nil {
 		return middleware.InternalError("Failed to retrieve updated profile")
 	}
@@ -148,24 +93,22 @@ func (h *AuthHandlers) VerifyToken(c *fiber.Ctx) error {
 	// If we reach here, the token has already been validated by the AuthMiddleware
 	userID := c.Locals("userID").(string)
 	email := c.Locals("userEmail").(string)
-	userType := c.Locals("userType")
+	isAdmin, _ := c.Locals("isAdmin").(bool)
 
 	return c.JSON(fiber.Map{
 		"success": true,
 		"message": "Token is valid",
 		"user": fiber.Map{
-			"id":    userID,
-			"email": email,
-			"type":  userType,
+			"id":      userID,
+			"email":   email,
+			"isAdmin": isAdmin,
 		},
 	})
 }
 
 // GetUserAddresses handles retrieving user addresses
 func (h *AuthHandlers) GetUserAddresses(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-
-	user, err := h.authService.GetUserByID(userID)
+	user, err := h.resolveUser(c)
 	if err != nil {
 		return middleware.InternalError("Failed to retrieve user addresses")
 	}
@@ -178,7 +121,11 @@ func (h *AuthHandlers) GetUserAddresses(c *fiber.Ctx) error {
 
 // CreateUserAddress handles adding a new address
 func (h *AuthHandlers) CreateUserAddress(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	user, err := h.resolveUser(c)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user profile")
+	}
+	userID := user.ID.Hex()
 
 	var address models.Address
 	if err := c.BodyParser(&address); err != nil {
@@ -188,10 +135,6 @@ func (h *AuthHandlers) CreateUserAddress(c *fiber.Ctx) error {
 	// Set defaults
 	if address.IsDefault {
 		// If this is default, unset other defaults
-		user, err := h.authService.GetUserByID(userID)
-		if err != nil {
-			return middleware.InternalError("Failed to get user")
-		}
 		for i := range user.Addresses {
 			user.Addresses[i].IsDefault = false
 		}
@@ -202,7 +145,7 @@ func (h *AuthHandlers) CreateUserAddress(c *fiber.Ctx) error {
 	}
 
 	// Add the new address
-	err := h.authService.AddUserAddress(userID, &address)
+	err = h.authService.AddUserAddress(userID, &address)
 	if err != nil {
 		return middleware.InternalError("Failed to add address")
 	}
@@ -216,9 +159,7 @@ func (h *AuthHandlers) CreateUserAddress(c *fiber.Ctx) error {
 
 // GetUserPaymentMethods handles retrieving user payment methods
 func (h *AuthHandlers) GetUserPaymentMethods(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-
-	user, err := h.authService.GetUserByID(userID)
+	user, err := h.resolveUser(c)
 	if err != nil {
 		return middleware.InternalError("Failed to retrieve payment methods")
 	}
@@ -231,7 +172,11 @@ func (h *AuthHandlers) GetUserPaymentMethods(c *fiber.Ctx) error {
 
 // CreateUserPaymentMethod handles adding a new payment method
 func (h *AuthHandlers) CreateUserPaymentMethod(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	user, err := h.resolveUser(c)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user profile")
+	}
+	userID := user.ID.Hex()
 
 	var paymentMethod models.PaymentMethod
 	if err := c.BodyParser(&paymentMethod); err != nil {
@@ -243,10 +188,6 @@ func (h *AuthHandlers) CreateUserPaymentMethod(c *fiber.Ctx) error {
 
 	if paymentMethod.IsDefault {
 		// If this is default, unset other defaults
-		user, err := h.authService.GetUserByID(userID)
-		if err != nil {
-			return middleware.InternalError("Failed to get user")
-		}
 		for i := range user.PaymentMethods {
 			user.PaymentMethods[i].IsDefault = false
 		}
@@ -257,7 +198,7 @@ func (h *AuthHandlers) CreateUserPaymentMethod(c *fiber.Ctx) error {
 	}
 
 	// Add the new payment method
-	err := h.authService.AddUserPaymentMethod(userID, &paymentMethod)
+	err = h.authService.AddUserPaymentMethod(userID, &paymentMethod)
 	if err != nil {
 		return middleware.InternalError("Failed to add payment method")
 	}
@@ -271,9 +212,7 @@ func (h *AuthHandlers) CreateUserPaymentMethod(c *fiber.Ctx) error {
 
 // GetUserWishlist handles retrieving user wishlist
 func (h *AuthHandlers) GetUserWishlist(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
-
-	user, err := h.authService.GetUserByID(userID)
+	user, err := h.resolveUser(c)
 	if err != nil {
 		return middleware.InternalError("Failed to retrieve wishlist")
 	}
@@ -286,10 +225,13 @@ func (h *AuthHandlers) GetUserWishlist(c *fiber.Ctx) error {
 
 // AddToWishlist handles adding a product to user's wishlist
 func (h *AuthHandlers) AddToWishlist(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	user, err := h.resolveUser(c)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user profile")
+	}
 	productID := c.Params("productId")
 
-	err := h.authService.AddToUserWishlist(userID, productID)
+	err = h.authService.AddToUserWishlist(user.ID.Hex(), productID)
 	if err != nil {
 		return middleware.InternalError("Failed to add to wishlist")
 	}
@@ -302,10 +244,13 @@ func (h *AuthHandlers) AddToWishlist(c *fiber.Ctx) error {
 
 // RemoveFromWishlist handles removing a product from user's wishlist
 func (h *AuthHandlers) RemoveFromWishlist(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	user, err := h.resolveUser(c)
+	if err != nil {
+		return middleware.InternalError("Failed to retrieve user profile")
+	}
 	productID := c.Params("productId")
 
-	err := h.authService.RemoveFromUserWishlist(userID, productID)
+	err = h.authService.RemoveFromUserWishlist(user.ID.Hex(), productID)
 	if err != nil {
 		return middleware.InternalError("Failed to remove from wishlist")
 	}

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Mercadomio Material 3 design tokens.
 ///
 /// Palette and radii extracted from the Stitch storefront designs
-/// (.stitch/designs/*.html). Typography approximates the Inter / Public Sans
-/// pairing using the platform default family with matching weights.
+/// (.stitch/designs/*.html). Typography uses the Stitch DS pairing:
+/// Inter for headline/body, Public Sans for labels (bundled in pubspec).
 class AppTheme {
   AppTheme._();
 
@@ -43,6 +43,16 @@ class AppTheme {
   static const double radiusCard = 12;
   static const double radiusCardLarge = 16;
 
+  /// Subtle elevation equivalent to Tailwind `shadow-sm`
+  /// (0 1px 2px rgba(24,29,22,0.06)) — tinted with onSurface, never pure black.
+  static const List<BoxShadow> softShadow = [
+    BoxShadow(
+      color: Color(0x0F181D16),
+      blurRadius: 4,
+      offset: Offset(0, 1),
+    ),
+  ];
+
   static ThemeData get light {
     final ColorScheme scheme = ColorScheme.fromSeed(seedColor: seed).copyWith(
       primary: primary,
@@ -79,7 +89,17 @@ class AppTheme {
       colorScheme: scheme,
     );
 
+    // Stitch DS typography: Inter for headline/body, Public Sans for labels.
+    final interText = base.textTheme.apply(fontFamily: 'Inter');
+    final publicSansLabels = base.textTheme.apply(fontFamily: 'Public Sans');
+    final TextTheme textTheme = interText.copyWith(
+      labelLarge: publicSansLabels.labelLarge,
+      labelMedium: publicSansLabels.labelMedium,
+      labelSmall: publicSansLabels.labelSmall,
+    );
+
     return base.copyWith(
+      textTheme: textTheme,
       scaffoldBackgroundColor: surface,
       appBarTheme: AppBarTheme(
         backgroundColor: surface,
@@ -88,7 +108,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(
+        titleTextStyle: textTheme.titleLarge?.copyWith(
           color: onSurface,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.2,
@@ -113,7 +133,7 @@ class AppTheme {
           disabledForegroundColor: onSurface.withValues(alpha: 0.38),
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: base.textTheme.labelLarge?.copyWith(
+          textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
@@ -127,7 +147,7 @@ class AppTheme {
           foregroundColor: primary,
           side: const BorderSide(color: outlineVariant),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          textStyle: base.textTheme.labelLarge?.copyWith(
+          textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
             fontSize: 15,
           ),
@@ -139,7 +159,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
-          textStyle: base.textTheme.labelLarge?.copyWith(
+          textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -148,11 +168,11 @@ class AppTheme {
         filled: true,
         fillColor: surfaceContainerLowest,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: base.textTheme.bodyMedium?.copyWith(
+        labelStyle: textTheme.bodyMedium?.copyWith(
           color: onSurfaceVariant,
           fontWeight: FontWeight.w500,
         ),
-        hintStyle: base.textTheme.bodyMedium?.copyWith(
+        hintStyle: textTheme.bodyMedium?.copyWith(
           color: onSurfaceVariant.withValues(alpha: 0.7),
         ),
         prefixIconColor: onSurfaceVariant,
@@ -182,11 +202,11 @@ class AppTheme {
         backgroundColor: surfaceContainer,
         selectedColor: primaryContainer,
         disabledColor: surfaceContainer,
-        labelStyle: base.textTheme.labelMedium?.copyWith(
+        labelStyle: textTheme.labelMedium?.copyWith(
           color: onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
-        secondaryLabelStyle: base.textTheme.labelMedium?.copyWith(
+        secondaryLabelStyle: textTheme.labelMedium?.copyWith(
           color: onPrimaryContainer,
           fontWeight: FontWeight.w600,
         ),
@@ -200,7 +220,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: inverseSurface,
-        contentTextStyle: base.textTheme.bodyMedium?.copyWith(
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: surfaceContainerLowest,
         ),
         shape: RoundedRectangleBorder(
@@ -217,18 +237,30 @@ class AppTheme {
         linearTrackColor: outlineVariant,
         circularTrackColor: outlineVariant,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      // Bottom navigation labels use Public Sans (label font per Stitch DS).
+      // Selected = w700, Unselected = w500 — consistent on both mobile
+      // BottomNavigationBar and desktop NavigationBar.
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surfaceContainer,
         selectedItemColor: primary,
         unselectedItemColor: onSurfaceVariant,
         type: BottomNavigationBarType.fixed,
+        selectedLabelStyle: textTheme.labelLarge?.copyWith(
+          fontFamily: 'Public Sans',
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: textTheme.labelLarge?.copyWith(
+          fontFamily: 'Public Sans',
+          fontWeight: FontWeight.w500,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceContainer,
         indicatorColor: primaryContainer,
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return base.textTheme.labelSmall?.copyWith(
+          return textTheme.labelSmall?.copyWith(
+            fontFamily: 'Public Sans',
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
                 : FontWeight.w500,

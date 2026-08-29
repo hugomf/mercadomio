@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme.dart';
+
 // Order Status Enum - Complete with Material Design styling
 enum OrderStatus {
   pending,
@@ -27,18 +29,52 @@ extension OrderStatusExtension on OrderStatus {
 
   String get englishValue => toString().split('.').last;
 
+  /// Foreground color for status badges, paired with [statusBackgroundColor]
+  /// using the Stitch DS container pairs.
   Color get statusColor {
     switch (this) {
       case OrderStatus.pending:
-        return Colors.orange[600]!;
+        return AppTheme.onSurfaceVariant; // #3F4A3D
       case OrderStatus.paid:
-        return Colors.blue[600]!;
+        return AppTheme.onTertiaryContainer; // #FFFBFF
       case OrderStatus.shipped:
-        return Colors.deepPurple[600]!;
+        return AppTheme.onPrimaryContainer; // #F7FFF1
       case OrderStatus.completed:
-        return Colors.green[600]!;
+        return AppTheme.secondary; // #446741
       case OrderStatus.cancelled:
-        return Colors.red[600]!;
+        return AppTheme.error; // #BA1A1A
+    }
+  }
+
+  /// Container color for status badges (Stitch DS tokens).
+  Color get statusBackgroundColor {
+    switch (this) {
+      case OrderStatus.pending:
+        return AppTheme.surfaceContainerHigh; // #E5EADF
+      case OrderStatus.paid:
+        return AppTheme.tertiaryContainer; // #C04C76
+      case OrderStatus.shipped:
+        return AppTheme.primaryContainer; // #268630
+      case OrderStatus.completed:
+        return AppTheme.secondaryContainer; // #C2EABA
+      case OrderStatus.cancelled:
+        return AppTheme.errorContainer; // #FFDAD6
+    }
+  }
+
+  /// Dark accent for icon/text on light surfaces (white cards, snackbars).
+  Color get statusAccentColor {
+    switch (this) {
+      case OrderStatus.pending:
+        return AppTheme.onSurfaceVariant; // #3F4A3D
+      case OrderStatus.paid:
+        return AppTheme.tertiary; // #A0335D
+      case OrderStatus.shipped:
+        return AppTheme.primary; // #006B1B
+      case OrderStatus.completed:
+        return AppTheme.secondary; // #446741
+      case OrderStatus.cancelled:
+        return AppTheme.error; // #BA1A1A
     }
   }
 
@@ -54,21 +90,6 @@ extension OrderStatusExtension on OrderStatus {
         return Icons.check_circle;
       case OrderStatus.cancelled:
         return Icons.cancel;
-    }
-  }
-
-  LinearGradient get statusGradient {
-    switch (this) {
-      case OrderStatus.pending:
-        return const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFB74D)]);
-      case OrderStatus.paid:
-        return const LinearGradient(colors: [Color(0xFF2196F3), Color(0xFF64B5F6)]);
-      case OrderStatus.shipped:
-        return const LinearGradient(colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)]);
-      case OrderStatus.completed:
-        return const LinearGradient(colors: [Color(0xFF4CAF50), Color(0xFF81C784)]);
-      case OrderStatus.cancelled:
-        return const LinearGradient(colors: [Color(0xFFF44336), Color(0xFFEF5350)]);
     }
   }
 }

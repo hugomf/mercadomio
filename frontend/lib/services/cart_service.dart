@@ -117,7 +117,7 @@ class CartService {
   Cart? _currentCart;
 
   String get currentCartId {
-    _currentCartId ??= 'guest-cart-${DateTime.now().millisecondsSinceEpoch}';
+    _currentCartId ??= 'test-cart-001'; // TEMP: forced seeded cart for screenshots
     return _currentCartId!;
   }
 

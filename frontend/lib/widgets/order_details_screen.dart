@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../services/order_service.dart';
+import '../theme.dart';
 
 // Premium Order Details Screen - Complete order tracking experience
 class OrderDetailsScreen extends StatefulWidget {
@@ -68,7 +69,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Pedido actualizado a ${newStatus.displayName}'),
-          backgroundColor: newStatus.statusColor,
+          backgroundColor: newStatus.statusAccentColor,
         ),
       );
     } catch (e) {
@@ -135,16 +136,16 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
 
   Widget _buildStatusCard(OrderResponse order) {
     return Card(
-      elevation: 6,
-      shadowColor: order.status.statusColor.withValues(alpha: 0.3),
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppTheme.outlineVariant),
       ),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          gradient: order.status.statusGradient,
+          color: order.status.statusBackgroundColor,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +154,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
               children: [
                 Icon(
                   order.status.statusIcon,
-                  color: Colors.white,
+                  color: order.status.statusColor,
                   size: 32,
                 ),
                 const SizedBox(width: 12),
@@ -163,8 +164,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     children: [
                       Text(
                         'Estado: ${order.status.displayName}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: order.status.statusColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -172,8 +173,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       const SizedBox(height: 4),
                       Text(
                         order.formattedDate,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: order.status.statusColor,
                           fontSize: 14,
                         ),
                       ),
@@ -189,7 +190,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
+                  color: order.status.statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -197,13 +198,17 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Progreso del pedido',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                              color: order.status.statusColor,
+                              fontWeight: FontWeight.w500),
                         ),
                         Text(
                           '${(order.progressPercentage * 100).round()}%',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              color: order.status.statusColor,
+                              fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -212,8 +217,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: order.progressPercentage,
-                        backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        backgroundColor:
+                            order.status.statusColor.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            order.status.statusColor),
                         minHeight: 8,
                       ),
                     ),
@@ -221,8 +228,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen>
                       const SizedBox(height: 12),
                       Text(
                         'Entrega estimada: ${order.estimatedDelivery}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: order.status.statusColor,
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                         ),

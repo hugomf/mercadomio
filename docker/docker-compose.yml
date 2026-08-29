@@ -1,6 +1,24 @@
 name: mercadomio
 
 services:
+  userbrew:
+    build:
+      context: ../../userbrew
+    ports:
+      - "8090:8090"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8090
+      - PUBLIC_URL=${USERBREW_PUBLIC_URL:-http://localhost:8090}
+      - DATABASE_URL=sqlite:///data/idp.db
+      - OAUTH_GOOGLE_ENABLED=${OAUTH_GOOGLE_ENABLED:-0}
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
+      - OAUTH_GOOGLE_REDIRECT_URI=${OAUTH_GOOGLE_REDIRECT_URI:-http://localhost:8090/auth/social/google/callback}
+    volumes:
+      - userbrew_data:/data
+    restart: unless-stopped
+
   backend:
     build: ../backend
     ports:
@@ -8,6 +26,8 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/mercadomio
       - REDIS_URI=redis://redis:6379
+      - USERBREW_ISSUER=${USERBREW_PUBLIC_URL:-http://localhost:8090}
+      - USERBREW_DISCOVERY_URL=http://userbrew:8090/.well-known/openid-configuration
     env_file:
       - path: ../backend/.env
         required: false
@@ -16,6 +36,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      userbrew:
+        condition: service_started
 
   frontend:
     build: ../frontend
@@ -92,3 +114,4 @@ volumes:
   mongo_data:
   postgres_data:
   redis_data:
+  userbrew_data:
