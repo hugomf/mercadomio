@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'admin_auth_service.dart';
 import 'package:http/http.dart' as http;
 import '../models/order.dart';
 
@@ -14,7 +15,8 @@ class AdminOrderService {
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        if (authToken != null) 'Authorization': 'Bearer $authToken',
+        if ((authToken ?? AdminAuthService.instance.token) != null)
+            'Authorization': 'Bearer ${authToken ?? AdminAuthService.instance.token}',
       };
 
   // GET /api/orders/admin?page&limit&status

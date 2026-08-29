@@ -244,6 +244,8 @@ class CategoryService extends GetxController {
     String? searchQuery,
     String sortBy = 'name',
     bool sortAscending = true,
+    double? minPrice,
+    double? maxPrice,
   }) async {
     try {
       final queryParams = <String, String>{
@@ -259,6 +261,13 @@ class CategoryService extends GetxController {
 
       if (!isAllSelected() && selectedCategories.isNotEmpty) {
         queryParams['category'] = selectedCategoryNames.join(',');
+      }
+
+      if (minPrice != null) {
+        queryParams['minPrice'] = minPrice.toString();
+      }
+      if (maxPrice != null) {
+        queryParams['maxPrice'] = maxPrice.toString();
       }
 
       final uri = Uri.parse('$apiUrl/api/products').replace(queryParameters: queryParams);

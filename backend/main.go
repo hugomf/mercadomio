@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/routes"
 	"mercadomio-backend/services"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -73,6 +75,34 @@ func main() {
 	// Initialize Auth Service
 	authService := services.NewAuthService(db)
 
+	// Initialize OIDC token validator against the userbrew IdP.
+	// Non-fatal: if the IdP is unreachable (e.g. local dev without userbrew),
+	// the backend still starts and serves public/optional-auth routes.
+	oidcIssuer := os.Getenv("USERBREW_ISSUER")
+	if oidcIssuer == "" {
+		oidcIssuer = "http://localhost:8090"
+	}
+	oidcDiscoveryURL := os.Getenv("USERBREW_DISCOVERY_URL")
+	if oidcDiscoveryURL == "" {
+		oidcDiscoveryURL = fmt.Sprintf("%s/.well-known/openid-configuration", oidcIssuer)
+	}
+	oidcAudiences := []string{"mercadomio-storefront", "mercadomio-admin"}
+	if raw := os.Getenv("USERBREW_AUDIENCES"); raw != "" {
+		oidcAudiences = strings.Split(raw, ",")
+	}
+	var oidcService *services.OidcService
+	for attempt := 1; attempt <= 10; attempt++ {
+		oidcService, err = services.NewOidcServiceAt(oidcDiscoveryURL, oidcIssuer, oidcAudiences)
+		if err == nil {
+			break
+		}
+		log.Printf("userbrew discovery not ready (attempt %d/10): %v", attempt, err)
+		time.Sleep(3 * time.Second)
+	}
+	if oidcService == nil {
+		log.Printf("WARNING: could not reach userbrew discovery at %s — auth-required routes will reject tokens", oidcIssuer)
+	}
+
 	// Initialize Order Service
 	orderService := services.NewOrderService(db)
 	orderService.SetProductService(productService)
@@ -102,6 +132,7 @@ func main() {
 		AnalyticsService: analyticsService,
 		CategoryService:  categoryService,
 		AuthService:      authService,
+		OidcService:      oidcService,
 		OrderService:     orderService,
 		PaymentService:   paymentService,
 		PricingService:   pricingService,

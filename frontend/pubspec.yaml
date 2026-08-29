@@ -52,6 +52,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  crypto: ^3.0.7
+  get_storage: ^2.1.1
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +86,34 @@ flutter:
   assets:
     - .env
     - assets/images/logo.png
+
+  # Stitch DS typography: Inter (headline/body), Public Sans (labels).
+  # Bundled as assets so rendering is deterministic and offline-safe.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-400.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-500.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-600.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-700.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-800.ttf
+          weight: 800
+        - asset: assets/fonts/Inter-900.ttf
+          weight: 900
+    - family: Public Sans
+      fonts:
+        - asset: assets/fonts/PublicSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/PublicSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/PublicSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/PublicSans-700.ttf
+          weight: 700
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package

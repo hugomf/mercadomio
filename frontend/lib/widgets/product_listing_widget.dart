@@ -10,13 +10,22 @@ import '../services/category_events.dart';
 import '../services/config_service.dart';
 import '../services/cart_controller.dart';
 import '../widgets/category_selector.dart';
-import '../widgets/category_breadcrumbs.dart';
-import '../widgets/product_search_controls.dart';
 import '../widgets/product_detail_screen.dart';
+import '../widgets/cart_screen.dart';
 import '../models/product.dart';
 
 class ProductListingWidget extends StatefulWidget {
-  const ProductListingWidget({super.key});
+  const ProductListingWidget({
+    super.key,
+    /// When false, the desktop sidebar's "Categorías" section is hidden.
+    /// Use this when the widget lives in a home screen that already shows
+    /// category tiles (e.g. the storefront hero) to avoid duplicating
+    /// category navigation.
+    this.showCategorySidebar = true,
+  });
+
+  /// When false, the desktop sidebar's "Categorías" section is hidden.
+  final bool showCategorySidebar;
 
   @override
   State<ProductListingWidget> createState() => ProductListingWidgetState();
@@ -37,6 +46,16 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   Timer? _debounceTimer;
   final RxString _sortBy = 'name'.obs;
   final RxBool _sortAscending = true.obs;
+
+  // Price range filter (desktop sidebar)
+  double _priceMin = 0.0;
+  double _priceMax = 500.0;
+  double _rangeMin = 10.0;
+  double _rangeMax = 500.0;
+
+  // Mobile pagination (replaces infinite scroll)
+  int get _totalPages =>
+      (_filteredProducts.value / _itemsPerPage).ceil().clamp(1, 1 << 20);
 
   Future<void> _fetchProducts({bool loadMore = false, int? page}) async {
     try {
@@ -62,6 +81,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         searchQuery: searchQuery,
         sortBy: _sortBy.value,
         sortAscending: _sortAscending.value,
+        minPrice: _priceMin.isFinite ? _priceMin : null,
+        maxPrice: _priceMax.isFinite ? _priceMax : null,
       );
 
       final newProducts = response['products'] as List<Product>;
@@ -69,7 +90,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
       final hasSearch = searchQuery.isNotEmpty;
       final hasCategoryFilter = categoryService.selectedCategories.isNotEmpty &&
-                               !categoryService.isAllSelected();
+          !categoryService.isAllSelected();
 
       if (hasSearch || hasCategoryFilter) {
         _filteredProducts.value = totalCount;
@@ -130,7 +151,10 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
   // Responsive design system
   double _getResponsiveValue(BuildContext context,
-      {required double mobile, required double tablet, required double desktop, double? fourK}) {
+      {required double mobile,
+      required double tablet,
+      required double desktop,
+      double? fourK}) {
     if (ResponsiveBreakpoints.of(context).isMobile) return mobile;
     if (ResponsiveBreakpoints.of(context).isTablet) return tablet;
     if (ResponsiveBreakpoints.of(context).isDesktop) return desktop;
@@ -138,7 +162,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   int _getCrossAxisCount(BuildContext context) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: 2,
       tablet: 3,
       desktop: MediaQuery.of(context).size.width > 1400 ? 4 : 3,
@@ -147,7 +172,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getAspectRatio(BuildContext context) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: 0.65,
       tablet: 0.7,
       desktop: 0.75,
@@ -156,7 +182,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getSpacing(BuildContext context) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: 4,
       tablet: 6,
       desktop: 8,
@@ -165,7 +192,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getFontSize(BuildContext context, {required double base}) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: base * 0.9,
       tablet: base,
       desktop: base * 1.2,
@@ -174,7 +202,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getIconSize(BuildContext context, {required double base}) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: base * 0.9,
       tablet: base,
       desktop: base * 1.4,
@@ -183,7 +212,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getPadding(BuildContext context, {required double base}) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: base * 0.8,
       tablet: base,
       desktop: base * 1.2,
@@ -192,7 +222,8 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   }
 
   double _getCardHeight(BuildContext context) {
-    return _getResponsiveValue(context,
+    return _getResponsiveValue(
+      context,
       mobile: 280,
       tablet: 320,
       desktop: 300,
@@ -212,135 +243,142 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
       height: cardHeight,
       child: GestureDetector(
         onTap: () => _navigateToProductDetail(product.id),
-child: Card(
-            elevation: 0,
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-              side: BorderSide(color: colorScheme.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                // Flexible image: shrinks when the grid tile is short so the
-                // text block below always fits without overflowing.
-                Expanded(
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      placeholder: (context, url) => Container(
-                        color: colorScheme.surfaceContainerHigh,
-                        child: Center(
-                          child: SizedBox(
-                            width: _getIconSize(context, base: 24),
-                            height: _getIconSize(context, base: 24),
-                            child: const CircularProgressIndicator(strokeWidth: 2),
-                          ),
+        child: Card(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            children: [
+              // Flexible image: shrinks when the grid tile is short so the
+              // text block below always fits without overflowing.
+              Expanded(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: CachedNetworkImage(
+                    imageUrl: product.imageUrl,
+                    placeholder: (context, url) => Container(
+                      color: colorScheme.surfaceContainerHigh,
+                      child: Center(
+                        child: SizedBox(
+                          width: _getIconSize(context, base: 24),
+                          height: _getIconSize(context, base: 24),
+                          child:
+                              const CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
-                      errorWidget: (context, url, error) => Container(
-                        color: colorScheme.surfaceContainerHigh,
-                        child: Icon(
-                          Icons.image,
-                          size: _getIconSize(context, base: 48),
-                          color: colorScheme.outline,
-                        ),
-                      ),
-                      fit: BoxFit.cover,
                     ),
+                    errorWidget: (context, url, error) => Container(
+                      color: colorScheme.surfaceContainerHigh,
+                      child: Icon(
+                        Icons.image,
+                        size: _getIconSize(context, base: 48),
+                        color: colorScheme.outline,
+                      ),
+                    ),
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(padding),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLowest,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: fontSize,
-                          color: colorScheme.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+              ),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(padding),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLowest,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: fontSize,
+                        color: colorScheme.onSurface,
                       ),
-                      Text(
-                        '\$${product.basePrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: fontSize * 1.15,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '\$${product.basePrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: fontSize * 1.15,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                ...List.generate(5, (index) {
-                                  return Icon(
-                                    Icons.star,
-                                    size: starSize,
-                                    color: index < (product.averageRating > 0 ? product.averageRating.floor() : 4)
-                                        ? Colors.amber
-                                        : colorScheme.outlineVariant,
-                                  );
-                                }),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              ...List.generate(5, (index) {
+                                return Icon(
+                                  Icons.star,
+                                  size: starSize,
+                                  color: index <
+                                          (product.averageRating > 0
+                                              ? product.averageRating.floor()
+                                              : 4)
+                                      ? Colors.amber
+                                      : colorScheme.outlineVariant,
+                                );
+                              }),
+                              SizedBox(width: _getPadding(context, base: 4)),
+                              Flexible(
+                                child: Text(
+                                  product.averageRating > 0
+                                      ? product.averageRating.toStringAsFixed(1)
+                                      : '4.0',
+                                  style: TextStyle(
+                                    fontSize: fontSize * 0.85,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                              if (product.reviewCount > 0) ...[
                                 SizedBox(width: _getPadding(context, base: 4)),
                                 Flexible(
                                   child: Text(
-                                    product.averageRating > 0 ? product.averageRating.toStringAsFixed(1) : '4.0',
+                                    '(${product.reviewCount})',
                                     style: TextStyle(
-                                      fontSize: fontSize * 0.85,
+                                      fontSize: fontSize * 0.8,
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                   ),
                                 ),
-                                if (product.reviewCount > 0) ...[
-                                  SizedBox(width: _getPadding(context, base: 4)),
-                                  Flexible(
-                                    child: Text(
-                                      '(${product.reviewCount})',
-                                      style: TextStyle(
-                                        fontSize: fontSize * 0.8,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
+                            ],
                           ),
-                          IconButton.filledTonal(
-                            icon: Icon(
-                              Icons.add_shopping_cart,
-                              size: iconSize,
-                              color: colorScheme.onPrimaryContainer,
-                            ),
-                            onPressed: () => _addToCart(product),
-                            padding: EdgeInsets.all(_getPadding(context, base: 6)),
-                            constraints: const BoxConstraints(),
-                            style: _cartButtonStyle(colorScheme),
+                        ),
+                        IconButton.filledTonal(
+                          icon: Icon(
+                            Icons.add_shopping_cart,
+                            size: iconSize,
+                            color: colorScheme.onPrimaryContainer,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                          onPressed: () => _addToCart(product),
+                          padding:
+                              EdgeInsets.all(_getPadding(context, base: 6)),
+                          constraints: const BoxConstraints(),
+                          style: _cartButtonStyle(colorScheme),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -348,7 +386,8 @@ child: Card(
 
   Widget _buildProductListItem(Product product) {
     final colorScheme = Theme.of(context).colorScheme;
-    final imageSize = _getResponsiveValue(context,
+    final imageSize = _getResponsiveValue(
+      context,
       mobile: 60,
       tablet: 70,
       desktop: 80,
@@ -366,7 +405,8 @@ child: Card(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(_getPadding(context, base: 4)),
+              borderRadius:
+                  BorderRadius.circular(_getPadding(context, base: 4)),
               child: CachedNetworkImage(
                 imageUrl: product.imageUrl,
                 width: imageSize,
@@ -381,7 +421,8 @@ child: Card(
                   color: colorScheme.surfaceContainerHigh,
                   width: imageSize,
                   height: imageSize,
-                  child: Icon(Icons.image, size: imageSize * 0.6, color: colorScheme.outline),
+                  child: Icon(Icons.image,
+                      size: imageSize * 0.6, color: colorScheme.outline),
                 ),
               ),
             ),
@@ -523,184 +564,407 @@ child: Card(
   Widget _buildMobileLayout() {
     return Column(
       children: [
-        // Search bar and controls
-        ProductSearchControls(
-          searchController: _searchController,
-          onSearchChanged: _onSearchChanged,
-          onClearSearch: () {
-            _searchController.clear();
-            _searchText.value = '';
-            _debounceTimer?.cancel();
-            _filteredProducts.value = 0;
-            _fetchProducts();
-          },
-          onSortSelected: (value) {
-            final parts = value.split('_');
-            _sortBy.value = parts[0];
-            _sortAscending.value = parts[1] == 'asc';
-            _fetchProducts();
-          },
-          onViewModeChanged: (mode) => _viewMode.value = mode,
-          currentViewMode: _viewMode.value,
-          searchText: _searchText,
-        ),
+        // Mobile TopAppBar (sticky): location chip + search + cart icon
+        _buildMobileTopAppBar(),
 
+        // Category selector pills
         CategorySelector(
-          // Category changes are handled by the event bus listener in
-          // initState (selection mutations publish to CategoryEventBus).
           onSelectionChanged: () {},
         ),
+        const SizedBox(height: 4),
 
-        // Category breadcrumbs
-        CategoryBreadcrumbs(
-          onBreadcrumbTap: () {},
-        ),
+        // Promo banner: "Envío gratis en pedidos > $500"
+        _buildMobilePromoBanner(),
 
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: _getPadding(context, base: 16),
-            vertical: _getPadding(context, base: 4),
-          ),
-          child: GetBuilder<CategoryService>(
-            builder: (categoryService) {
-              final hasActiveFilters = categoryService.selectedCategories.isNotEmpty ||
-                                    _searchText.value.trim().isNotEmpty;
-              return Text(
-                hasActiveFilters && !categoryService.isAllSelected()
-                  ? '${_filteredProducts.value} de ${_totalProducts.value} productos'
-                  : '${_totalProducts.value} productos',
-                style: TextStyle(
-                  fontSize: _getFontSize(context, base: 14),
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            },
-          ),
-        ),
+        // Product count + sort button section
+        _buildMobileSectionHeader(),
 
+        // Product grid with "Ver más" button at the bottom
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Obx(() {
-                if (_isLoading.value && !_hasMore) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (_errorMessage.value.isNotEmpty) {
-                  return Center(child: Text(_errorMessage.value));
-                }
-                if (_products.isEmpty) {
-                  return const Center(child: Text('No hay productos disponibles'));
-                }
-
-                return NotificationListener<ScrollNotification>(
-                  onNotification: (scroll) {
-                    if (scroll.metrics.pixels == scroll.metrics.maxScrollExtent &&
-                        _hasMore && !_isLoading.value) {
-                      _fetchProducts(loadMore: true);
-                    }
-                    return false;
-                  },
-                  child: RefreshIndicator(
-                    onRefresh: _refreshProducts,
-                    child: _viewMode.value == 'card'
-                      ? GridView.builder(
-                          padding: EdgeInsets.all(_getPadding(context, base: 8)),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: _getCrossAxisCount(context),
-                            childAspectRatio: _getAspectRatio(context),
-                            crossAxisSpacing: _getSpacing(context),
-                            mainAxisSpacing: _getSpacing(context),
-                          ),
-                          itemCount: _products.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= _products.length) {
-                              return Center(
-                                child: SizedBox(
-                                  width: _getIconSize(context, base: 24),
-                                  height: _getIconSize(context, base: 24),
-                                  child: const CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              );
-                            }
-                            return _buildProductCard(_products[index]);
-                          },
-                        )
-                      : ListView.builder(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: _getPadding(context, base: 8),
-                            vertical: _getPadding(context, base: 4),
-                          ),
-                          itemCount: _products.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= _products.length) {
-                              return Center(
-                                child: SizedBox(
-                                  width: _getIconSize(context, base: 24),
-                                  height: _getIconSize(context, base: 24),
-                                  child: const CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                              );
-                            }
-                            return _buildProductListItem(_products[index]);
-                          },
-                        ),
-                  ),
-                );
-              });
-            },
-          ),
+          child: _buildMobileProductGrid(),
         ),
       ],
     );
   }
 
+  /// Sticky mobile TopAppBar: location chip in the first row, search bar
+  /// in the second row, and a cart icon with badge on the right.
+  Widget _buildMobileTopAppBar() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.onSurface.withValues(alpha: 0.06),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Row 1: Location chip + cart icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Location chip
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Enviar a:',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'Polanco, CDMX',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Cart icon with badge
+              _buildCartBadge(colorScheme),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Row 2: Search bar
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'Buscar productos',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              ),
+              style: TextStyle(
+                fontSize: 14,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Cart icon with item-count badge (matches Stitch mobile TopAppBar).
+  Widget _buildCartBadge(ColorScheme colorScheme) {
+    return GetBuilder<CartController>(
+      builder: (cartController) {
+        final itemCount = cartController.cart.value?.itemCount ?? 0;
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.shopping_cart,
+                size: 22,
+                color: colorScheme.onSurface,
+              ),
+              onPressed: () => Get.to(() => const CartScreen()),
+            ),
+            if (itemCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Text(
+                    itemCount > 99 ? '99+' : itemCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Stitch-style mobile promo banner: "Envío gratis en pedidos > $500".
+  Widget _buildMobilePromoBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Decorative circle
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.local_offer,
+              size: 20,
+              color: colorScheme.onSecondaryContainer,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Envío gratis',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                Text(
+                  'en pedidos > \$500',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSecondaryContainer
+                        .withValues(alpha: 0.85),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mobile section header: product count (left) + sort button (right).
+  Widget _buildMobileSectionHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          GetBuilder<CategoryService>(
+            builder: (categoryService) {
+              final hasActiveFilters =
+                  categoryService.selectedCategories.isNotEmpty &&
+                      !categoryService.isAllSelected();
+              final searchTerm = _searchText.value.trim();
+              final count = hasActiveFilters || searchTerm.isNotEmpty
+                  ? _filteredProducts.value
+                  : _totalProducts.value;
+              return Text(
+                '$count productos',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              );
+            },
+          ),
+          // Sort button (mock shows "Filtros" but we keep sort for functionality)
+          Container(
+            height: 36,
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: PopupMenuButton<String>(
+              icon: Icon(
+                Icons.sort,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onSelected: (value) {
+                final parts = value.split('_');
+                _sortBy.value = parts[0];
+                _sortAscending.value = parts[1] == 'asc';
+                _fetchProducts();
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'basePrice_asc',
+                  child: const Text('Precio ↑ Más baratos'),
+                ),
+                PopupMenuItem(
+                  value: 'basePrice_desc',
+                  child: const Text('Precio ↓ Más caros'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mobile product grid with "Ver más" button at the bottom
+  /// (replaces the previous infinite-scroll behaviour).
+  Widget _buildMobileProductGrid() {
+    return Obx(() {
+      if (_isLoading.value && _products.isEmpty) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (_errorMessage.value.isNotEmpty) {
+        return Center(child: Text(_errorMessage.value));
+      }
+      if (_products.isEmpty) {
+        return const Center(child: Text('No hay productos disponibles'));
+      }
+
+      return RefreshIndicator(
+        onRefresh: _refreshProducts,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.all(_getPadding(context, base: 8)),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: _getCrossAxisCount(context),
+                  childAspectRatio: _getAspectRatio(context),
+                  crossAxisSpacing: _getSpacing(context),
+                  mainAxisSpacing: _getSpacing(context),
+                ),
+                itemCount: _products.length,
+                itemBuilder: (context, index) {
+                  return _buildProductCard(_products[index]);
+                },
+              ),
+              // "Ver más" button at the bottom
+              if (_hasMore && !_isLoading.value)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => _fetchProducts(loadMore: true),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Ver más',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              // Loading indicator when loading more
+              if (_isLoading.value && _hasMore)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  /// Builds the desktop layout: sidebar filters + product grid with toolbar,
+  /// header, and bottom pagination — matching the Stitch desktop mock exactly.
   Widget _buildDesktopLayout() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Persistent category sidebar
-        _buildCategorySidebar(),
-
+        // Sidebar filters (sticky, 256px wide) — matches Stitch sidebar exactly
+        _buildDesktopSidebar(),
         const SizedBox(width: 24),
 
-        // Main content column: toolbar, count, grid, pagination
+        // Main content area
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  _getPadding(context, base: 16),
-                  _getPadding(context, base: 12),
-                  _getPadding(context, base: 16),
-                  0,
-                ),
-                child: ProductSearchControls(
-                  searchController: _searchController,
-                  onSearchChanged: _onSearchChanged,
-                  onClearSearch: () {
-                    _searchController.clear();
-                    _searchText.value = '';
-                    _debounceTimer?.cancel();
-                    _filteredProducts.value = 0;
-                    _fetchProducts();
-                  },
-                  onSortSelected: (value) {
-                    final parts = value.split('_');
-                    _sortBy.value = parts[0];
-                    _sortAscending.value = parts[1] == 'asc';
-                    _fetchProducts();
-                  },
-                  onViewModeChanged: (mode) => _viewMode.value = mode,
-                  currentViewMode: _viewMode.value,
-                  searchText: _searchText,
-                ),
-              ),
+              // Top toolbar: search + sort + view mode
+              _buildDesktopToolbar(),
+              const SizedBox(height: 8),
 
+              // Page header with breadcrumbs, title, count, applied filters
               _buildDesktopPageHeader(),
 
-              // Responsive product grid with bottom pagination (desktop)
+              const SizedBox(height: 8),
+
+              // Product grid (4 columns on desktop) with bottom pagination
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -712,50 +976,579 @@ child: Card(
                         return Center(child: Text(_errorMessage.value));
                       }
                       if (_products.isEmpty) {
-                        return const Center(child: Text('No hay productos disponibles'));
+                        return const Center(
+                          child: Text('No hay productos disponibles'),
+                        );
                       }
 
                       final crossAxisCount = constraints.maxWidth > 1200
                           ? 4
-                          : constraints.maxWidth > 860 ? 3 : 2;
+                          : constraints.maxWidth > 860
+                              ? 3
+                              : 2;
 
                       return RefreshIndicator(
                         onRefresh: _refreshProducts,
                         child: _viewMode.value == 'card'
-                          ? GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                childAspectRatio: 0.72,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
+                            ? GridView.builder(
+                                padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  childAspectRatio: 0.7,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                ),
+                                itemCount: _products.length,
+                                itemBuilder: (context, index) {
+                                  return _buildDesktopProductCard(
+                                      _products[index]);
+                                },
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 0, vertical: 8),
+                                itemCount: _products.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child:
+                                        _buildProductListItem(_products[index]),
+                                  );
+                                },
                               ),
-                              itemCount: _products.length,
-                              itemBuilder: (context, index) {
-                                return _buildDesktopProductCard(_products[index]);
-                              },
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              itemCount: _products.length,
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _buildProductListItem(_products[index]),
-                                );
-                              },
-                            ),
                       );
                     });
                   },
                 ),
               ),
 
+              // Bottom pagination bar (Stitch style)
               _buildPaginationBar(),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// Desktop sidebar with collapsible sections: Categorías (checkboxes + counts)
+  /// and Precio (RangeSlider + number inputs). Matches Stitch desktop sidebar.
+  Widget _buildDesktopSidebar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final _ = colorScheme; // Used in child widgets via context
+
+    return Container(
+      width: 256,
+      constraints: const BoxConstraints(maxWidth: 256),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Categorías section
+            _buildDesktopSidebarSection(
+              title: 'Categorías',
+              icon: Icons.expand_less,
+              initiallyExpanded: true,
+              children: [
+                GetBuilder<CategoryService>(
+                  builder: (categoryService) {
+                    final isAllSelected = categoryService.isAllSelected();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // "Todos" checkbox
+                        _buildDesktopSidebarCheckbox(
+                          label: 'Todos',
+                          count: _totalProducts.value,
+                          selected: isAllSelected,
+                          onChanged: (value) {
+                            if (value == true) {
+                              categoryService.addSelectedCategory(
+                                CategoryService.allCategoriesId,
+                                CategoryService.allCategoriesName,
+                              );
+                              _fetchProducts();
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        // Individual category checkboxes
+                        ...categoryService.categories.map((category) {
+                          final isSelected = categoryService.selectedCategories
+                              .contains(category.id);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _buildDesktopSidebarCheckbox(
+                              label: category.name,
+                              count: _countProductsInCategory(category.id),
+                              selected: isSelected,
+                              onChanged: (value) {
+                                categoryService.addSelectedCategory(
+                                  category.id,
+                                  category.name,
+                                );
+                                _fetchProducts();
+                              },
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Precio section
+            _buildDesktopSidebarSection(
+              title: 'Precio',
+              icon: Icons.expand_less,
+              initiallyExpanded: true,
+              children: _buildDesktopPriceRangeFilter(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Collapsible sidebar section matching Stitch design: white card, border,
+  /// header with chevron, content below.
+  Widget _buildDesktopSidebarSection({
+    required String title,
+    required IconData icon,
+    required bool initiallyExpanded,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool expanded = initiallyExpanded;
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.surfaceContainer),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Section header with chevron
+              InkWell(
+                onTap: () => setState(() => expanded = !expanded),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Icon(
+                        expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              if (expanded) ...[
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Desktop sidebar checkbox item: checkbox + label + count badge (N).
+  Widget _buildDesktopSidebarCheckbox({
+    required String label,
+    required int count,
+    required bool selected,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: () => onChanged(!selected),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+        child: Row(
+          children: [
+            Checkbox(
+              value: selected,
+              onChanged: onChanged,
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+              side: BorderSide(color: colorScheme.outlineVariant),
+              activeColor: colorScheme.primary,
+              checkColor: colorScheme.onPrimary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? colorScheme.primary : colorScheme.onSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (count > 0)
+              Text(
+                '($count)',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Desktop price range filter: RangeSlider with editable min/max inputs below.
+  List<Widget> _buildDesktopPriceRangeFilter() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return [
+      RangeSlider(
+        values: RangeValues(_rangeMin, _rangeMax),
+        min: _priceMin,
+        max: _priceMax,
+        divisions: 50,
+        labels: RangeLabels(
+          '\$${_rangeMin.toStringAsFixed(0)}',
+          '\$${_rangeMax.toStringAsFixed(0)}',
+        ),
+        onChanged: (values) {
+          setState(() {
+            _rangeMin = values.start;
+            _rangeMax = values.end;
+          });
+        },
+        onChangeEnd: (values) {
+          _priceMin = values.start;
+          _priceMax = values.end;
+          _fetchProducts();
+        },
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: _buildDesktopPriceInput(
+              value: _rangeMin,
+              colorScheme: colorScheme,
+              onChanged: (v) => setState(() => _rangeMin = v),
+              onSubmitted: () {
+                _priceMin = _rangeMin;
+                _fetchProducts();
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              '-',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _buildDesktopPriceInput(
+              value: _rangeMax,
+              colorScheme: colorScheme,
+              onChanged: (v) => setState(() => _rangeMax = v),
+              onSubmitted: () {
+                _priceMax = _rangeMax;
+                _fetchProducts();
+              },
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Small numeric text field with $ prefix for desktop price filter.
+  Widget _buildDesktopPriceInput({
+    required double value,
+    required ColorScheme colorScheme,
+    required ValueChanged<double> onChanged,
+    required VoidCallback onSubmitted,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              '\$',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(
+            child: SizedBox(
+              height: 36,
+              child: TextFormField(
+                initialValue: value.toStringAsFixed(0),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainer,
+                ),
+                onChanged: (s) {
+                  final parsed = double.tryParse(s);
+                  if (parsed != null) onChanged(parsed);
+                },
+                onFieldSubmitted: (_) => onSubmitted(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Desktop top toolbar: search bar (expanded) + sort dropdown + view mode toggle.
+  Widget _buildDesktopToolbar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final horizontalPadding = 0.0;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Row(
+        children: [
+          // Search bar (expands to fill)
+          Expanded(
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Icon(
+                      Icons.search,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: 'Buscar productos...',
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.7),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  // Clear button (shows when text not empty)
+                  Obx(() {
+                    if (_searchText.value.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          size: 20,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _searchText.value = '';
+                          _debounceTimer?.cancel();
+                          _fetchProducts();
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Sort dropdown
+          Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value:
+                    '${_sortBy.value}_${_sortAscending.value ? "asc" : "desc"}',
+                icon: Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                ),
+                dropdownColor: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(8),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'basePrice_asc',
+                    child: Text('Precio: Menor a Mayor'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'basePrice_desc',
+                    child: Text('Precio: Mayor a Menor'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'name_asc',
+                    child: Text('Nombre A-Z'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'name_desc',
+                    child: Text('Nombre Z-A'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    final parts = value.split('_');
+                    _sortBy.value = parts[0];
+                    _sortAscending.value = parts[1] == 'asc';
+                    _fetchProducts();
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // View mode toggle (grid / list)
+          Row(
+            children: [
+              _buildViewModeButton(
+                icon: Icons.grid_view,
+                selected: _viewMode.value == 'card',
+                onTap: () => _viewMode.value = 'card',
+              ),
+              _buildViewModeButton(
+                icon: Icons.view_list,
+                selected: _viewMode.value == 'list',
+                onTap: () => _viewMode.value = 'list',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// View mode button (grid or list) for desktop toolbar.
+  Widget _buildViewModeButton({
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: selected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: selected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant,
+        ),
+      ),
     );
   }
 
@@ -771,10 +1564,10 @@ child: Card(
             categoryService.selectedCategories.isNotEmpty &&
                 !categoryService.isAllSelected();
         final searchTerm = _searchText.value.trim();
-        final activeLabel = hasActiveFilters &&
-                categoryService.selectedCategoryNames.isNotEmpty
-            ? categoryService.selectedCategoryNames.last
-            : 'Productos';
+        final activeLabel =
+            hasActiveFilters && categoryService.selectedCategoryNames.isNotEmpty
+                ? categoryService.selectedCategoryNames.last
+                : 'Productos';
         final count = hasActiveFilters || searchTerm.isNotEmpty
             ? _filteredProducts.value
             : _totalProducts.value;
@@ -942,130 +1735,9 @@ child: Card(
     );
   }
 
-  Widget _buildCategorySidebar() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 240,
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.surfaceContainer),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          GetBuilder<CategoryService>(
-            builder: (categoryService) {
-              final isAllSelected = categoryService.isAllSelected();
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSidebarHeader('Categorías'),
-                  const SizedBox(height: 4),
-                  _buildSidebarItem(
-                    label: 'Todos',
-                    selected: isAllSelected,
-                    onTap: () {
-                      categoryService.addSelectedCategory(
-                        CategoryService.allCategoriesId,
-                        CategoryService.allCategoriesName,
-                      );
-                    },
-                  ),
-                  ...categoryService.categories.map((category) {
-                    final isSelected = categoryService.selectedCategories.contains(category.id);
-                    return _buildSidebarItem(
-                      label: category.name,
-                      selected: isSelected,
-                      onTap: () {
-                        categoryService.addSelectedCategory(category.id, category.name);
-                      },
-                    );
-                  }),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebarHeader(String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          Icon(
-            Icons.expand_less,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebarItem({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: [
-            Icon(
-              selected ? Icons.check_box : Icons.check_box_outline_blank,
-              size: 20,
-              color: selected ? colorScheme.primary : colorScheme.outline,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.w500,
-                  color: selected ? colorScheme.primary : colorScheme.onSurface,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildPaginationBar() {
     final colorScheme = Theme.of(context).colorScheme;
-    final totalPages = (_filteredProducts.value / _itemsPerPage).ceil().clamp(1, 1 << 20);
+    final totalPages = _totalPages;
     final currentPage = _currentPage - 1; // _currentPage is 1-based.
     if (totalPages <= 1 && !_hasMore) {
       return const SizedBox.shrink();
@@ -1090,15 +1762,18 @@ child: Card(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            icon: Icon(Icons.chevron_left, size: _getIconSize(context, base: 22)),
+            icon:
+                Icon(Icons.chevron_left, size: _getIconSize(context, base: 22)),
             color: colorScheme.onSurfaceVariant,
-            onPressed: currentPage > 1 ? () => _goToPage(currentPage - 1) : null,
+            onPressed:
+                currentPage > 1 ? () => _goToPage(currentPage - 1) : null,
           ),
           if (start > 1) ...[
             _buildPageNumber(1, currentPage, colorScheme),
             if (start > 2)
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 4)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: _getPadding(context, base: 4)),
                 child: Text(
                   '...',
                   style: TextStyle(
@@ -1113,7 +1788,8 @@ child: Card(
           if (end < totalPages) ...[
             if (end < totalPages - 1)
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: _getPadding(context, base: 4)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: _getPadding(context, base: 4)),
                 child: Text(
                   '...',
                   style: TextStyle(
@@ -1125,9 +1801,12 @@ child: Card(
             _buildPageNumber(totalPages, currentPage, colorScheme),
           ],
           IconButton(
-            icon: Icon(Icons.chevron_right, size: _getIconSize(context, base: 22)),
+            icon: Icon(Icons.chevron_right,
+                size: _getIconSize(context, base: 22)),
             color: colorScheme.onSurfaceVariant,
-            onPressed: currentPage < totalPages ? () => _goToPage(currentPage + 1) : null,
+            onPressed: currentPage < totalPages
+                ? () => _goToPage(currentPage + 1)
+                : null,
           ),
         ],
       ),
@@ -1163,6 +1842,19 @@ child: Card(
     );
   }
 
+  /// Counts how many currently-loaded products belong to a given category.
+  int _countProductsInCategory(String categoryId) {
+    return _products.where((p) {
+      if (p.category == categoryId) return true;
+      if (p.categories != null && p.categories!.contains(categoryId)) {
+        return true;
+      }
+      return false;
+    }).length;
+  }
+
+  /// Stitch-style price range filter: a RangeSlider with editable min/max
+  /// number inputs below it.
   Future<void> _goToPage(int page) async {
     if (page < 1) return;
     _currentPage = page;
@@ -1173,7 +1865,8 @@ child: Card(
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 800; // Lower threshold for testing
+        final isDesktop =
+            constraints.maxWidth >= 800; // Lower threshold for testing
 
         if (isDesktop) {
           return _buildDesktopLayout();
@@ -1422,8 +2115,8 @@ class _DesktopProductCardState extends State<_DesktopProductCard> {
                             side: discount != null
                                 ? BorderSide.none
                                 : BorderSide(
-                                    color: colorScheme.primary.withValues(
-                                        alpha: 0.2),
+                                    color: colorScheme.primary
+                                        .withValues(alpha: 0.2),
                                   ),
                           ),
                           child: IconButton(

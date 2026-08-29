@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'theme.dart';
 import 'services/cart_controller.dart';
@@ -12,13 +13,16 @@ import 'widgets/product_listing_widget.dart';
 import 'widgets/cart_screen.dart';
 import 'widgets/cart_icon.dart';
 import 'widgets/auth_guard.dart';
+import 'widgets/auth_callback_screen.dart';
 import 'widgets/order_history_screen.dart';
 import 'widgets/storefront_widget.dart';
+import 'widgets/footer.dart';
 import 'services/order_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await GetStorage.init('auth');
   runApp(const MyApp());
 }
 
@@ -42,6 +46,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const MainScreen(),
       getPages: [
+        GetPage(name: '/auth/callback', page: () => const AuthCallbackScreen()),
       ],
     );
   }
@@ -97,29 +102,8 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Desktop nav indices (single source of truth): 0 Inicio, 1 Categorías,
-  // 2 Carrito, 3 Pedidos, 4 Perfil. The mobile bottom bar only exposes
-  // Inicio/Carrito/Pedidos, mapping those to desktop indices via
-  // [_mobileTabToIndex].
-  static const List<int> _mobileTabToIndex = [0, 2, 3];
-
-  // Derive which mobile bottom-bar tab corresponds to the current selection,
-  // clamping desktop-only indices (Categorías, Perfil) to Inicio so the bar
-  // never builds with an out-of-range currentIndex.
-  int _bottomNavIndex() {
-    switch (_selectedIndex) {
-      case 2:
-        return 1; // Carrito
-      case 3:
-        return 2; // Pedidos
-      default:
-        return 0; // Inicio (also Categorías and Perfil)
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
@@ -133,33 +117,53 @@ class _MainScreenState extends State<MainScreen> {
             )
           : _buildContent(),
       bottomNavigationBar: isDesktop
-          ? null
-          : BottomNavigationBar(
-              backgroundColor: colorScheme.surfaceContainer,
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Inicio',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.shopping_cart),
-                  label: 'Carrito',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.receipt_long),
-                  label: 'Pedidos',
+          ? const Footer()
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Footer(),
+                BottomNavigationBar(
+                  items: const <BottomNavigationBarItem>[
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: 'Inicio',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.category),
+                      label: 'Categorías',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.shopping_cart),
+                      label: 'Carrito',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.receipt_long),
+                      label: 'Pedidos',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.account_circle),
+                      label: 'Perfil',
+                    ),
+                  ],
+                  currentIndex: _selectedIndex,
+                  onTap: (index) {
+                    if (index == 4) {
+                      _onProfileItemTapped();
+                    } else {
+                      _onItemTapped(index);
+                    }
+                  },
                 ),
               ],
-              currentIndex: _bottomNavIndex(),
-              selectedItemColor: colorScheme.primary,
-              unselectedItemColor: colorScheme.onSurfaceVariant,
-              onTap: (index) => _onItemTapped(_mobileTabToIndex[index]),
             ),
     );
   }
 
   Widget _buildContent() {
     switch (_selectedIndex) {
+      case 1:
+        // Categorías tab — show the storefront with category tiles
+        return const HomeScreen();
       case 2:
         return const CartScreen();
       case 3:
@@ -408,12 +412,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   // Section links shown in the second row of the desktop header (Inicio,
-  // Categorías, Pedidos, Perfil), matching the mock's active underline style.
+  // Categorías, Carrito, Pedidos, Perfil), matching the mock's active
+  // underline style. Labels use Public Sans (label font per Stitch DS).
   Widget _buildNavLinks() {
     final colorScheme = Theme.of(context).colorScheme;
     const links = <(int, String)>[
       (0, 'Inicio'),
       (1, 'Categorías'),
+      (2, 'Carrito'),
       (3, 'Pedidos'),
       (4, 'Perfil'),
     ];
@@ -448,10 +454,11 @@ class _MainScreenState extends State<MainScreen> {
                   label,
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     color: selected
                         ? colorScheme.primary
                         : colorScheme.onSurfaceVariant,
+                    fontFamily: 'Public Sans', // label font per Stitch DS
                   ),
                 ),
               ),
@@ -708,51 +715,80 @@ class _ProfileView extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  /// Shared search controller so the sticky mobile storefront header
+  /// drives the product listing search without duplicating state.
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     if (ResponsiveBreakpoints.of(context).isMobile) {
-      // Mobile layout
-      return Column(
-        children: [
-          const Expanded(
+      // Mobile layout: single scroll view with a sticky storefront header
+      // (location chip + search + cart), the storefront hero/categories/offers,
+      // then the product listing (without its own duplicate header).
+      return CustomScrollView(
+        slivers: [
+          // Sticky header pinned to the top while scrolling.
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: StorefrontHeaderDelegate(
+              height: 82,
+              searchController: _searchController,
+              onSearchChanged: (value) {
+                // Drive the shared product-listing search.
+                Get.find<ProductListingWidgetState>()
+                    .searchProducts(value);
+              },
+            ),
+          ),
+          // Storefront hero + categories + offers (mobile-compact sizes).
+          SliverToBoxAdapter(
+            child: StorefrontWidget(
+              isMobile: true,
+            ),
+          ),
+          // Product listing without its own mobile header — the sticky
+          // header above is the single source of search + cart on mobile.
+          const SliverToBoxAdapter(
             child: ProductListingWidget(),
           ),
         ],
       );
-    } else {
-      // Desktop/tablet layout: storefront hero + category tiles above the
-      // flexible product listing. The storefront never starves the listing:
-      // it is capped at half the panel height AND leaves at least 320px of
-      // vertical space for the listing (scrolling internally if needed).
-      return Row(
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: (constraints.maxHeight - 320)
-                          .clamp(0.0, constraints.maxHeight * 0.5),
-                    ),
-                    child: const SingleChildScrollView(
-                      child: StorefrontWidget(),
-                    ),
-                  ),
-                  const Expanded(
-                    child: ProductListingWidget(),
-                  ),
-                ],
-              ),
+          // Storefront capped above the listing so it never starves it;
+          // scrolls internally on short viewports.
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: (constraints.maxHeight - 320)
+                  .clamp(0.0, constraints.maxHeight * 0.5),
+            ),
+            child: const SingleChildScrollView(
+              child: StorefrontWidget(),
             ),
           ),
+          const Expanded(
+            child: ProductListingWidget(),
+          ),
         ],
-      );
-    }
+      ),
+    );
   }
 }

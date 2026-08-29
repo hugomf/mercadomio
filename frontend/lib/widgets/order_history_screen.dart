@@ -2,16 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../models/order.dart';
 import '../services/order_service.dart';
+import '../theme.dart';
 import 'order_details_screen.dart';
 import '../main.dart';
 
 // Professional Order History Screen - Selling Point UI
 class OrderHistoryScreen extends StatefulWidget {
   final OrderService orderService;
+  /// Optional pre-loaded orders (used by the screenshot compare entry point
+  /// when the backend auth flow is unavailable). When non-null, the screen
+  /// renders this data instead of fetching.
+  final OrderHistoryResponse? seedOrders;
 
   const OrderHistoryScreen({
     super.key,
     required this.orderService,
+    this.seedOrders,
   });
 
   @override
@@ -34,10 +40,12 @@ int _currentPage = 1;
   @override
   void initState() {
     super.initState();
-    _ordersFuture = widget.orderService.getOrderHistory(
-      page: _currentPage,
-      limit: _limit,
-    );
+    _ordersFuture = widget.seedOrders != null
+        ? Future.value(widget.seedOrders)
+        : widget.orderService.getOrderHistory(
+            page: _currentPage,
+            limit: _limit,
+          );
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -331,17 +339,17 @@ int _currentPage = 1;
                               vertical: 10,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               borderSide:
                                   BorderSide(color: colorScheme.outlineVariant),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               borderSide:
                                   BorderSide(color: colorScheme.outlineVariant),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide(
                                 color: colorScheme.primary,
                                 width: 2,
@@ -569,7 +577,7 @@ int _currentPage = 1;
               padding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
               ),
               elevation: 0,
             ),
@@ -676,7 +684,7 @@ int _currentPage = 1;
                       side: BorderSide(color: colorScheme.outline),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: const Text('Ver detalles'),
@@ -701,7 +709,7 @@ int _currentPage = 1;
                         side: BorderSide.none,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       icon: const Icon(Icons.replay, size: 18),
@@ -722,14 +730,14 @@ int _currentPage = 1;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(status.statusIcon, size: 14, color: status.statusColor),
+        Icon(status.statusIcon, size: 14, color: status.statusAccentColor),
         const SizedBox(width: 4),
         Text(
           status.displayName,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: status.statusColor,
+            color: status.statusAccentColor,
           ),
         ),
       ],
@@ -884,19 +892,20 @@ class _OrderCardState extends State<OrderCard>
         scale: _scaleAnimation,
         child: Card(
           elevation: 0,
-          shadowColor: order.status.statusColor.withValues(alpha: 0.3),
+          shadowColor: order.status.statusAccentColor.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: colorScheme.outlineVariant),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             onTap: widget.onTap,
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 color: colorScheme.surfaceContainerLowest,
+                boxShadow: AppTheme.softShadow,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -914,7 +923,7 @@ class _OrderCardState extends State<OrderCard>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          gradient: order.status.statusGradient,
+                          color: order.status.statusBackgroundColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -922,14 +931,14 @@ class _OrderCardState extends State<OrderCard>
                           children: [
                             Icon(
                               order.status.statusIcon,
-                              color: Colors.white,
+                              color: order.status.statusColor,
                               size: 16,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               order.status.displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: order.status.statusColor,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1011,12 +1020,12 @@ class _OrderCardState extends State<OrderCard>
                         SizedBox(
                           width: 60,
                           height: 60,
-                          child: CircularProgressIndicator(
-                            value: order.progressPercentage,
-                            backgroundColor: Colors.grey.shade200,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              order.status.statusColor,
-                            ),
+                           child: CircularProgressIndicator(
+                             value: order.progressPercentage,
+                             backgroundColor: Colors.grey.shade200,
+                             valueColor: AlwaysStoppedAnimation<Color>(
+                               order.status.statusAccentColor,
+                             ),
                             strokeWidth: 3,
                           ),
                         )

@@ -4,6 +4,7 @@ import '../services/cart_controller.dart';
 import '../services/cart_service.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
+import '../theme.dart';
 import 'checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
@@ -170,8 +171,13 @@ class CartScreen extends StatelessWidget {
           )
         : null;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: AppTheme.softShadow,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(

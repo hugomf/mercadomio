@@ -1,3 +1,9 @@
+# Agent tooling and QA artifacts
+.opencode/
+.kilo/
+screenshots_compare/
+screenshot_desktop_storefront.png
+
 # Operating System Files
 .DS_Store
 .DS_Store?

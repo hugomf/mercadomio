@@ -1,37 +1,54 @@
 package middleware
 
 import (
-	"mercadomio-backend/services"
 	"strings"
+
+	"mercadomio-backend/services"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// AuthMiddleware authenticates requests using JWT tokens
-func AuthMiddleware(authService *services.AuthService) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
+const bearerPrefix = "Bearer "
 
-		if authHeader == "" {
+// extractBearerToken returns the raw token from an Authorization header.
+func extractBearerToken(c *fiber.Ctx) (string, bool) {
+	header := c.Get("Authorization")
+	if header == "" || !strings.HasPrefix(header, bearerPrefix) {
+		return "", false
+	}
+	token := strings.TrimSpace(strings.TrimPrefix(header, bearerPrefix))
+	if token == "" {
+		return "", false
+	}
+	return token, true
+}
+
+// setIdentityLocals stores the validated identity for downstream handlers.
+// Prefers the OIDC "sub" claim, but falls back to a local "userId" claim so
+// tokens issued by the local auth service (which carry userId) also work.
+func setIdentityLocals(c *fiber.Ctx, claims *services.OidcClaims) {
+	userID := claims.Sub
+	if userID == "" {
+		userID = claims.UserID
+	}
+	c.Locals("userID", userID)
+	c.Locals("userEmail", claims.Email)
+	c.Locals("userName", claims.Name)
+	c.Locals("isAdmin", claims.IsAdmin())
+}
+
+// AuthMiddleware authenticates requests using OIDC tokens issued by userbrew.
+func AuthMiddleware(oidc *services.OidcService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token, ok := extractBearerToken(c)
+		if !ok {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"success": false,
 				"message": "Authorization header is required",
 			})
 		}
 
-		// Extract token from "Bearer <token>" format
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"success": false,
-				"message": "Invalid authorization header format",
-			})
-		}
-
-		token := tokenParts[1]
-
-		// Validate token
-		claims, err := authService.ValidateToken(token)
+		claims, err := oidc.ValidateToken(token)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"success": false,
@@ -39,37 +56,51 @@ func AuthMiddleware(authService *services.AuthService) fiber.Handler {
 			})
 		}
 
-		// Store user info in locals for use in handlers
-		c.Locals("userID", claims.UserID)
-		c.Locals("userEmail", claims.Email)
-		c.Locals("userType", claims.Type)
-
+		setIdentityLocals(c, claims)
 		return c.Next()
 	}
 }
 
-// OptionalAuthMiddleware allows requests with or without authentication
-func OptionalAuthMiddleware(authService *services.AuthService) fiber.Handler {
+// OptionalAuthMiddleware attaches identity when a valid token is present,
+// but never blocks the request.
+func OptionalAuthMiddleware(oidc *services.OidcService) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
-
-		if authHeader != "" {
-			// Extract token from "Bearer <token>" format
-			tokenParts := strings.Split(authHeader, " ")
-			if len(tokenParts) == 2 && tokenParts[0] == "Bearer" {
-				token := tokenParts[1]
-
-				// Validate token (but don't fail if invalid)
-				claims, err := authService.ValidateToken(token)
-				if err == nil {
-					// Store user info in locals for use in handlers
-					c.Locals("userID", claims.UserID)
-					c.Locals("userEmail", claims.Email)
-					c.Locals("userType", claims.Type)
-				}
+		if token, ok := extractBearerToken(c); ok {
+			if claims, err := oidc.ValidateToken(token); err == nil {
+				setIdentityLocals(c, claims)
 			}
 		}
+		return c.Next()
+	}
+}
 
+// AdminMiddleware requires a valid token carrying the mercadomio-admin group.
+func AdminMiddleware(oidc *services.OidcService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token, ok := extractBearerToken(c)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"message": "Authorization header is required",
+			})
+		}
+
+		claims, err := oidc.ValidateToken(token)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"success": false,
+				"message": "Invalid or expired token",
+			})
+		}
+
+		if !claims.IsAdmin() {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"success": false,
+				"message": "Admin access required",
+			})
+		}
+
+		setIdentityLocals(c, claims)
 		return c.Next()
 	}
 }

@@ -23,6 +23,28 @@ class _CategorySelectorState extends State<CategorySelector> {
     isAllSelected: true,
   ).obs;
 
+  /// Maps category names to Material icons, matching the Stitch mock.
+  static const Map<String, IconData> _categoryIcons = {
+    'Frutas y Verduras': Icons.local_florist,
+    'Frutas': Icons.local_florist,
+    'Verduras': Icons.local_florist,
+    'Lácteos': Icons.water_drop,
+    'Carnicería': Icons.set_meal,
+    'Panadería': Icons.bakery_dining,
+    'Abarrotes': Icons.kitchen,
+    'Bebidas': Icons.local_bar,
+    'Orgánicos': Icons.eco,
+    'Ofertas': Icons.local_offer,
+    'All': Icons.category,
+  };
+
+  /// Returns the icon for a category, falling back to a generic icon.
+  IconData _getIconForCategory(String categoryName, String categoryId) {
+    return _categoryIcons[categoryName] ??
+        _categoryIcons[categoryId] ??
+        Icons.category;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,20 +69,18 @@ class _CategorySelectorState extends State<CategorySelector> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const SizedBox(
-            height: 36,
+            height: 44,
             child: Center(child: CircularProgressIndicator()),
           );
         }
-
         return Obx(() => _buildCategoryList());
       },
     );
   }
 
   Widget _buildCategoryList() {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      height: 36,
+      height: 44,
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -71,86 +91,101 @@ class _CategorySelectorState extends State<CategorySelector> {
             final isAllSelected = _currentSelection.value.isAllSelected;
             return Padding(
               padding: const EdgeInsets.only(right: 8.0),
-              child: GestureDetector(
+              child: _buildPill(
+                icon: _getIconForCategory(
+                  CategoryService.allCategoriesName,
+                  CategoryService.allCategoriesId,
+                ),
+                label: 'Todos',
+                selected: isAllSelected,
                 onTap: () {
                   categoryService.addSelectedCategory(
                     CategoryService.allCategoriesId,
-                    CategoryService.allCategoriesName
+                    CategoryService.allCategoriesName,
                   );
                   widget.onSelectionChanged();
                   setState(() {});
                 },
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                  margin: const EdgeInsets.only(right: 4.0),
-                  decoration: BoxDecoration(
-                    color: isAllSelected
-                        ? colorScheme.primary
-                        : colorScheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(
-                      color: isAllSelected
-                          ? colorScheme.primary
-                          : colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Text(
-                    'Todos',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isAllSelected
-                          ? colorScheme.onPrimary
-                          : colorScheme.onSurface,
-                    ),
-                  ),
-                ),
               ),
             );
           }
 
           final categoryIndex = index - 1;
           final category = categoryService.categories[categoryIndex];
-          final isSelected = _currentSelection.value.selectedIds.contains(category.id) &&
-            !_currentSelection.value.isAllSelected;
+          final isSelected = _currentSelection.value.selectedIds
+                  .contains(category.id) &&
+              !_currentSelection.value.isAllSelected;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: GestureDetector(
+            child: _buildPill(
+              icon: _getIconForCategory(category.name, category.id),
+              label: category.name,
+              selected: isSelected,
               onTap: () {
-                categoryService.addSelectedCategory(category.id, category.name);
+                categoryService.addSelectedCategory(
+                  category.id,
+                  category.name,
+                );
                 widget.onSelectionChanged();
                 setState(() {});
               },
-              child: Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(16.0),
-                  border: Border.all(
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.outlineVariant,
-                  ),
-                ),
-                child: Text(
-                  category.name,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurface,
-                  ),
-                ),
-              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Builds a single category pill matching the Stitch mobile mock.
+  Widget _buildPill({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        decoration: BoxDecoration(
+          // Selected → primaryContainer (Stitch bg-primary-container)
+          // Unselected → surfaceContainer with hover (Stitch bg-surface-container)
+          color: selected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(9999),
+          border: selected
+              ? null
+              : Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? colorScheme.onPrimaryContainer
+                    : colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
