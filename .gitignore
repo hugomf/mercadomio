@@ -149,6 +149,8 @@ logs/
 .env.development.local
 .env.test.local
 .env.production.local
+# Per-environment deploy configs (.env without secrets; tracked for deploy.sh)
+!deploy/**/.env
 
 # Database
 *.sqlite

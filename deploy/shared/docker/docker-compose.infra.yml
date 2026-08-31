@@ -1,0 +1,111 @@
+name: mercadomio-infra
+
+# Infrastructure services shared across all remote environments:
+# postgres (Directus), mongo (catalog), redis (cache/cart), directus (CMS),
+# imgvault + minio (image storage).
+#
+# Consumed by ./deploy.sh --env {dev|qa|prod}. Values come from the
+# mercadomio.env written on the app server from deploy/{env}/.env.
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-mercadomio}
+    volumes:
+      - mercadomio_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-mercadomio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mercadomio_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - mercadomio_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  directus:
+    image: directus/directus:latest
+    restart: unless-stopped
+    environment:
+      KEY: ${DIRECTUS_KEY:-mercadomio}
+      SECRET: ${DIRECTUS_SECRET:-supersecretkey}
+      DB_CLIENT: pg
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-mercadomio}
+      DB_USER: ${POSTGRES_USER:-admin}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@mercadomio.mx}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-admin123}
+      CORS_ENABLED: "true"
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL:-https://${DOMAIN:-localhost}}
+      ASSETS_REQUIRE_AUTHENTICATION: "false"
+      ASSETS_CACHE_TTL: "30d"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - mercadomio_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  imgvault:
+    image: ${IMGVAULT_IMAGE:-gitea.sonnora.mx/sonnora-mx/mercadomio/imgvault}:${REGISTRY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin123}@postgres:5432/${POSTGRES_DB:-mercadomio}
+      S3_ENDPOINT: minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET: ${IMGVAULT_BUCKET:-mercadomio-images}
+      S3_USE_SSL: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+networks:
+  default:
+    name: mercadomio-net
+    external: true
+
+volumes:
+  mercadomio_postgres_data:
+  mercadomio_mongo_data:
+  mercadomio_redis_data:
+  mercadomio_minio_data:

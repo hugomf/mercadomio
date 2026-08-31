@@ -1,0 +1,13 @@
+[Unit]
+Description=Mercadomio backend API (Docker)
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/docker compose -f /opt/mercadomio/docker-compose.app.yml up -d backend
+ExecStop=/usr/bin/docker compose -f /opt/mercadomio/docker-compose.app.yml stop backend
+
+[Install]
+WantedBy=multi-user.target
