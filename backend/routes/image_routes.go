@@ -7,9 +7,10 @@ import (
 )
 
 // SetupImageRoutes configures all image-related routes
-func SetupImageRoutes(app *fiber.App, imageHandlers *handlers.ImageHandlers, cloudinaryHandlers *handlers.CloudinaryHandlers, directusHandlers *handlers.DirectusHandlers) {
-	// Cloudinary proxy route for products (hidden from frontend)
-	app.Get("/api/images/products/:path", cloudinaryHandlers.CloudinaryProxy)
+func SetupImageRoutes(app *fiber.App, imageHandlers *handlers.ImageHandlers, imgVaultHandlers *handlers.ImgVaultHandlers, directusHandlers *handlers.DirectusHandlers) {
+	// imgvault proxy routes for product images (hidden from frontend)
+	app.Get("/api/imgvault/images/:id/file", imgVaultHandlers.ImgVaultFileProxy)
+	app.Post("/api/imgvault/upload", imgVaultHandlers.ImgVaultUploadProxy)
 
 	// Directus proxy routes for assets
 	app.Get("/api/directus/assets/:path", directusHandlers.DirectusProxy)
