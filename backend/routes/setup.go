@@ -2,7 +2,6 @@ package routes
 
 import (
 	"log"
-	"mercadomio-backend/config"
 	"mercadomio-backend/handlers"
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/services"
@@ -39,12 +38,12 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	cartHandlers := handlers.NewCartHandlers(deps.CartService)
 	analyticsHandlers := handlers.NewAnalyticsHandlers(deps.AnalyticsService)
 
-	// Initialize Cloudinary configuration
-	cloudinaryConfig := config.GetCloudinaryConfig()
-	cloudinaryHandlers := handlers.NewCloudinaryHandlers(
-		cloudinaryConfig.CloudName,
-		cloudinaryConfig.ProductsFolder,
-	)
+	// Initialize imgvault handlers
+	imgVaultURL := os.Getenv("IMGVAULT_URL")
+	if imgVaultURL == "" {
+		imgVaultURL = "http://localhost:8081"
+	}
+	imgVaultHandlers := handlers.NewImgVaultHandlers(imgVaultURL, os.Getenv("IMGVAULT_API_KEY"))
 
 	// Initialize Directus handlers
 	directusURL := os.Getenv("DIRECTUS_URL")
@@ -65,7 +64,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	SetupProductRoutes(app, productHandlers)
 	SetupCartRoutes(app, cartHandlers, deps.OidcService)
 	SetupAnalyticsRoutes(app, analyticsHandlers)
-	SetupImageRoutes(app, imageHandlers, cloudinaryHandlers, directusHandlers)
+	SetupImageRoutes(app, imageHandlers, imgVaultHandlers, directusHandlers)
 	SetupCategoryRoutes(app, categoryHandlers)
 	SetupAuthRoutes(app, authHandlers, deps.OidcService)
 	SetupOrderRoutes(app, orderHandlers, deps.OidcService)
