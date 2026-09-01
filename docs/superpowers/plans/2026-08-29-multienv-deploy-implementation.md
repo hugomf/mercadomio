@@ -342,21 +342,29 @@ git commit -m "feat: swap Cloudinary for imgvault secure proxy in backend"
 - Modify: `sonnora-dev:/home/hugo/userbrew-dev/docker-compose.yml`
 - Modify: `sonnora:/root/sonnora-compose/nginx/dev.conf`
 
-- [ ] **Step 1: Fijar puertos estables en userbrew-dev**
+- [x] **Step 1: Fijar puertos estables en userbrew-dev**
 
 `ssh sonnora-dev`; en `/home/hugo/userbrew-dev/docker-compose.yml`: server `38123:3000` → `3001:3000`, frontend `38231:5173` → `5173:5173`, sentinel `38321:9000` → `9000:9000`.
 `docker compose up -d` en ese dir.
 
-- [ ] **Step 2: Corregir VPS dev.conf**
+**DONE**: compose ports updated + comment; `docker compose --env-file .env.dev up -d` re-created containers. Verified: server `3001:3000`+`5173:5173`, sentinel `9000:9000`; both Up, server healthy. Backed up to `docker-compose.yml.bak.*`.
+
+- [x] **Step 2: Corregir VPS dev.conf**
 
 `ssh sonnora`; en `/root/sonnora-compose/nginx/dev.conf` corregir `userbrew.dev.sonnora.mx` → `10.0.0.6:3001` (server) y `:5173` (frontend). `docker exec sonnora-nginx nginx -t && nginx -s reload`.
 
-- [ ] **Step 3: Verificar**
+**DONE**: dev.conf proxy_pass: backend `10.0.0.6:8000`→`:3001`, frontend `10.0.0.6:3000`→`:5173`. `nginx -s reload` alone did NOT apply (sed -i broke the single-file bind-mount inode); a `docker restart sonnora-nginx` re-mounted and applied. `nginx -t` clean. Backed up to `dev.conf.bak.*`.
+
+- [x] **Step 3: Verificar**
 
 Run: `curl -sf https://userbrew.dev.sonnora.mx/health`
 Expected: 200 / ok.
 
-- [ ] **Step 4: Commit** (si los cambios remotos se versionan en el repo userbrew; sino, solo registro)
+**DONE**: `GET /health` → 200; `GET /` → 200. Backend `/auth` via nginx → 404 (identical to direct `:3001` → 404; normal API behavior, proxy path confirmed working).
+
+- [x] **Step 4: Commit** (si los cambios remotos se versionan en el repo userbrew; sino, solo registro)
+
+**DONE**: neither `sonnora-dev:/home/hugo/userbrew-dev` nor `sonnora:/root/sonnora-compose` is a git repo → no version commit; logged here only.
 
 ---
 
