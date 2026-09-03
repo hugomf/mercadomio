@@ -54,7 +54,11 @@ build() {
   local name="$1" ctx="$2"; shift 2
   local tag="$REGISTRY/$name:$ENV"
   echo "==> Building+push: $tag"
-  docker build --push -t "$tag" "$@" "$ctx"
+  if docker buildx version >/dev/null 2>&1; then
+    docker buildx build --push -t "$tag" "$@" "$ctx"
+  else
+    docker build --push -t "$tag" "$@" "$ctx"
+  fi
 }
 
 WEB_ARGS=(
