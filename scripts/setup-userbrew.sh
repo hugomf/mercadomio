@@ -12,6 +12,13 @@
 #   ADMIN_REDIRECT          Admin console OAuth redirect (env-specific default)
 #   USERBREW_ADMIN_EMAIL    Bootstrap admin email      (default admin@mercadomio.mx)
 #   USERBREW_ADMIN_PASSWORD Bootstrap admin password   (default changeme123!)
+#   USERBREW_ADMIN_TOKEN    Admin API key (ub_sk_...) or admin JWT for the IdP.
+#                           When set, admin operations authenticate via
+#                           X-API-Key (key) or Authorization: Bearer (JWT)
+#                           and no username/password login is performed.
+#                           Generate an admin API key in the userbrew admin
+#                           dashboard (Settings -> API Keys). Mirrors the
+#                           userbrew "deploy without interactive login" model.
 set -euo pipefail
 
 ENV="local"
@@ -71,7 +78,14 @@ json() { python3 -c "import sys,json;d=json.load(sys.stdin);print(d$1)"; }
 req() {
   local method="$1" url="$2" body="${3:-}" token="${4:-}"
   local args=(-sS -X "$method" -H 'Content-Type: application/json')
-  [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
+  if [[ -n "$token" ]]; then
+    # userbrew auth: API keys (ub_sk_*) authenticate via X-API-Key; JWTs via
+    # Authorization: Bearer (middleware.rs checks X-API-Key first).
+    case "$token" in
+      ub_sk_*) args+=(-H "X-API-Key: $token") ;;
+      *)       args+=(-H "Authorization: Bearer $token") ;;
+    esac
+  fi
   [[ -n "$body" ]] && args+=(-d "$body")
   curl "${args[@]}" "$url"
 }
@@ -110,10 +124,15 @@ else
   echo "    Setup already completed."
 fi
 
-echo "==> Logging in as $ADMIN_EMAIL..."
-LOGIN=$(req POST "$USERBREW_URL/auth/login" "{\"identifier\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
-TOKEN=$(echo "$LOGIN" | json "['access_token']")
-[[ -n "$TOKEN" && "$TOKEN" != "None" ]] || { echo "Login failed: $LOGIN"; exit 1; }
+if [[ -n "${USERBREW_ADMIN_TOKEN:-}" ]]; then
+  echo "==> Using admin API key from USERBREW_ADMIN_TOKEN (no login)"
+  TOKEN="$USERBREW_ADMIN_TOKEN"
+else
+  echo "==> No USERBREW_ADMIN_TOKEN; logging in as $ADMIN_EMAIL..."
+  LOGIN=$(req POST "$USERBREW_URL/auth/login" "{\"identifier\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
+  TOKEN=$(echo "$LOGIN" | json "['access_token']")
+  [[ -n "$TOKEN" && "$TOKEN" != "None" ]] || { echo "Login failed: $LOGIN"; exit 1; }
+fi
 
 echo "==> Ensuring role 'mercadomio-admin' exists..."
 ROLES=$(req GET "$USERBREW_URL/admin/roles" "" "$TOKEN")
