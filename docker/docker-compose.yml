@@ -1,24 +1,6 @@
 name: mercadomio
 
 services:
-  userbrew:
-    build:
-      context: ../../userbrew
-    ports:
-      - "8090:8090"
-    environment:
-      - HOST=0.0.0.0
-      - PORT=8090
-      - PUBLIC_URL=${USERBREW_PUBLIC_URL:-http://localhost:8090}
-      - DATABASE_URL=sqlite:///data/idp.db
-      - OAUTH_GOOGLE_ENABLED=${OAUTH_GOOGLE_ENABLED:-0}
-      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
-      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
-      - OAUTH_GOOGLE_REDIRECT_URI=${OAUTH_GOOGLE_REDIRECT_URI:-http://localhost:8090/auth/social/google/callback}
-    volumes:
-      - userbrew_data:/data
-    restart: unless-stopped
-
   backend:
     build: ../backend
     ports:
@@ -26,8 +8,8 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/mercadomio
       - REDIS_URI=redis://redis:6379
-      - USERBREW_ISSUER=${USERBREW_PUBLIC_URL:-http://localhost:8090}
-      - USERBREW_DISCOVERY_URL=http://userbrew:8090/.well-known/openid-configuration
+      - USERBREW_ISSUER=${USERBREW_ISSUER:-http://192.168.1.98:3001}
+      - USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL:-http://192.168.1.98:3001/.well-known/openid-configuration}
     env_file:
       - path: ../backend/.env
         required: false
@@ -36,8 +18,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      userbrew:
-        condition: service_started
 
   frontend:
     build: ../frontend
@@ -110,8 +90,74 @@ services:
       postgres:
         condition: service_healthy
 
+  # Optional image-storage services (imgvault + MinIO). Off by default; enable
+  # with:  docker compose --profile imgvault up -d
+  minio:
+    image: minio/minio:latest
+    profiles: ["imgvault"]
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  imgvault:
+    image: ${IMGVAULT_IMAGE:-gitea.sonnora.mx/sonnora-mx/mercadomio/imgvault}:${REGISTRY_IMAGE_TAG:-latest}
+    profiles: ["imgvault"]
+    ports:
+      - "8081:8081"
+    environment:
+      - SQLITE_DATABASE_URL=${IMGVAULT_SQLITE:-sqlite:/data/imagevault.db}
+      - OBJECT_STORAGE_ENDPOINT=minio:9000
+      - OBJECT_STORAGE_EXTERNAL_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT:-localhost:9000}
+      - OBJECT_STORAGE_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - OBJECT_STORAGE_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin123}
+      - OBJECT_STORAGE_BUCKET=${IMGVAULT_BUCKET:-images}
+      - OBJECT_STORAGE_REGION=us-east-1
+      - OBJECT_STORAGE_USE_SSL=false
+      - API_KEY="REDACTED"
+      - RUST_LOG=info,image_service=debug
+      - ENABLE_NSFW_CHECK=false
+      - CHECK_WATERMARK=false
+    volumes:
+      - imgvault_data:/data
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  create-buckets:
+    image: minio/mc:latest
+    profiles: ["imgvault"]
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin123}) do echo 'Waiting for MinIO...' && sleep 1; done;
+      /usr/bin/mc mb minio/${IMGVAULT_BUCKET:-images} --ignore-existing;
+      /usr/bin/mc anonymous set public minio/${IMGVAULT_BUCKET:-images};
+      echo 'MinIO bucket created and set to public';
+      "
+
 volumes:
   mongo_data:
   postgres_data:
   redis_data:
-  userbrew_data:
+  minio_data:
+  imgvault_data:
