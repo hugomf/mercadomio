@@ -36,8 +36,9 @@ case "$ENV" in
   *) echo "missing/invalid --env {dev|qa|prod}"; exit 1 ;;
 esac
 
-[ -n "${GITEA_TOKEN:-}" ] || { echo "missing GITEA_TOKEN"; exit 1; }
 [ -f "deploy/$ENV/.env" ] || { echo "missing deploy/$ENV/.env"; exit 1; }
+[ -f "deploy/.env" ] && { set -a; source "deploy/.env"; set +a; }
+[ -n "${GITEA_TOKEN:-}" ] || { echo "missing GITEA_TOKEN (set it or put it in deploy/.env)"; exit 1; }
 
 USERBREW_ISSUER="https://userbrew.$ENV.sonnora.mx"
 API_URL="https://mercadomio.$ENV.sonnora.mx"
@@ -55,9 +56,9 @@ build() {
   local tag="$REGISTRY/$name:$ENV"
   echo "==> Building+push: $tag"
   if docker buildx version >/dev/null 2>&1; then
-    docker buildx build --push -t "$tag" "$@" "$ctx"
+    docker buildx build --push --platform linux/arm64 -t "$tag" "$@" "$ctx"
   else
-    docker build --push -t "$tag" "$@" "$ctx"
+    docker build --push --platform linux/arm64 -t "$tag" "$@" "$ctx"
   fi
 }
 
