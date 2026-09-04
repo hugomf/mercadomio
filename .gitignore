@@ -151,6 +151,8 @@ logs/
 .env.production.local
 # Per-environment deploy configs (.env without secrets; tracked for deploy.sh)
 !deploy/**/.env
+# Registry/publish secrets (kept local, never committed)
+deploy/.env
 
 # Database
 *.sqlite

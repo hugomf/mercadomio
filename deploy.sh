@@ -153,9 +153,15 @@ ENV_FILE_REMOTE="$REMOTE_WORK/mercadomio.env"
   echo "BACKEND_PORT=${BACKEND_PORT:-8083}"
   echo "FRONTEND_PORT=${FRONTEND_PORT:-8084}"
   echo "ADMIN_PORT=${ADMIN_PORT:-8085}"
+  echo "APP_NGINX_PORT=${APP_NGINX_PORT:-8080}"
   echo "DIRECTUS_PORT=${DIRECTUS_PORT:-8055}"
   echo "IMGVAULT_PORT=${IMGVAULT_PORT:-8081}"
   echo "MINIO_PORT=${MINIO_PORT:-9000}"
+  echo "MINIO_CONSOLE_PORT=${MINIO_CONSOLE_PORT:-9001}"
+  echo "POSTGRES_PORT=${POSTGRES_PORT:-5432}"
+  echo "MONGO_PORT=${MONGO_PORT:-27017}"
+  echo "MONGO_IMAGE=${MONGO_IMAGE:-mongo:7}"
+  echo "REDIS_PORT=${REDIS_PORT:-6379}"
   echo "DOMAIN=$DOMAIN"
   echo "USERBREW_ISSUER=${USERBREW_ISSUER}"
   echo "USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL}"
@@ -209,14 +215,14 @@ else
 fi
 
 # ------------------------- smoke test (app server) ----------------------
-say "Smoke test: app-nginx answering on :8080"
+say "Smoke test: app-nginx answering on :${APP_NGINX_PORT:-8080}"
 ok=0
 for _ in $(seq 1 30); do
-  st="$(ssh "$APP_HOST" "curl -sf -m 3 'http://127.0.0.1:8080/' >/dev/null && echo up" 2>/dev/null || true)"
+  st="$(ssh "$APP_HOST" "curl -sf -m 3 'http://127.0.0.1:${APP_NGINX_PORT:-8080}/' >/dev/null && echo up" 2>/dev/null || true)"
   [ "$st" = "up" ] && ok=1 && break
   sleep 3
 done
-[ "$ok" = "1" ] || die "app-nginx not answering on :8080; check 'sudo docker logs $ENV-mercadomio-nginx' on $APP_HOST"
+[ "$ok" = "1" ] || die "app-nginx not answering on :${APP_NGINX_PORT:-8080}; check 'sudo docker logs $ENV-mercadomio-nginx' on $APP_HOST"
 
 # ------------------------- VPS (optional) ------------------------------
 if [ "$REGISTER_VPS" = "1" ]; then

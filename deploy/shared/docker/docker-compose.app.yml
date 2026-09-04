@@ -8,6 +8,8 @@ services:
   backend:
     image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/backend:${REGISTRY_IMAGE_TAG:-latest}
     restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8083}:8080"
     environment:
       - PORT=8080
       - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/mercadomio}
@@ -28,12 +30,16 @@ services:
   frontend:
     image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/frontend:${REGISTRY_IMAGE_TAG:-latest}
     restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8084}:80"
     depends_on:
       - backend
 
   admin:
     image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/admin:${REGISTRY_IMAGE_TAG:-latest}
     restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT:-8085}:80"
     depends_on:
       - backend
 
