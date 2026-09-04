@@ -39,6 +39,14 @@ func setIdentityLocals(c *fiber.Ctx, claims *services.OidcClaims) {
 
 // AuthMiddleware authenticates requests using OIDC tokens issued by userbrew.
 func AuthMiddleware(oidc *services.OidcService) fiber.Handler {
+	if oidc == nil {
+		return func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"success": false,
+				"message": "Authentication service unavailable",
+			})
+		}
+	}
 	return func(c *fiber.Ctx) error {
 		token, ok := extractBearerToken(c)
 		if !ok {
@@ -64,6 +72,11 @@ func AuthMiddleware(oidc *services.OidcService) fiber.Handler {
 // OptionalAuthMiddleware attaches identity when a valid token is present,
 // but never blocks the request.
 func OptionalAuthMiddleware(oidc *services.OidcService) fiber.Handler {
+	if oidc == nil {
+		return func(c *fiber.Ctx) error {
+			return c.Next()
+		}
+	}
 	return func(c *fiber.Ctx) error {
 		if token, ok := extractBearerToken(c); ok {
 			if claims, err := oidc.ValidateToken(token); err == nil {
@@ -76,6 +89,14 @@ func OptionalAuthMiddleware(oidc *services.OidcService) fiber.Handler {
 
 // AdminMiddleware requires a valid token carrying the mercadomio-admin group.
 func AdminMiddleware(oidc *services.OidcService) fiber.Handler {
+	if oidc == nil {
+		return func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"success": false,
+				"message": "Authentication service unavailable",
+			})
+		}
+	}
 	return func(c *fiber.Ctx) error {
 		token, ok := extractBearerToken(c)
 		if !ok {

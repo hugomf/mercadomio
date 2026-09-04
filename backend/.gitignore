@@ -21,8 +21,8 @@ dist/
 coverage.out
 coverage.html
 
-# Dependency directories
-vendor/
+# Dependency directories (vendor comitted for hermetic image builds)
+# vendor/
 
 # IDE specific files
 .idea/

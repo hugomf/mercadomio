@@ -1,0 +1,49 @@
+name: mercadomio-app
+
+# Application services for remote environments: backend, frontend, admin.
+# Images come from the Gitea registry (never built on the servers).
+# Values come from mercadomio.env (written from deploy/{env}/.env).
+
+services:
+  backend:
+    image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/backend:${REGISTRY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8083}:8080"
+    environment:
+      - PORT=8080
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/mercadomio}
+      - REDIS_ADDR=${REDIS_ADDR:-redis:6379}
+      - REDIS_URI=${REDIS_URI:-redis://redis:6379}
+      - USERBREW_ISSUER=${USERBREW_ISSUER}
+      - USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL}
+      - DIRECTUS_URL=${DIRECTUS_URL:-http://127.0.0.1:8055}
+      - IMGVAULT_URL=${IMGVAULT_URL:-http://127.0.0.1:8081}
+      - IMGVAULT_API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/frontend:${REGISTRY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8084}:80"
+    depends_on:
+      - backend
+
+  admin:
+    image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/admin:${REGISTRY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT:-8085}:80"
+    depends_on:
+      - backend
+
+networks:
+  default:
+    name: mercadomio-net
+    external: true

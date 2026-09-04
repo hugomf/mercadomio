@@ -1,0 +1,152 @@
+name: mercadomio-infra
+
+# Infrastructure services shared across all remote environments:
+# postgres (Directus), mongo (catalog), redis (cache/cart), directus (CMS),
+# imgvault + minio (image storage).
+#
+# Consumed by ./deploy.sh --env {dev|qa|prod}. Values come from the
+# mercadomio.env written on the app server from deploy/{env}/.env.
+
+services:
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_DB: ${POSTGRES_DB:-mercadomio}
+    volumes:
+      - mercadomio_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-mercadomio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: ${MONGO_IMAGE:-mongo:7}
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mercadomio_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - mercadomio_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  directus:
+    image: directus/directus:latest
+    restart: unless-stopped
+    ports:
+      - "${DIRECTUS_PORT:-8055}:8055"
+    environment:
+      KEY: ${DIRECTUS_KEY:-mercadomio}
+      SECRET: ${DIRECTUS_SECRET:-supersecretkey}
+      DB_CLIENT: pg
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-mercadomio}
+      DB_USER: ${POSTGRES_USER:-admin}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      ADMIN_EMAIL: ${DIRECTUS_ADMIN_EMAIL:-admin@mercadomio.mx}
+      ADMIN_PASSWORD: ${DIRECTUS_ADMIN_PASSWORD:-admin123}
+      CORS_ENABLED: "true"
+      PUBLIC_URL: ${DIRECTUS_PUBLIC_URL:-https://${DOMAIN:-localhost}}
+      ASSETS_REQUIRE_AUTHENTICATION: "false"
+      ASSETS_CACHE_TTL: "30d"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    volumes:
+      - mercadomio_minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  imgvault:
+    image: ${IMGVAULT_IMAGE:-gitea.sonnora.mx/sonnora-mx/mercadomio/imgvault}:${REGISTRY_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "${IMGVAULT_PORT:-8081}:8081"
+    environment:
+      - SQLITE_DATABASE_URL=sqlite:/data/imagevault.db
+      - OBJECT_STORAGE_ENDPOINT=minio:9000
+      - OBJECT_STORAGE_EXTERNAL_ENDPOINT=127.0.0.1:${MINIO_PORT:-9000}
+      - OBJECT_STORAGE_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - OBJECT_STORAGE_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin123}
+      - OBJECT_STORAGE_BUCKET=${IMGVAULT_BUCKET:-images}
+      - OBJECT_STORAGE_REGION=us-east-1
+      - OBJECT_STORAGE_USE_SSL=false
+      - API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
+      - RUST_LOG=info,image_service=debug
+      - ENABLE_NSFW_CHECK=false
+      - CHECK_WATERMARK=false
+    volumes:
+      - mercadomio_imgvault_data:/data
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Create the MinIO bucket on startup (idempotent)
+  create-buckets:
+    image: minio/mc:latest
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin123}) do echo 'Waiting for MinIO...' && sleep 1; done;
+      /usr/bin/mc mb minio/${IMGVAULT_BUCKET:-images} --ignore-existing;
+      /usr/bin/mc anonymous set public minio/${IMGVAULT_BUCKET:-images};
+      echo 'MinIO bucket created and set to public';
+      "
+
+networks:
+  default:
+    name: mercadomio-net
+    external: true
+
+volumes:
+  mercadomio_postgres_data:
+  mercadomio_mongo_data:
+  mercadomio_redis_data:
+  mercadomio_minio_data:
+  mercadomio_imgvault_data:
