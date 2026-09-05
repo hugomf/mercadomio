@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Bootstraps the userbrew IdP for MercadoMío (idempotent):
-#   1. Completes first-run setup (admin user + RSA signing keys)
-#   2. Creates the mercadomio-admin role and assigns it to the admin user
-#   3. Registers the OAuth clients used by storefront and admin console
+# Bootstraps the userbrew IdP for MercadoMío (idempotent) by delegating to the
+# userbrew blueprint applier (deploy/local/apply-blueprint.py) with the
+# MercadoMío blueprint (scripts/blueprints/idp.yaml).
+#
+# The blueprint reconciles:
+#   1. First-run setup (admin user + RSA signing keys)
+#   2. The `mercadomio-admin` role, assigned to the admin user
+#   3. The OAuth clients used by storefront and admin console
 #
 # Usage: scripts/setup-userbrew.sh [--env {local|dev|qa|prod}]
 #
@@ -11,14 +15,13 @@
 #   STOREFRONT_REDIRECT     Storefront OAuth redirect  (env-specific default)
 #   ADMIN_REDIRECT          Admin console OAuth redirect (env-specific default)
 #   USERBREW_ADMIN_EMAIL    Bootstrap admin email      (default admin@mercadomio.mx)
-#   USERBREW_ADMIN_PASSWORD Bootstrap admin password   (default changeme123!)
+#   USERBREW_ADMIN_PASSWORD Bootstrap admin password   (default ChangeMe123!)
 #   USERBREW_ADMIN_TOKEN    Admin API key (ub_sk_...) or admin JWT for the IdP.
 #                           When set, admin operations authenticate via
 #                           X-API-Key (key) or Authorization: Bearer (JWT)
 #                           and no username/password login is performed.
-#                           Generate an admin API key in the userbrew admin
-#                           dashboard (Settings -> API Keys). Mirrors the
-#                           userbrew "deploy without interactive login" model.
+#   USERBREW_REPO_DIR       Path to the userbrew checkout (default ../userbrew
+#                           relative to this repo).
 set -euo pipefail
 
 ENV="local"
@@ -70,25 +73,24 @@ case "$ENV" in
     ;;
 esac
 
-ADMIN_EMAIL="${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}"
-ADMIN_PASSWORD="${USERBREW_ADMIN_PASSWORD:-changeme123!}"
-ADMIN_USERNAME="mercadomio-admin"
+export USERBREW_URL STOREFRONT_REDIRECT ADMIN_REDIRECT APP_ORIGIN
+export USERBREW_ADMIN_EMAIL="${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}"
+export USERBREW_ADMIN_PASSWORD="${USERBREW_ADMIN_PASSWORD:-ChangeMe123!}"
+export USERBREW_ADMIN_USERNAME="mercadomio-admin"
 
-json() { python3 -c "import sys,json;d=json.load(sys.stdin);print(d$1)"; }
-req() {
-  local method="$1" url="$2" body="${3:-}" token="${4:-}"
-  local args=(-sS -X "$method" -H 'Content-Type: application/json')
-  if [[ -n "$token" ]]; then
-    # userbrew auth: API keys (ub_sk_*) authenticate via X-API-Key; JWTs via
-    # Authorization: Bearer (middleware.rs checks X-API-Key first).
-    case "$token" in
-      ub_sk_*) args+=(-H "X-API-Key: $token") ;;
-      *)       args+=(-H "Authorization: Bearer $token") ;;
-    esac
-  fi
-  [[ -n "$body" ]] && args+=(-d "$body")
-  curl "${args[@]}" "$url"
-}
+MERCADOMIO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+USERBREW_DIR="${USERBREW_REPO_DIR:-$MERCADOMIO_DIR/../userbrew}"
+APPLIER="$USERBREW_DIR/deploy/local/apply-blueprint.py"
+BLUEPRINT="$MERCADOMIO_DIR/scripts/blueprints/idp.yaml"
+
+if [ ! -f "$APPLIER" ]; then
+  echo "ERROR: applier no encontrado en $APPLIER (ajusta USERBREW_REPO_DIR)"
+  exit 1
+fi
+if [ ! -f "$BLUEPRINT" ]; then
+  echo "ERROR: blueprint no encontrado en $BLUEPRINT"
+  exit 1
+fi
 
 echo "==> Waiting for userbrew at $USERBREW_URL ..."
 for i in $(seq 1 60); do
@@ -97,87 +99,7 @@ for i in $(seq 1 60); do
   sleep 2
 done
 
-echo "==> Checking setup status..."
-STATUS=$(req GET "$USERBREW_URL/setup/status")
-
-if [[ "$(echo "$STATUS" | json "['setup_completed']")" == "False" ]]; then
-  echo "==> Running first-time setup (creates $ADMIN_EMAIL + RSA keys)..."
-  SETUP_BODY=$(python3 - "$ADMIN_EMAIL" "$ADMIN_USERNAME" "$ADMIN_PASSWORD" "$USERBREW_URL" <<'EOF'
-import json, sys
-email, username, password, base_url = sys.argv[1:]
-print(json.dumps({
-    "database": {"url": ""},
-    "admin_email": email,
-    "admin_username": username,
-    "admin_password": password,
-    "server_host": "0.0.0.0",
-    "server_port": 8090,
-    "base_url": base_url,
-    "jwt_algorithm": "RS256",
-    "generate_rsa_keys": True,
-}))
-EOF
-)
-  RESULT=$(req POST "$USERBREW_URL/setup/complete" "$SETUP_BODY")
-  echo "$RESULT" | json "['status']" >/dev/null || true
-else
-  echo "    Setup already completed."
-fi
-
-if [[ -n "${USERBREW_ADMIN_TOKEN:-}" ]]; then
-  echo "==> Using admin API key from USERBREW_ADMIN_TOKEN (no login)"
-  TOKEN="$USERBREW_ADMIN_TOKEN"
-else
-  echo "==> No USERBREW_ADMIN_TOKEN; logging in as $ADMIN_EMAIL..."
-  LOGIN=$(req POST "$USERBREW_URL/auth/login" "{\"identifier\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
-  TOKEN=$(echo "$LOGIN" | json "['access_token']")
-  [[ -n "$TOKEN" && "$TOKEN" != "None" ]] || { echo "Login failed: $LOGIN"; exit 1; }
-fi
-
-echo "==> Ensuring role 'mercadomio-admin' exists..."
-ROLES=$(req GET "$USERBREW_URL/admin/roles" "" "$TOKEN")
-if ! echo "$ROLES" | python3 -c "
-import sys, json
-data = sys.stdin.read()
-roles = json.loads(data)
-items = roles if isinstance(roles, list) else roles.get('roles') or roles.get('data') or []
-sys.exit(0 if any(r.get('name') == 'mercadomio-admin' for r in items) else 1)
-"; then
-  req POST "$USERBREW_URL/admin/roles" \
-    '{"name":"mercadomio-admin","permissions":[],"deny":[]}' "$TOKEN" >/dev/null
-  echo "    Role created."
-else
-  echo "    Role already present."
-fi
-
-echo "==> Assigning role to admin user..."
-req POST "$USERBREW_URL/admin/users/$ADMIN_EMAIL/roles/mercadomio-admin" "" "$TOKEN" >/dev/null || true
-
-create_client() {
-  local name="$1" redirect="$2"
-  local clients existing_id
-  clients=$(req GET "$USERBREW_URL/admin/oauth-clients" "" "$TOKEN")
-  existing_id=$(echo "$clients" | CLIENT_NAME="$name" python3 -c "
-import sys, json, os
-clients = json.loads(sys.stdin.read())
-items = clients if isinstance(clients, list) else clients.get('clients') or clients.get('data') or []
-match = [c for c in items if c.get('name') == os.environ['CLIENT_NAME']]
-print(match[0].get('id') or match[0].get('client_id') if match else '')
-")
-  local body="{\"name\":\"$name\",\"redirect_uris\":[\"$redirect\"],\"allowed_origins\":[\"$APP_ORIGIN\"],\"require_pkce\":true,\"is_public\":true,\"scopes\":[\"openid\",\"profile\",\"email\",\"offline_access\"]}"
-  if [[ -z "$existing_id" ]]; then
-    local resp
-    resp=$(req POST "$USERBREW_URL/admin/oauth-clients" "$body" "$TOKEN")
-    echo "    Created '$name': $(echo "$resp" | json "['client_id']")"
-  else
-    echo "    Client '$name' already registered ($existing_id)."
-  fi
-}
-
-echo "==> Registering OAuth clients..."
-APP_ORIGIN="$APP_ORIGIN"
-create_client "mercadomio-storefront" "$STOREFRONT_REDIRECT"
-create_client "mercadomio-admin"      "$ADMIN_REDIRECT"
+python3 "$APPLIER" "$BLUEPRINT" "$USERBREW_URL"
 
 echo ""
 echo "Setup complete."
