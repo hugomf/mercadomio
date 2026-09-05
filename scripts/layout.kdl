@@ -1,0 +1,24 @@
+layout {
+    pane split_direction="vertical" {
+        pane split_direction="horizontal" {
+            pane command="bash" {
+                args "-c" "./scripts/docker-logs.sh"
+                name "Docker Logs"
+            }
+            pane command="bash" {
+                args "-c" "./scripts/server.sh"
+                name "Backend :8080"
+            }
+        }
+        pane split_direction="horizontal" {
+            pane command="bash" {
+                args "-c" "./scripts/frontend.sh"
+                name "Frontend :3000"
+            }
+            pane command="bash" {
+                args "-c" "./scripts/admin-console.sh"
+                name "Admin :3100"
+            }
+        }
+    }
+}
