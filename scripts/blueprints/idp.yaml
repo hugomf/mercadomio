@@ -1,0 +1,56 @@
+# Bootstrap blueprint for the MercadoMío userbrew IdP (idempotent).
+#
+# Creates (create-or-reuse):
+#   1. First-run setup (admin user + RSA signing keys)
+#   2. The `mercadomio-admin` role, assigned to the admin user
+#   3. The OAuth clients used by storefront and admin console
+#
+# Applied by userbrew's apply-blueprint.py via scripts/setup-userbrew.sh.
+# Env vars overridable per environment (see the wrapper script).
+
+name: mercadomio
+launch_url: ${APP_ORIGIN:-http://localhost:3000}
+provider_type: password
+visibility: assigned
+flow: default-authentication-flow
+
+setup:
+  required: true
+  admin:
+    email: ${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}
+    username: mercadomio-admin
+    password: ${USERBREW_ADMIN_PASSWORD:-ChangeMe123!}
+  server:
+    host: 0.0.0.0
+    port: 8090
+    base_url: ${USERBREW_URL:-http://localhost:8090}
+    jwt_algorithm: RS256
+    generate_rsa_keys: true
+
+users:
+  - username: mercadomio-admin
+    email: ${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}
+    display_name: MercadoMío Admin
+    password: ${USERBREW_ADMIN_PASSWORD:-ChangeMe123!}
+    status: active
+    roles: [mercadomio-admin]
+
+roles:
+  - name: mercadomio-admin
+    permissions: []
+    deny: []
+    inherits: []
+
+oauth_clients:
+  - name: mercadomio-storefront
+    redirect_uris: ["${STOREFRONT_REDIRECT:-http://localhost:3000/auth/callback}"]
+    allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+    require_pkce: true
+    is_public: true
+    scopes: [openid, profile, email, offline_access]
+  - name: mercadomio-admin
+    redirect_uris: ["${ADMIN_REDIRECT:-http://localhost:3100/auth/callback}"]
+    allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+    require_pkce: true
+    is_public: true
+    scopes: [openid, profile, email, offline_access]

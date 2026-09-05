@@ -1,0 +1,44 @@
+# MercadoMío local blueprint — provisions the MercadoMío application, the
+# mercadomio-admin RBAC role, the OIDC clients used by storefront and admin
+# console, and the admin user, in the local userbrew sidecar.
+#
+# Engine format (global:). Idempotent: reuses entities by name, never deletes.
+# Applied automatically by userbrew via USERBREW_BLUEPRINT_FILE (auto-bootstrap,
+# USERBREW_BOOTSTRAP=1) and/or manually via /admin/blueprints/apply.
+# Env vars are interpolated server-side from the container env (docker/.env +
+# docker/.env.local).
+
+global:
+  app:
+    name: "mercadomio"
+    launch_url: "${APP_ORIGIN:-http://localhost:3000}"
+    provider_type: "password"
+    visibility: "assigned"
+    registration_enabled: true
+
+  roles:
+    - name: "mercadomio-admin"
+
+  oauth_clients:
+    - name: "mercadomio-storefront"
+      redirect_uris: ["${STOREFRONT_REDIRECT:-http://localhost:3000/auth/callback}"]
+      allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+      require_pkce: true
+      is_public: true
+      scopes: [openid, profile, email, offline_access]
+    - name: "mercadomio-admin"
+      redirect_uris: ["${ADMIN_REDIRECT:-http://localhost:3100/auth/callback}"]
+      allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+      require_pkce: true
+      is_public: true
+      scopes: [openid, profile, email, offline_access]
+
+  users:
+    - username: "mercadomio-admin"
+      email: "${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}"
+      display_name: "MercadoMío Admin"
+      password: "${USERBREW_ADMIN_PASSWORD}"
+      status: "active"
+      roles: [mercadomio-admin]
+
+  api_keys: []
