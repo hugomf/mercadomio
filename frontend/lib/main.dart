@@ -307,19 +307,25 @@ class _MainScreenState extends State<MainScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.shopping_bag,
-                          size: 28, color: colorScheme.primary),
+                      // Brand logo, matching the mock's logo image + wordmark
+                      // (`h-10 w-auto object-contain`).
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.contain,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Mercadomio',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontSize: 24,
                           color: colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 24),
-                      SizedBox(width: 190, child: _DesktopLocationChip()),
+                      SizedBox(width: 220, child: _DesktopLocationChip()),
                       const SizedBox(width: 24),
                       Expanded(
                         child: SizedBox(
@@ -412,14 +418,14 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   // Section links shown in the second row of the desktop header (Inicio,
-  // Categorías, Carrito, Pedidos, Perfil), matching the mock's active
-  // underline style. Labels use Public Sans (label font per Stitch DS).
+  // Categorías, Pedidos, Perfil), matching the mock's active underline style
+  // and its four-item nav (the cart lives in the actions row, not the nav).
+  // Labels use Public Sans (label font per Stitch DS).
   Widget _buildNavLinks() {
     final colorScheme = Theme.of(context).colorScheme;
     const links = <(int, String)>[
       (0, 'Inicio'),
       (1, 'Categorías'),
-      (2, 'Carrito'),
       (3, 'Pedidos'),
       (4, 'Perfil'),
     ];
@@ -491,7 +497,7 @@ class _DesktopLocationChipState extends State<_DesktopLocationChip> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(999),
       onTap: () async {
         final zone = await _pickZone();
         if (zone != null && mounted) {
@@ -499,24 +505,27 @@ class _DesktopLocationChipState extends State<_DesktopLocationChip> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(8),
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(999),
           border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
-            Icon(Icons.location_on, size: 18, color: colorScheme.primary),
-            const SizedBox(width: 8),
+            Icon(Icons.location_on, size: 20, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Enviar a',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 10,
+                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w500,
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
@@ -533,8 +542,6 @@ class _DesktopLocationChipState extends State<_DesktopLocationChip> {
                 ],
               ),
             ),
-            Icon(Icons.expand_more,
-                size: 18, color: colorScheme.onSurfaceVariant),
           ],
         ),
       ),
@@ -770,24 +777,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Storefront capped above the listing so it never starves it;
-          // scrolls internally on short viewports.
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: (constraints.maxHeight - 320)
-                  .clamp(0.0, constraints.maxHeight * 0.5),
+      builder: (context, constraints) => SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            // Storefront hero + categories + offers, flowing naturally in the
+            // page scroll exactly like the Stitch storefront-desktop mock.
+            StorefrontWidget(),
+            // Listing embedded as a content-sized section below the
+            // storefront (no sidebar / bounded-height layout).
+            ProductListingWidget(
+              showCategorySidebar: false,
+              embeddedScroll: true,
             ),
-            child: const SingleChildScrollView(
-              child: StorefrontWidget(),
-            ),
-          ),
-          const Expanded(
-            child: ProductListingWidget(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

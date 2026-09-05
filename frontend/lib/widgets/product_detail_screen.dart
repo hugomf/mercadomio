@@ -26,6 +26,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final RxInt _selectedImageIndex = 0.obs;
   final RxString _selectedVariantId = ''.obs;
   final RxInt _quantity = 1.obs;
+  final RxList<Product> _relatedProducts = <Product>[].obs;
+  final RxBool _relatedLoading = false.obs;
 
   Product? get product => _product.value;
   bool get isLoading => _isLoading.value;
@@ -49,10 +51,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       if (productDetails.variants.isNotEmpty) {
         _selectedVariantId.value = productDetails.variants.first.variantId;
       }
+
+      _loadRelatedProducts();
     } catch (e) {
       _errorMessage.value = 'Error al cargar el producto: ${e.toString()}';
     } finally {
       _isLoading.value = false;
+    }
+  }
+
+  Future<void> _loadRelatedProducts() async {
+    try {
+      _relatedLoading.value = true;
+      final related = await productService.getRelatedProducts(widget.productId);
+      _relatedProducts.value = related;
+    } catch (_) {
+      // Non-critical: leave the related products section empty on failure.
+    } finally {
+      _relatedLoading.value = false;
     }
   }
 
@@ -240,7 +256,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
             children: [
-              // Logo + nav links (hidden on mobile but present in desktop)
+              // Logo + search (left group)
               Expanded(
                 flex: 2,
                 child: Row(
@@ -255,59 +271,69 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                     const SizedBox(width: 24),
-                    _buildDesktopNavLink('Frutas y Verduras', true, colorScheme),
-                    _buildDesktopNavLink('Panadería', false, colorScheme),
-                    _buildDesktopNavLink('Despensa', false, colorScheme),
-                    _buildDesktopNavLink('Lácteos', false, colorScheme),
+                    // Search field
+                    Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        border: Border.all(color: colorScheme.outlineVariant),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12),
+                            child: Icon(Icons.search,
+                                size: 20, color: colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Buscar productos...',
+                                hintStyle: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 14,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-              // Search field (centered)
+              // Nav links (center)
               Expanded(
-                flex: 3,
-                child: Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLowest,
-                    border: Border.all(color: colorScheme.outlineVariant),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 12),
-                        child: Icon(Icons.search,
-                            size: 20, color: colorScheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Buscar productos...',
-                            hintStyle: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                flex: 2,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildDesktopNavLink('Produce', true, colorScheme),
+                    _buildDesktopNavLink('Bakery', false, colorScheme),
+                    _buildDesktopNavLink('Pantry', false, colorScheme),
+                    _buildDesktopNavLink('Dairy', false, colorScheme),
+                  ],
                 ),
               ),
               // Actions: location, account, cart
-              Row(
-                children: [
-                  _buildDesktopIconButton(Icons.location_on_outlined,
-                      'Ubicación', colorScheme),
-                  _buildDesktopIconButton(Icons.person_outline, 'Cuenta',
-                      colorScheme),
-                  _buildDesktopIconButton(
-                      Icons.shopping_cart_outlined, 'Carrito', colorScheme,
-                      isPrimary: true),
-                ],
+              Expanded(
+                flex: 1,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _buildDesktopIconButton(Icons.location_on_outlined,
+                        'Ubicación', colorScheme),
+                    _buildDesktopIconButton(Icons.person_outline, 'Cuenta',
+                        colorScheme),
+                    _buildDesktopIconButton(
+                        Icons.shopping_cart_outlined, 'Carrito', colorScheme,
+                        isPrimary: true),
+                  ],
+                ),
               ),
             ],
           ),
@@ -367,7 +393,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
                               if (product!.images.length > 1)
                                 _buildDesktopThumbnails(),
                             ],
@@ -402,26 +427,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 ),
                                 const SizedBox(height: 12),
                               ],
-                              // Category tag
-                              if (product!.category != null) ...[
-                                Text(
-                                  product!.category!.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    letterSpacing: 1.4,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.primary,
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                              ],
                               // Product name
                               Text(
                                 product!.name,
                                 style: const TextStyle(
                                   fontSize: 36,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.bold,
                                   height: 1.1,
                                   letterSpacing: -0.5,
                                   fontFamily: 'Inter',
@@ -432,16 +443,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               Row(
                                 children: [
                                   Row(
-                                    children: List.generate(5, (index) {
-                                      return Icon(
-                                        Icons.star,
-                                        size: 20,
-                                        color: index <
-                                                product!.averageRating.floor()
-                                            ? Colors.amber
-                                            : colorScheme.outlineVariant,
-                                      );
-                                    }),
+                                    children:
+                                        buildRatingStars(product!.averageRating, 20),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -502,8 +505,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: colorScheme.surfaceContainerLow,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color: colorScheme.outlineVariant),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,12 +529,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ],
                               // Purchase box with rounded-full stepper and button
                               Container(
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.all(24),
                                 decoration: BoxDecoration(
                                   color: colorScheme.surfaceContainerLowest,
                                   border: Border.all(
                                       color: colorScheme.outlineVariant),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorScheme.onSurface
+                                          .withValues(alpha: 0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
@@ -582,7 +591,63 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
           ),
         ),
+        _buildDesktopFooter(colorScheme),
       ],
+    );
+  }
+
+  Widget _buildDesktopFooter(ColorScheme colorScheme) {
+    const links = [
+      'About Us',
+      'Contact',
+      'Shipping Info',
+      'Returns',
+      'Privacy Policy',
+      'Terms of Service',
+    ];
+    return Container(
+      color: colorScheme.surfaceContainerLowest,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+      child: Column(
+        children: [
+          Text(
+            'Mercadomio',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Inter',
+              color: colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 24,
+            runSpacing: 8,
+            children: links
+                .map((label) => InkWell(
+                      onTap: () {},
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            '© 2026 Mercadomio. Freshly picked Mexican flavors delivered to your door.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.secondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -686,8 +751,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Helper for top nav links
   Widget _buildDesktopNavLink(String label, bool isActive, ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        border: isActive
+            ? Border(
+                bottom: BorderSide(color: colorScheme.primary, width: 2),
+              )
+            : null,
+      ),
       child: Text(
         label,
         style: TextStyle(
@@ -721,6 +794,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Renders 5 stars at the given size, supporting half-star ratings via
+  /// Icons.star_half, matching the mock's Material Symbols star fill variation.
+  List<Widget> buildRatingStars(double rating, double size) {
+    return List.generate(5, (index) {
+      final full = rating - index;
+      IconData icon;
+      if (full >= 0.75) {
+        icon = Icons.star;
+      } else if (full >= 0.25) {
+        icon = Icons.star_half;
+      } else {
+        icon = Icons.star_border;
+      }
+      return Icon(icon, size: size, color: Colors.amber);
+    });
   }
 
   Widget _buildQuickInfoRow(IconData icon, String label, String value,
@@ -793,37 +883,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildDesktopAccordions() {
-    return Column(
-      children: [
-        _buildAccordionItem(
-          title: 'Descripción',
-          initiallyExpanded: true,
-          child: Text(
-            product!.description,
-            style: const TextStyle(fontSize: 15, height: 1.5),
-          ),
+    // Borderless accordion joined by hairlines, matching the mock's
+    // `border-t border-outline-variant divide-y divide-outline-variant` list.
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        _buildAccordionItem(
-          title: 'Información Nutrimental',
-          child: Text(
-            'Información nutrimental pendiente de agregar para este producto.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+      child: Column(
+        children: [
+          _buildAccordionItem(
+            title: 'Descripción',
+            initiallyExpanded: true,
+            child: Text(
+              product!.description,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-        _buildAccordionItem(
-          title: 'Envío',
-          child: Text(
-            'Disponible para entrega el día de hoy si tu pedido se realiza antes de las 2 PM.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          _buildAccordionItem(
+            title: 'Información Nutrimental',
+            child: Text(
+              'Información nutrimental pendiente de agregar para este producto.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-      ],
+          _buildAccordionItem(
+            title: 'Consejos de Conservación',
+            child: Text(
+              'Guarda este producto en un lugar fresco y seco. Consume pronto para disfrutar su sabor al máximo.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -834,19 +937,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outlineVariant),
+        ),
       ),
-      clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Inter',
+          ),
         ),
         initiallyExpanded: initiallyExpanded,
+        iconColor: colorScheme.onSurfaceVariant,
+        collapsedIconColor: colorScheme.outline,
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [child],
       ),
@@ -861,6 +968,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           color: Theme.of(context).colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Padding(
@@ -900,44 +1017,69 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildDesktopThumbnails() {
-    return SizedBox(
-      height: 88,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: product!.images.length,
-        itemBuilder: (context, index) {
-          final image = product!.images[index];
-          return Obx(() => GestureDetector(
-            onTap: () => _selectedImageIndex.value = index,
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _selectedImageIndex.value == index
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outlineVariant,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: CachedNetworkImage(
-                imageUrl: image.url,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  child: Icon(Icons.image, color: Theme.of(context).colorScheme.outline),
-                ),
+    final colorScheme = Theme.of(context).colorScheme;
+    final images = product!.images;
+    final maxVisible = 4;
+    final visible = images.take(maxVisible).toList();
+    final overflow = images.length - visible.length;
+
+    return GridView.count(
+      crossAxisCount: 4,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1,
+      children: List.generate(visible.length + (overflow > 0 ? 1 : 0), (index) {
+        if (index >= visible.length) {
+          // "+N" overflow tile, matches the mock's final less-prominent cell
+          return Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '+$overflow',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Public Sans',
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
-          ));
-        },
-      ),
+          );
+        }
+        final image = images[index];
+        return Obx(() => GestureDetector(
+          onTap: () => _selectedImageIndex.value = index,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _selectedImageIndex.value == index
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant,
+                width: 2,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: CachedNetworkImage(
+              imageUrl: image.url,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: colorScheme.surfaceContainerHigh,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: colorScheme.surfaceContainerHigh,
+                child: Icon(Icons.image, color: colorScheme.outline),
+              ),
+            ),
+          ),
+        ));
+      }),
     );
   }
 
@@ -1297,76 +1439,200 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Productos Relacionados',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 200,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: product!.relatedProducts.length,
-            itemBuilder: (context, index) {
-              return _buildRelatedProductCard(product!.relatedProducts[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRelatedProductCard(String productId) {
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: CachedNetworkImage(
-                imageUrl: 'https://via.placeholder.com/150', // TODO: Get actual image
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
+            Text(
+              'Productos Similares',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Related Product', // TODO: Get actual product name
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '\$0.00', // TODO: Get actual price
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to full related products view
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Ver más'),
+                  Icon(Icons.arrow_forward, size: 14),
                 ],
               ),
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        Obx(() {
+          if (_relatedLoading.value) {
+            return const SizedBox(
+              height: 200,
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (_relatedProducts.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          final isDesktop =
+              MediaQuery.of(context).size.width >= 800;
+          if (isDesktop) {
+            return GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.8,
+              children: _relatedProducts
+                  .take(4)
+                  .map((p) => _buildRelatedProductCard(p))
+                  .toList(),
+            );
+          }
+          return SizedBox(
+            height: 240,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _relatedProducts.length,
+              itemBuilder: (context, index) {
+                return _buildRelatedProductCard(_relatedProducts[index],
+                    compact: true);
+              },
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildRelatedProductCard(Product related, {bool compact = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final unitLabel = related.customAttributes?['unit']?.toString();
+    return Container(
+      width: compact ? 150 : null,
+      margin: compact ? const EdgeInsets.only(right: 12) : null,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.onSurface.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CachedNetworkImage(
+                    imageUrl: related.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: colorScheme.surfaceContainerHigh,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: colorScheme.surfaceContainerHigh,
+                      child: Icon(Icons.image,
+                          color: colorScheme.outline),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: _toggleWishlist,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        authService.isAuthenticated
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        size: 18,
+                        color: authService.isAuthenticated
+                            ? colorScheme.error
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  related.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (unitLabel != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    unitLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '\$${related.basePrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () =>
+                          cartController.addToCart(productId: related.id),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.add,
+                          size: 16,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

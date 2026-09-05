@@ -371,9 +371,9 @@ class _HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final height = isMobile ? 200.0 : 360.0;
+    final height = isMobile ? 200.0 : 400.0;
     final hPadding = isMobile ? 24.0 : 40.0;
-    final vPadding = isMobile ? 20.0 : 36.0;
+    final vPadding = isMobile ? 20.0 : 40.0;
 
     return Container(
       width: double.infinity,
@@ -463,7 +463,7 @@ class _HeroBanner extends StatelessWidget {
                       Text(
                         '20% de descuento en\nFrutas y Verduras',
                         style: TextStyle(
-                          fontSize: 40,
+                          fontSize: isMobile ? 26 : 46,
                           height: 1.1,
                           fontWeight: FontWeight.w800,
                           color: colorScheme.onPrimaryContainer,
@@ -600,8 +600,10 @@ class _CategoryTilesState extends State<_CategoryTiles> {
   }
 }
 
-/// Desktop category grid matching Stitch desktop mock (7 items, circular tiles with hover).
-class _CategoryGrid extends StatelessWidget {
+/// Desktop category grid matching Stitch desktop mock (7 items, circular tiles
+/// with hover that inverts the tile background like the mock's
+/// `group-hover:bg-secondary-container` behaviour).
+class _CategoryGrid extends StatefulWidget {
   const _CategoryGrid({
     required this.categories,
     required this.onCategoryTap,
@@ -611,9 +613,16 @@ class _CategoryGrid extends StatelessWidget {
   final void Function(Category category) onCategoryTap;
 
   @override
+  State<_CategoryGrid> createState() => _CategoryGridState();
+}
+
+class _CategoryGridState extends State<_CategoryGrid> {
+  int? _hoveredIndex;
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final visible = categories.take(7).toList();
+    final visible = widget.categories.take(7).toList();
 
     return GridView.builder(
       shrinkWrap: true,
@@ -622,46 +631,62 @@ class _CategoryGrid extends StatelessWidget {
         crossAxisCount: 7,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        childAspectRatio: 1.0,
       ),
       itemCount: visible.length,
       itemBuilder: (context, index) {
         final category = visible[index];
+        final hovered = _hoveredIndex == index;
         return MouseRegion(
-          child: InkWell(
-            onTap: () => onCategoryTap(category),
-            borderRadius: BorderRadius.circular(12),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.outlineVariant),
+          onEnter: (_) => setState(() => _hoveredIndex = index),
+          onExit: (_) => setState(() => _hoveredIndex = null),
+          child: Tooltip(
+            message: category.name,
+            child: InkWell(
+              onTap: () => widget.onCategoryTap(category),
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: hovered
+                          ? colorScheme.secondaryContainer
+                          : colorScheme.surfaceContainerLow,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: hovered
+                            ? colorScheme.secondaryContainer
+                            : colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Icon(
+                      StorefrontWidget._iconFor(category.name),
+                      size: 32,
+                      color: hovered
+                          ? colorScheme.onSecondaryContainer
+                          : colorScheme.secondary,
+                    ),
                   ),
-                  child: Icon(
-                    StorefrontWidget._iconFor(category.name),
-                    size: 28,
-                    color: colorScheme.secondary,
+                  const SizedBox(height: 12),
+                  Text(
+                    category.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.2,
+                      color: hovered
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                      fontFamily: 'Public Sans',
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  category.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.2,
-                    color: colorScheme.onSurfaceVariant,
-                    fontFamily: 'Public Sans',
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -728,32 +753,62 @@ class _OffersGrid extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.52,
           ),
           itemCount: offers.length,
           itemBuilder: (context, index) =>
-              _buildOfferCard(context, offers[index]),
+              _OfferCard(offer: offers[index], isCompact: true),
         ),
       );
     }
 
-    // Desktop: 4-column grid
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 24,
-        crossAxisSpacing: 24,
-        childAspectRatio: 0.62,
-      ),
-      itemCount: offers.length,
-      itemBuilder: (context, index) => _buildOfferCard(context, offers[index]),
+    // Desktop: responsive columns (2 until wide enough for 4, mirroring the
+    // mock's `sm:grid-cols-2 lg:grid-cols-4`), with a card aspect generous
+    // enough that the square image + content never overflow.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1100 ? 4 : 2;
+        final aspect = columns == 4 ? 0.68 : 0.62;
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 24,
+            crossAxisSpacing: 24,
+            childAspectRatio: aspect,
+          ),
+          itemCount: offers.length,
+          itemBuilder: (context, index) => _OfferCard(offer: offers[index]),
+        );
+      },
     );
   }
+}
 
-  Widget _buildOfferCard(BuildContext context, Map<String, dynamic> offer) {
+/// Offer product card matching the Stitch desktop mock: square image with a
+/// discount badge, category label, name, prices and a circular add button.
+/// Hover raises the card shadow and zooms the image (`hover:shadow-md`,
+/// `group-hover:scale-105` in the mock).
+class _OfferCard extends StatefulWidget {
+  const _OfferCard({required this.offer, this.isCompact = false});
+
+  final Map<String, dynamic> offer;
+
+  /// Renders the tighter mobile variant (smaller paddings/sizes).
+  final bool isCompact;
+
+  @override
+  State<_OfferCard> createState() => _OfferCardState();
+}
+
+class _OfferCardState extends State<_OfferCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final offer = widget.offer;
     final discount = offer['discount'] as String;
     final image = offer['image'] as String;
     final category = offer['category'] as String;
@@ -761,156 +816,167 @@ class _OffersGrid extends StatelessWidget {
     final originalPrice = offer['originalPrice'] as double;
     final salePrice = offer['salePrice'] as double;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              AspectRatio(
-                aspectRatio: 1.5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.network(
-                      image,
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.image,
-                        size: 48,
-                        color: colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(
+                alpha: _hovered ? 0.10 : 0.04,
               ),
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colorScheme.error,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    discount,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onError,
+              blurRadius: _hovered ? 16 : 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLow,
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(16)),
                     ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurfaceVariant,
-                      letterSpacing: 0.5,
-                      fontFamily: 'Public Sans',
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                      height: 1.3,
-                    ),
-                  ),
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '\$${originalPrice.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.outline,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                          Text(
-                            '\$${salePrice.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Add to cart button (circular)
-                      InkWell(
-                        onTap: () {},
-                        borderRadius: BorderRadius.circular(17),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.add,
-                            size: 18,
-                            color: colorScheme.onPrimaryContainer,
+                    child: ClipRRect(
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: AnimatedScale(
+                        scale: _hovered ? 1.05 : 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        child: Image.network(
+                          image,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.image,
+                            size: 48,
+                            color: colorScheme.outline,
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ],
+                ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.error,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      discount,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onError,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(widget.isCompact ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurfaceVariant,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Public Sans',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: widget.isCompact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                        height: 1.3,
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '\$${originalPrice.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.outline,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            Text(
+                              '\$${salePrice.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: widget.isCompact ? 16 : 18,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Add to cart button (circular)
+                        InkWell(
+                          onTap: () {},
+                          borderRadius: BorderRadius.circular(17),
+                          child: Container(
+                            width: widget.isCompact ? 30 : 34,
+                            height: widget.isCompact ? 30 : 34,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              size: widget.isCompact ? 16 : 18,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

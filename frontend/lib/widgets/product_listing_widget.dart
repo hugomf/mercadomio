@@ -22,10 +22,18 @@ class ProductListingWidget extends StatefulWidget {
     /// category tiles (e.g. the storefront hero) to avoid duplicating
     /// category navigation.
     this.showCategorySidebar = true,
+    /// When true, renders a content-sized product grid (no sidebar, no
+    /// bounded-height layout) suitable for embedding inside the free-scrolling
+    /// storefront home page, mirroring the single-scroll storefront mock.
+    this.embeddedScroll = false,
   });
 
   /// When false, the desktop sidebar's "Categorías" section is hidden.
   final bool showCategorySidebar;
+
+  /// When true, renders a content-sized grid inside the page scroll instead
+  /// of the bounded-height desktop layout.
+  final bool embeddedScroll;
 
   @override
   State<ProductListingWidget> createState() => ProductListingWidgetState();
@@ -861,6 +869,17 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
   /// Mobile product grid with "Ver más" button at the bottom
   /// (replaces the previous infinite-scroll behaviour).
   Widget _buildMobileProductGrid() {
+    return RefreshIndicator(
+      onRefresh: _refreshProducts,
+      child: SingleChildScrollView(
+        child: _buildProductGridContent(),
+      ),
+    );
+  }
+
+  /// Shared grid + "Ver más" column used by the mobile layout (wrapped in a
+  /// refreshable scroll view) and by the embedded home scroll (no wrapper).
+  Widget _buildProductGridContent() {
     return Obx(() {
       if (_isLoading.value && _products.isEmpty) {
         return const Center(child: CircularProgressIndicator());
@@ -872,72 +891,151 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
         return const Center(child: Text('No hay productos disponibles'));
       }
 
-      return RefreshIndicator(
-        onRefresh: _refreshProducts,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.all(_getPadding(context, base: 8)),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: _getCrossAxisCount(context),
-                  childAspectRatio: _getAspectRatio(context),
-                  crossAxisSpacing: _getSpacing(context),
-                  mainAxisSpacing: _getSpacing(context),
-                ),
-                itemCount: _products.length,
-                itemBuilder: (context, index) {
-                  return _buildProductCard(_products[index]);
-                },
-              ),
-              // "Ver más" button at the bottom
-              if (_hasMore && !_isLoading.value)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () => _fetchProducts(loadMore: true),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Ver más',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.keyboard_arrow_down,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
-                      ),
+      return Column(
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.all(_getPadding(context, base: 8)),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _getCrossAxisCount(context),
+              childAspectRatio: _getAspectRatio(context),
+              crossAxisSpacing: _getSpacing(context),
+              mainAxisSpacing: _getSpacing(context),
+            ),
+            itemCount: _products.length,
+            itemBuilder: (context, index) {
+              return _buildProductCard(_products[index]);
+            },
+          ),
+          // "Ver más" button at the bottom
+          if (_hasMore && !_isLoading.value)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => _fetchProducts(loadMore: true),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Ver más',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ],
+                  ),
                 ),
-              // Loading indicator when loading more
-              if (_isLoading.value && _hasMore)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-            ],
-          ),
-        ),
+              ),
+            ),
+          // Loading indicator when loading more
+          if (_isLoading.value && _hasMore)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+        ],
       );
     });
+  }
+
+  /// Section header for the embedded home page listing: a title in the same
+  /// style as the storefront sections plus the sort control.
+  Widget _buildEmbeddedSectionHeader() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        _getPadding(context, base: 8),
+        32,
+        _getPadding(context, base: 8),
+        4,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          GetBuilder<CategoryService>(
+            builder: (categoryService) {
+              final hasActiveFilters =
+                  categoryService.selectedCategories.isNotEmpty &&
+                      !categoryService.isAllSelected();
+              final searchTerm = _searchText.value.trim();
+              final count = hasActiveFilters || searchTerm.isNotEmpty
+                  ? _filteredProducts.value
+                  : _totalProducts.value;
+              return Text(
+                hasActiveFilters || searchTerm.isNotEmpty
+                    ? 'Resultados ($count)'
+                    : 'Todos los productos',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              );
+            },
+          ),
+          Container(
+            height: 36,
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: PopupMenuButton<String>(
+              icon: Icon(
+                Icons.sort,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onSelected: (value) {
+                final parts = value.split('_');
+                _sortBy.value = parts[0];
+                _sortAscending.value = parts[1] == 'asc';
+                _fetchProducts();
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'basePrice_asc',
+                  child: const Text('Precio ↑ Más baratos'),
+                ),
+                PopupMenuItem(
+                  value: 'basePrice_desc',
+                  child: const Text('Precio ↓ Más caros'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Content-sized layout used when the listing is embedded in the storefront
+  /// home scroll: section header + shrink-wrap grid (no sidebar, no sticky
+  /// toolbar, no bounded-height impied by Expanded).
+  Widget _buildEmbeddedLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildEmbeddedSectionHeader(),
+        _buildProductGridContent(),
+        const SizedBox(height: 24),
+      ],
+    );
   }
 
   /// Builds the desktop layout: sidebar filters + product grid with toolbar,
@@ -1863,6 +1961,9 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embeddedScroll) {
+      return _buildEmbeddedLayout();
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop =
