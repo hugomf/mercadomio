@@ -26,6 +26,9 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    networks:
+      - default
+      - infra
 
   frontend:
     image: ${REGISTRY:-gitea.sonnora.mx/sonnora-mx/mercadomio}/frontend:${REGISTRY_IMAGE_TAG:-latest}
@@ -46,4 +49,6 @@ services:
 networks:
   default:
     name: mercadomio-net
+    external: true
+  infra:
     external: true

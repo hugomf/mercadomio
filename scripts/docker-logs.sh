@@ -11,7 +11,7 @@ SENTINEL="/tmp/mercadomio-docker-ready"
 cleanup() { rm -f "$SENTINEL"; }
 trap cleanup EXIT
 
-# Bring the full infra stack up (compose + healthchecks + IdP bootstrap/blueprint).
+# Bring the app infra stack up (compose + healthchecks).
 "$SCRIPT_DIR/docker-up.sh"
 
 echo ""

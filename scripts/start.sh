@@ -3,9 +3,8 @@
 # Start the Mercado Mío backend server (Go/Fiber).
 #
 # Loads backend/local.env, brings up the full dependent stack via
-# scripts/docker-up.sh (postgres, mongo, redis, directus, userbrew, minio,
-# imgvault, create-buckets) with healthchecks + IdP bootstrap, then runs the
-# backend with `go run .`.
+# scripts/docker-up.sh (postgres, mongo, redis, directus) with healthchecks,
+# then runs the backend with `go run .`.
 #
 # Usage:
 #   ./scripts/start.sh
@@ -35,7 +34,9 @@ if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# Bring up every dependent service (infra + imgvault/MinIO + userbrew IdP).
+# Bring up every dependent service (postgres, mongo, redis, directus).
+# Userbrew, imgvault, and minio are provided by the local platform stack
+# (sonnora-deploy platform/docker/docker-compose.local.yml); start it first.
 "$SCRIPT_DIR/docker-up.sh"
 
 # Compile check before serving.
