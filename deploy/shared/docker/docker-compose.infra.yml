@@ -4,8 +4,9 @@ name: mercadomio-infra
 # postgres (Directus), mongo (catalog), redis (cache/cart), directus (CMS),
 # imgvault + minio (image storage).
 #
-# Consumed by ./deploy.sh --env {dev|qa|prod}. Values come from the
-# mercadomio.env written on the app server from deploy/{env}/.env.
+# Consumed by sonnora-deploy/bin/deploy.sh --project mercadomio --env {dev|qa|prod}.
+# Values come from the mercadomio.env written on the app server from
+# deploy/env/{env}.env.
 
 services:
   postgres:

@@ -1,7 +1,7 @@
-# sonnora VPS — mercadomio.sonnora.mx
-# Installed by: ./deploy.sh --env prod --register-vps
+# sonnora VPS — ${DOMAIN}
+# Installed by: sonnora-deploy/bin/deploy.sh --project mercadomio --env {env} --register-vps
 #
-# Proxies to sonnora-prod (mercadomio app-nginx Docker on :8080).
+# Proxies to the mercadomio app-nginx Docker on :${APP_NGINX_PORT}.
 # TLS terminated here (certbot); SPA + API proxied to the app server.
 
 map $http_upgrade $connection_upgrade {
@@ -12,7 +12,7 @@ map $http_upgrade $connection_upgrade {
 server {
     listen 80;
     listen [::]:80;
-    server_name mercadomio.sonnora.mx;
+    server_name ${DOMAIN};
 
     location /.well-known/acme-challenge/ {
         root /var/www/astro;
@@ -26,10 +26,10 @@ server {
 server {
     listen 443 ssl;
     listen [::]:443 ssl;
-    server_name mercadomio.sonnora.mx;
+    server_name ${DOMAIN};
 
-    ssl_certificate /etc/letsencrypt/live/mercadomio.sonnora.mx/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mercadomio.sonnora.mx/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -38,7 +38,7 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
 
     location / {
-        proxy_pass http://192.168.1.90:8080;
+        proxy_pass http://${APP_HOST_IP}:${APP_NGINX_PORT};
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

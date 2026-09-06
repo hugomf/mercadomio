@@ -1,5 +1,91 @@
 # Session Log
 
+## 2026-09-05 — Unified sonnora-deploy engine + deploy/env contract
+
+Built `/Users/hugo/Projects/sonnora-deploy/` as the shared deployment engine
+(`deploy.sh`, `lib/common.sh`, `lib/vps_compose_patch.py`, `docs/DEPLOY.md`).
+
+New cross-repo contract:
+- `deploy/env/<env>.env` — single config/environment (compose `--env-file`,
+  installed on host as `<project>.env` 0600).
+- `deploy/sonnora/vps.conf.tmpl` — edge nginx block, `envsubst`-rendered.
+
+Repos migrated:
+- **mercadomio** (fully conformed): `deploy/env/{dev,qa,prod}.env` (engine
+  trailer: `REMOTE_APP_PULL/UP`, `COMPOSE_FILES`, `STAGE_FILES`, health checks),
+  `deploy/sonnora/vps.conf.tmpl` (`${DOMAIN} ${APP_HOST_IP} ${APP_NGINX_PORT}`);
+  legacy root `deploy.sh` + `deploy/deploy-qa.sh` removed. Dry-runs pass with
+  `--dry-run --skip-dns-check`.
+- **rideshare** (min-conformance): `deploy/env/*.env` (+`VPS_UPSTREAM`),
+  `deploy/sonnora/vps.conf.tmpl`; `deploy.sh` re-pointed (lines 76/327);
+  `deploy/qa/sonnora/qa.conf` kept. Render-equivalence verified vs old confs.
+- **imgvault** (min-conformance): `deploy/env/{dev,prod}.env` = verbatim moves
+  of the old per-env `.env` + new `IMGVAULT_IMAGES_UPSTREAM`/`IMGVAULT_APP_UPSTREAM`;
+  `qa.env` = verbatim move of root `.env.qa` (userbrew IdP config — driven by
+  `deploy/qa/deploy-qa.sh`, not `deploy.sh`); `deploy/sonnora/vps.conf.tmpl`
+  (4 placeholders); `deploy.sh` env map/REMOTE_ENV_FILE/VPS block re-pointed;
+  bootstrap paths updated; old env files + per-env `vps.conf` removed; compose
+  files untouched; `.gitignore` now ignores `deploy/env/` (qa.env holds real
+  IdP/RPi secrets — it was uncovered before). `bash -n` + render-equivalence
+  (dev/qa byte-identical vs old confs; prod gains chain.pem) all pass.
+
+Engine stays mercadomio-only (pull-based); rideshare/imgvault build on host and
+kept their own `deploy.sh`.
+
+## 2026-09-05 — Reproducible sonnora-dev deploy files (setup-userbrew.sh rewrite)
+
+Request: "generate the necesary files like script, etc (if not already there) so we can reproduce this process" — deploy mercadomio to sonnora-dev reusing the pre-existing userbrew instance.
+
+Context: all deploy files already existed (`deploy.sh`, `deploy/dev/.env`, `deploy/dev/sonnora/vps.conf`, `deploy/shared/docker/*.yml`, `deploy/shared/nginx/app-server.conf`, `scripts/publish-images.sh`, `scripts/blueprints/idp.yaml`). The only broken piece was `scripts/setup-userbrew.sh`, which delegated to the userbrew repo script `deploy/local/apply-blueprint.py` — that py applier has been **removed** from `~/Projects/userbrew` (its native `/admin/blueprints/apply` engine cannot manage OAuth clients). Format of old idp.yaml (nested `setup.admin`/`setup.server`) no longer parses under the native engine.
+
+Changes:
+- Rewrote `scripts/setup-userbrew.sh` (~224 lines) as a self-contained curl+jq reconciler of the two OAuth clients (`mercadomio-storefront`→`STOREFRONT_REDIRECT`, `mercadomio-admin`→`ADMIN_REDIRECT`): wait `/health` (60×2s) → auth (`USERBREW_ADMIN_TOKEN` via `X-API-Key` if `ub_sk_*`, else `Bearer`; or login via `/setup/console-app`+`/auth/login`) → `GET /admin/oauth-clients` → reconcile by client_id (idempotent `PUT`), fall back to name-match (warn: admin API cannot rename client_id), else `POST` create (prints auto `ub_client_*` id + warning to align frontend `USERBREW_CLIENT_ID`). Kept the `--env {local|dev|qa|prod}` + env-override contract. No python/userbrew-repo dependency.
+- Marked `scripts/blueprints/idp.yaml` as LEGACY (header comment only; file kept for audit).
+- No changes to `deploy.sh`, `publish-images.sh`, compose files, or vps.conf — all already correct.
+
+Verified: `bash -n` OK; behavior tested end-to-end against a local mock of the userbrew API (127.0.0.1:18099; empty→create both, already-desired→no-op, wrong-redirect→idempotent PUT, id-mismatch→warn, token+login auth, bad-password→clean error). All cases pass.
+
+Reproducible dev process (all steps now exist): `./scripts/publish-images.sh --env dev` (arm64 push to gitea, needs `GITEA_TOKEN`) → `./scripts/setup-userbrew.sh --env dev` → `./deploy.sh --env dev --register-vps`.
+
+## 2026-09-05 — Full migration product images to imgvault (Cloudinary removed)
+
+Request: "replace the product images repository with imagevault" (full migration; seed going forward; legacy images left as-is, no backfill).
+
+Spec: `docs/superpowers/specs/2026-09-05-product-images-imgvault-design.md`.
+
+Changes:
+- New package `backend/imageurl` (`resolve.go`): `Resolve(stored, baseURL)` → UUID → `{base}/api/imgvault/images/{uuid}/variant/card`; empty → `""`; `http(s)://` → passthrough (legacy). Applied at render time (`c.BaseURL()`) in `product_handlers` (GetProducts list+search, GetProduct), `category_handlers` (GetCategories, SearchCategoryByName), `order_handlers` (GetOrder, GetUserOrders, GetOrdersAdmin — OrderItem.ImageURL snapshot resolved).
+- `backend/handlers/imgvault_handlers.go`: extracted shared `proxyFile` (streams bytes, Cache-Control public max-age=3600, 404/503 passthrough); added `ImgVaultVariantProxy` (`GET /api/imgvault/images/:id/variant/:variant`, validates UUID + preset ∈ {thumbnail,card,hero,icon}).
+- `backend/routes/image_routes.go`: registered `GET /api/imgvault/images/:id/variant/:variant`.
+- `seed/scrape-natura-api.sh`: removed Cloudinary sourcing/checks and `upload_to_cloudinary`; new `upload_to_imgvault` downloads the Natura image to a temp file and posts it to `$API_URL/api/imgvault/upload` (backend proxy), storing the returned imgvault UUID in `imageUrl`.
+- `docker/docker-compose.yml`: removed `profiles: ["imgvault"]` from `minio`, `imgvault`, `create-buckets` so they start with `docker compose up -d`. `deploy/shared/docker/docker-compose.infra.yml` already had imgvault+minio per env (no change).
+- Cleanup: `backend/local.env` Cloudinary block removed; `deploy/setup-pi-production.sh` no longer emits `CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET`. No Cloudinary references remain in code or seed (only in historical docs).
+
+Verified: `go build ./...` + `go vet ./...` OK; `go test ./...` → 36 passed, 3 failed all with Mongo connection "server selection" timeouts (no local MongoDB running — environmental, not code; the previously known `TestPricingResolvePricesIntegration` failure is among them). `bash -n seed/scrape-natura-api.sh` OK. `docker compose config --quiet` exit 0 (only pre-existing warnings: missing `docker/.env` + unset userbrew secrets).
+
+Follow-ups:
+- `scripts/docker-logs.sh` (the Docker pane of `local.sh`) started infra with an explicit service list that omitted imgvault/minio; added `minio imgvault create-buckets` + MinIO/imgvault healthcheck waits before the `/tmp/mercadomio-docker-ready` sentinel.
+- New `scripts/docker-up.sh` (executable): single bring-up of the full infra stack — compose `up -d --build postgres mongo redis directus userbrew minio imgvault create-buckets`, healthchecks for each, IdP bootstrap + blueprint apply, then touches the sentinel. `scripts/docker-logs.sh` now just sources it and follows container logs; `scripts/start.sh` now brings up the whole stack via `docker-up.sh` before `go build`/`go run` (previously only ensured mongo+redis).
+- Local stack requires `docker/.env` (may be empty) and `docker/.env.local` (see `.env.local.example`; generated locally with random secrets, admin password `02377fa2ac555e049af97f02`).
+
+Follow-ups — 2026-09-05 First full local bring-up (imgvault debug):
+- imgvault changes (repo `~/Projects/imgvault`, no git): `Dockerfile.dev` fixed for local build — `rust:1.88-slim-bookworm`/`debian:bookworm-slim` (bullseye EOL libpq 404), `COPY migrations ./migrations` (sqlx::migrate! needs it at compile time), release LTO off + `-j8` (OOM kill otherwise), runtime `/data` dir chowned to `rustuser` (SQLite db path). Built as `imgvault:local` and pinned via `docker/.env` `IMGVAULT_IMAGE=imgvault` + `REGISTRY_IMAGE_TAG=local`. `src/main.rs`: added `DefaultBodyLimit::max(10 * 1024 * 1024)` layer (axum Multipart ~2MB default rejected uploads >2MB with "No file provided"; handler MAX_FILE_SIZE is already 10MB).
+- imgvault upstream auth note: Bearer `IMGVAULT_API_KEY` is sent by backend `doRequest` on all imgvault calls; middleware was disabled — **now ENABLED** (see follow-up below).
+- `docker/self-host.yaml`: the blueprint engine does not support top-level `roles` blocks (engine.rs only reads `user.roles`), so the `mercadomio-admin` role was never created and apply failed with `role 'mercadomio-admin' not found`. Fixed: removed `roles:` block and assigned the admin user to the `admin` role that setup creates. Updated the file comment.
+- First-run IdP bootstrap failed an extra time because the ad-hoc admin password violated userbrew's password policy (needs an uppercase). Regenerated `USERBREW_ADMIN_PASSWORD=7!IcuHhO2HlKOl@VbC60` in `docker/.env.local` (this supersedes the earlier `02377fa2ac555e049af97f02`).
+- Live E2E verified against running stack: `POST /api/imgvault/upload` (backend proxy) → 200 + UUID; `GET /api/imgvault/images/<uuid>/variant/card|icon` → 200 `image/webp`, `variant/nope` → 400, non-UUID id → 400; product with `imageUrl=<uuid>` returns resolved `http://localhost:8080/api/imgvault/images/<uuid>/variant/card` (200, 123188 bytes). Test product deleted after check.
+- Local startup flow confirmed: `scripts/start.sh` → `docker-up.sh` (full infra + IdP bootstrap + blueprint) → backend on :8080.
+
+Follow-ups — 2026-09-05 imgvault API key auth enabled:
+- `~/Projects/imgvault/src/middleware.rs`: `require_api_key` now in use. Whitelists `/health` first (so healthchecks/readiness work even without a key), requires env `API_KEY`, validates `Authorization: Bearer <key>`; failure → 401 `AUTH_ERROR`.
+- `~/Projects/imgvault/src/main.rs`: router restructured into `api` routes (upload/me/images/images/:id/file/variant/transform/remove-background/remove-watermark/tags/jobs) then layered AFTER merge — `require_api_key` (outermost) covers all `/api/v1/*`; `/health` open via middleware whitelist; CORS + `DefaultBodyLimit(10MB)` kept. axum gotcha: `.merge()` after `.layer()` bypasses layers.
+- Rebuilt `imgvault:local` (also absorbed pre-existing `FitMode::Smart` exhaustiveness fixes in `image_service.rs`/`job_worker.rs`/`image_handler.rs` — repo is being edited concurrently by another actor, re-check before builds).
+- `backend/local.env` added `IMGVAULT_URL=http://localhost:8081` + `IMGVAULT_API_KEY="REDACTED"
+- Verified direct :8081: `/health` no-key 200; list no-key 401, good key 200, wrong key 401. Verified via backend proxy :8080: upload → 200 JSON `id`, variant/card → 200 `image/webp`, re-tested product resolution URL 200.
+- Deploy envs (dev/qa/prod `.env` + infra/app compose) already carry `IMGVAULT_API_KEY="REDACTED"
+
+No git.
+
 ## 2026-08-16 — Product images wired for the full catalog
 
 Request: "todavia no muestra imagenes de los otros productos".

@@ -4,7 +4,7 @@
 # Usage:
 #   GITEA_TOKEN=... scripts/publish-images.sh --env {dev|qa|prod}
 #
-# Reads per-env overrides from deploy/{env}/.env (e.g. USERBREW_ISSUER build arg).
+# Reads per-env overrides from deploy/env/{env}.env (e.g. USERBREW_ISSUER build arg).
 #
 # Requires: docker with buildx (docker build --push works with default builder
 # when credentials are set via `docker login`). Login username: hugomf.
@@ -36,9 +36,8 @@ case "$ENV" in
   *) echo "missing/invalid --env {dev|qa|prod}"; exit 1 ;;
 esac
 
-[ -f "deploy/$ENV/.env" ] || { echo "missing deploy/$ENV/.env"; exit 1; }
-[ -f "deploy/.env" ] && { set -a; source "deploy/.env"; set +a; }
-[ -n "${GITEA_TOKEN:-}" ] || { echo "missing GITEA_TOKEN (set it or put it in deploy/.env)"; exit 1; }
+[ -f "deploy/env/$ENV.env" ] || { echo "missing deploy/env/$ENV.env"; exit 1; }
+[ -n "${GITEA_TOKEN:-}" ] || { echo "missing GITEA_TOKEN"; exit 1; }
 
 USERBREW_ISSUER="https://userbrew.$ENV.sonnora.mx"
 API_URL="https://mercadomio.$ENV.sonnora.mx"
@@ -46,7 +45,7 @@ WEB_REDIRECT="https://mercadomio.$ENV.sonnora.mx/auth/callback"
 ADMIN_REDIRECT="https://mercadomio.$ENV.sonnora.mx/admin/auth/callback"
 
 # shellcheck disable=SC1091
-set -a; source "deploy/$ENV/.env"; set +a
+set -a; source "deploy/env/$ENV.env"; set +a
 
 echo "==> Login to Gitea registry ($GITEA_USER@$REGISTRY)"
 echo "$GITEA_TOKEN" | docker login gitea.sonnora.mx -u "$GITEA_USER" --password-stdin

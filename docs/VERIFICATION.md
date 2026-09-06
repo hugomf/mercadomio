@@ -25,8 +25,13 @@ Run from `frontend/` and `admin_console/`:
 
 - [ ] **Dockerfile builds**: `docker build ./backend` succeeds; runtime image includes `curl`
       (required by the prod compose healthcheck) and runs as non-root `appuser`
-- [ ] **Deploy scripts parse**: `bash -n deploy/setup-pi-production.sh` and
-      `bash -n deploy/deploy-qa.sh` exit 0
+- [ ] **Deploy scripts parse**: `bash -n deploy/setup-pi-production.sh`,
+      `bash -n scripts/publish-images.sh`, and (from the shared engine repo)
+      `bash -n lib/common.sh deploy.sh` all exit 0
+- [ ] **Shared engine dry-run**: `sonnora-deploy/deploy.sh --project mercadomio --env {dev|qa|prod} --dry-run`
+      completes exit 0 (preflight + staging + health steps printed, no SSH executed)
+- [ ] **env files source cleanly**: `set -a; source deploy/env/dev.env; set +a` (and qa/prod)
+      exit 0 with no errors
 - [ ] **Compose valid**: `docker compose -f docker/docker-compose.yml config --quiet`
       and the QA variant pass (backend `.env` missing is OK — `env_file` is optional)
 - [ ] **Prod artifacts**: sandbox dry-run of `setup-pi-production.sh` generation functions
