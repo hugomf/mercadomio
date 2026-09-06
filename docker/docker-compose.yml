@@ -10,6 +10,8 @@ services:
       - REDIS_URI=redis://redis:6379
       - USERBREW_ISSUER=${USERBREW_ISSUER:-http://localhost:8090}
       - USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL:-http://localhost:8090/.well-known/openid-configuration}
+      - IMGVAULT_URL=http://imgvault-server:8081
+      - IMGVAULT_API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
     env_file:
       - path: ../backend/.env
         required: false
@@ -18,6 +20,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - default
+      - infra
 
   frontend:
     build: ../frontend
@@ -90,120 +95,12 @@ services:
       postgres:
         condition: service_healthy
 
-  # Image storage services (imgvault + MinIO). Enabled by default.
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  imgvault:
-    image: ${IMGVAULT_IMAGE:-gitea.sonnora.mx/sonnora-mx/mercadomio/imgvault}:${REGISTRY_IMAGE_TAG:-latest}
-    ports:
-      - "8081:8081"
-    environment:
-      - SQLITE_DATABASE_URL=${IMGVAULT_SQLITE:-sqlite:/data/imagevault.db}
-      - OBJECT_STORAGE_ENDPOINT=minio:9000
-      - OBJECT_STORAGE_EXTERNAL_ENDPOINT=${MINIO_EXTERNAL_ENDPOINT:-localhost:9000}
-      - OBJECT_STORAGE_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
-      - OBJECT_STORAGE_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin123}
-      - OBJECT_STORAGE_BUCKET=${IMGVAULT_BUCKET:-images}
-      - OBJECT_STORAGE_REGION=us-east-1
-      - OBJECT_STORAGE_USE_SSL=false
-      - API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
-      - RUST_LOG=info,image_service=debug
-      - ENABLE_NSFW_CHECK=false
-      - CHECK_WATERMARK=false
-    volumes:
-      - imgvault_data:/data
-    depends_on:
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  # Userbrew IdP sidecar (same pattern as rideshare). Runs on :8090 so the
-  # backend's default USERBREW_ISSUER (localhost:8090) and the OAuth redirects
-  # under docker/.env match. Auto-bootstraps itself and applies the MercadoMío
-  # blueprint (docker/self-host.yaml) via USERBREW_BLUEPRINT_FILE.
-  # Secrets live in docker/.env.local (gitignored, see .env.local.example).
-  # To use a locally built image with the latest engine: set
-  # USERBREW_IMAGE=userbrew:latest (build with userbrew/scripts/docker-build.sh).
-  userbrew:
-    image: ${USERBREW_IMAGE:-gitea.sonnora.mx/sonnora-mx/userbrew/userbrew:latest}
-    restart: unless-stopped
-    ports:
-      - "${USERBREW_PUBLIC_PORT:-8090}:3000"
-      - "${USERBREW_UI_PORT:-5174}:5173"
-    volumes:
-      - userbrew_data:/data
-      - ./self-host.yaml:/blueprint/self-host.yaml:ro
-    env_file:
-      - path: ./.env
-        required: true
-      - path: ./.env.local
-        required: false
-    environment:
-      DATABASE_URL: sqlite:///data/idp.db?mode=rwc
-      HOST: 0.0.0.0
-      PORT: "3000"
-      PUBLIC_URL: ${USERBREW_PUBLIC_URL:-http://localhost:8090}
-      JWT_ISSUER: ${JWT_ISSUER:-userbrew-local}
-      JWT_SECRET: ${JWT_SECRET}
-      PEPPER: ${PEPPER}
-      TOKEN_SECRET: ${TOKEN_SECRET}
-      MAILER_ADAPTER: ${MAILER_ADAPTER:-stub}
-      WEBAUTHN_ORIGIN: ${WEBAUTHN_ORIGIN:-http://localhost:5173}
-      OAUTH_ENABLED: "false"
-      RUST_LOG: server=info,tower_http=info
-      BACKEND_URL: http://localhost:3000
-      USERBREW_BOOTSTRAP: "1"
-      USERBREW_BLUEPRINT_FILE: /blueprint/self-host.yaml
-      USERBREW_BASE_URL: ${USERBREW_PUBLIC_URL:-http://localhost:8090}
-      USERBREW_JWT_ALGORITHM: "HS256"
-      USERBREW_ADMIN_EMAIL: ${USERBREW_ADMIN_EMAIL:-admin@mercadomio.mx}
-      USERBREW_ADMIN_USERNAME: ${USERBREW_ADMIN_USERNAME:-mercadomio-admin}
-      USERBREW_ADMIN_PASSWORD: ${USERBREW_ADMIN_PASSWORD}
-    healthcheck:
-      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)})"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  create-buckets:
-    image: minio/mc:latest
-    restart: "no"
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc alias set minio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin123}) do echo 'Waiting for MinIO...' && sleep 1; done;
-      /usr/bin/mc mb minio/${IMGVAULT_BUCKET:-images} --ignore-existing;
-      /usr/bin/mc anonymous set public minio/${IMGVAULT_BUCKET:-images};
-      echo 'MinIO bucket created and set to public';
-      "
-
 volumes:
   mongo_data:
   postgres_data:
   redis_data:
-  minio_data:
-  imgvault_data:
-  userbrew_data:
+
+networks:
+  infra:
+    name: infra
+    external: true

@@ -6,9 +6,16 @@
 # It REPLACES the previous implementation, which delegated to userbrew's
 # deploy/local/apply-blueprint.py; that applier was removed from userbrew
 # (superseded by the native /admin/blueprints/apply engine, which CANNOT manage
-# OAuth clients). The userbrew instances (userbrew.*.sonnora.mx) are shared and
-# pre-initialized, so first-run setup (admin user, app, RSA keys) is NOT done
-# here — run userbrew's own bootstrap on the instance if it is fresh.
+# OAuth clients).
+#
+# LOCAL instance: the local platform stack (sonnora-platform/local,
+# bootstrap --env local) now owns the IdP and publishes userbrew at
+# http://localhost:8090 (and UI at :5174) on the shared `infra` network.
+# First-run setup (admin user, app, RSA keys) is NOT done here — run the
+# platform bootstrap (Task 6: ./platform/scripts/bootstrap.sh --env local)
+# on a fresh checkout; this script remains the target of the OAuth
+# reconciliations at http://localhost:8090. Remote instances
+# (userbrew.*.sonnora.mx) are likewise shared and pre-initialized.
 #
 # It reconciles the two OAuth clients the frontends use:
 #   mercadomio-storefront  -> STOREFRONT_REDIRECT
