@@ -778,6 +778,19 @@ Changes:
 - `flutter analyze` + `flutter test` clean in `admin_console`; backend still
   `go build`/`go vet` clean.
 
+## 2026-09-06 — Shared platform stack rollout (Tasks 1-12 verification)
+
+Approved design: single platform stack per env (sonnora-deploy/platform) with one shared sentinel `sentry-<env>`, platform owns sole `SENTINEL_TOKEN`, consumers drop bundled userbrew and join shared `infra` external network.
+
+Files changed per repo:
+- **sonnora-deploy** (unstaged per GC11, platform untracked): `deploy.sh` (+ --platform branch + register-vps loop over `platform/vps/*.conf.tmpl`), `platform/env/{local,dev,qa,prod}.env`, `platform/docker/docker-compose.{local,dev,qa,prod}.yml`, `platform/sentinel/self-host.{local,dev,qa,prod}.yaml`, `platform/scripts/bootstrap.sh`, `platform/deploy.sh`, `platform/vps/{userbrew,sentinel,imgvault}.conf.tmpl`
+- **mercadomio** (c4d1b28 committed Task 10, Task 11 unstaged): `docker/docker-compose.yml` (drop userbrew/imgvault/minio/create-buckets + join infra backend `http://imgvault-server:8081`), `scripts/setup-userbrew.sh` header, `deploy/shared/docker/docker-compose.infra.yml` (trim to postgres/mongo/redis/directus), `deploy/shared/docker/docker-compose.app.yml` (backend [default,infra]), `deploy/env/qa.env` (IMGVAULT_URL server)
+- **rideshare** (dc64e19 committed): `deploy/{dev,qa,prod,local}/self-host.yaml` (ref sentry-<env>), `deploy/{dev,qa,prod,local}/bootstrap.sh` (drop SENTINEL_TOKEN write)
+
+Verified: `bash -n` 7 files OK, `docker compose config --quiet` OK (mercadomio local/infra/app + platform 4 envs with SENTINEL_TOKEN=check + sourced env), `go vet ./...` OK, shellcheck unavailable noted (Task 7 gap), `infra` network exists. Git left unstaged per GC11 — no final commit.
+
+Open items: Gitea registry auth for `gitea.sonnora.mx/sonnora-mx/userbrew/userbrew:latest + sentinel` and `mercadomio/imgvault:qa` pulls; DNS entries for `userbrew/sentinel/imgvault.<env>.sonnora.mx` -> VPS_HOST before --register-vps cert issuance; `IMGVAULT_API_KEY=dev_api_key_123` shared-value rotation; credentialvault future; parked: prod APP_HOST_IP 10.0.0.5 assumes wg Pi vs VPS hub (defer, not fixed), prod secrets path mismatch, orphaned MINIO/IMGVAULT_PORT + stale comments in mercadomio qa.env, container_name suffix interpretation.
+
 ## 2026-08-14 — Fix hardcoded paths & stale tests
 
 ### Completed
