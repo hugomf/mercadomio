@@ -13,13 +13,7 @@ compose() { docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_DIR/.env" "$@
 echo "🐳 Starting Docker stack (app infra)..."
 echo "   (stopping app containers first — backend/frontend run on the host)"
 compose stop backend frontend 2>/dev/null || true
-compose up -d --build postgres mongo redis directus 2>&1
-
-echo "⏳ Waiting for Postgres..."
-until compose exec -T postgres pg_isready -U admin -d mercadomio > /dev/null 2>&1; do
-  sleep 0.5
-done
-echo "✅ Postgres ready on :5432"
+compose up -d --build mongo redis 2>&1
 
 echo "⏳ Waiting for MongoDB..."
 until compose exec -T mongo mongosh --quiet --eval "db.adminCommand('ping').ok" > /dev/null 2>&1; do
