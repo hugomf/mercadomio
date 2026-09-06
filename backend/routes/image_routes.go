@@ -10,6 +10,7 @@ import (
 func SetupImageRoutes(app *fiber.App, imageHandlers *handlers.ImageHandlers, imgVaultHandlers *handlers.ImgVaultHandlers, directusHandlers *handlers.DirectusHandlers) {
 	// imgvault proxy routes for product images (hidden from frontend)
 	app.Get("/api/imgvault/images/:id/file", imgVaultHandlers.ImgVaultFileProxy)
+	app.Get("/api/imgvault/images/:id/variant/:variant", imgVaultHandlers.ImgVaultVariantProxy)
 	app.Post("/api/imgvault/upload", imgVaultHandlers.ImgVaultUploadProxy)
 
 	// Directus proxy routes for assets

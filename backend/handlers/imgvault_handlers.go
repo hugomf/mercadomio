@@ -37,6 +37,39 @@ func (h *ImgVaultHandlers) ImgVaultFileProxy(c *fiber.Ctx) error {
 	}
 
 	target := fmt.Sprintf("%s/api/v1/images/%s/file", h.imgVaultURL, id)
+	return h.proxyFile(c, target)
+}
+
+// ImgVaultVariantProxy proxies GET {imgvault}/api/v1/images/:id/variant/:variant.
+func (h *ImgVaultHandlers) ImgVaultVariantProxy(c *fiber.Ctx) error {
+	id := c.Params("id")
+	if !isUUID(id) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid image id",
+		})
+	}
+
+	variant := c.Params("variant")
+	if !isKnownVariant(variant) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "unknown variant",
+		})
+	}
+
+	target := fmt.Sprintf("%s/api/v1/images/%s/variant/%s", h.imgVaultURL, id, variant)
+	return h.proxyFile(c, target)
+}
+
+func isKnownVariant(variant string) bool {
+	switch variant {
+	case "thumbnail", "card", "hero", "icon":
+		return true
+	}
+	return false
+}
+
+// proxyFile streams the bytes of a validated imgvault target to the caller.
+func (h *ImgVaultHandlers) proxyFile(c *fiber.Ctx, target string) error {
 	resp, err := h.doRequest(c, http.MethodGet, target, nil)
 	if err != nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{

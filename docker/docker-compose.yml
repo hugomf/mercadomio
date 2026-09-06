@@ -90,11 +90,9 @@ services:
       postgres:
         condition: service_healthy
 
-  # Optional image-storage services (imgvault + MinIO). Off by default; enable
-  # with:  docker compose --profile imgvault up -d
+  # Image storage services (imgvault + MinIO). Enabled by default.
   minio:
     image: minio/minio:latest
-    profiles: ["imgvault"]
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -112,7 +110,6 @@ services:
 
   imgvault:
     image: ${IMGVAULT_IMAGE:-gitea.sonnora.mx/sonnora-mx/mercadomio/imgvault}:${REGISTRY_IMAGE_TAG:-latest}
-    profiles: ["imgvault"]
     ports:
       - "8081:8081"
     environment:
@@ -191,7 +188,6 @@ services:
 
   create-buckets:
     image: minio/mc:latest
-    profiles: ["imgvault"]
     restart: "no"
     depends_on:
       minio:

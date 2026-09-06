@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"mercadomio-backend/imageurl"
 	"mercadomio-backend/services"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,6 +31,11 @@ func (h *CategoryHandlers) GetCategories(c *fiber.Ctx) error {
 	// Return empty array instead of nil if no categories exist
 	if categories == nil {
 		return c.JSON([]services.Category{})
+	}
+
+	base := c.BaseURL()
+	for i := range categories {
+		categories[i].ImageURL = imageurl.Resolve(categories[i].ImageURL, base)
 	}
 
 	return c.JSON(categories)
@@ -114,6 +120,8 @@ func (h *CategoryHandlers) SearchCategoryByName(c *fiber.Ctx) error {
 			"error": err.Error(),
 		})
 	}
+
+	category.ImageURL = imageurl.Resolve(category.ImageURL, c.BaseURL())
 
 	return c.JSON(category)
 }

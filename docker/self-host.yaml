@@ -1,12 +1,16 @@
 # MercadoMío local blueprint — provisions the MercadoMío application, the
-# mercadomio-admin RBAC role, the OIDC clients used by storefront and admin
-# console, and the admin user, in the local userbrew sidecar.
+# OIDC clients used by storefront and admin console, and the admin user, in
+# the local userbrew sidecar.
 #
 # Engine format (global:). Idempotent: reuses entities by name, never deletes.
 # Applied automatically by userbrew via USERBREW_BLUEPRINT_FILE (auto-bootstrap,
 # USERBREW_BOOTSTRAP=1) and/or manually via /admin/blueprints/apply.
 # Env vars are interpolated server-side from the container env (docker/.env +
 # docker/.env.local).
+#
+# NOTE: the blueprint engine does not yet support creating top-level `roles`
+# blocks, so the admin user is assigned to the `admin` role that setup/complete
+# creates automatically.
 
 global:
   app:
@@ -15,9 +19,6 @@ global:
     provider_type: "password"
     visibility: "assigned"
     registration_enabled: true
-
-  roles:
-    - name: "mercadomio-admin"
 
   oauth_clients:
     - name: "mercadomio-storefront"
@@ -39,6 +40,6 @@ global:
       display_name: "MercadoMío Admin"
       password: "${USERBREW_ADMIN_PASSWORD}"
       status: "active"
-      roles: [mercadomio-admin]
+      roles: [admin]
 
   api_keys: []
