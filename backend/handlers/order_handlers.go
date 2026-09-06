@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"mercadomio-backend/imageurl"
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/models"
 	"mercadomio-backend/services"
@@ -69,6 +70,15 @@ func (h *OrderHandlers) CreateOrder(c *fiber.Ctx) error {
 	return middleware.Created(c, order.ToResponse(), "order created successfully")
 }
 
+// resolveOrderImages rewrites stored imgvault UUIDs in order item snapshots
+// into servable image URLs on the current request's base URL.
+func resolveOrderImages(c *fiber.Ctx, resp *models.OrderResponse) {
+	base := c.BaseURL()
+	for i := range resp.Items {
+		resp.Items[i].ImageURL = imageurl.Resolve(resp.Items[i].ImageURL, base)
+	}
+}
+
 // GetOrder handles GET /api/orders/:id
 func (h *OrderHandlers) GetOrder(c *fiber.Ctx) error {
 	// Get user ID from auth context
@@ -93,7 +103,10 @@ func (h *OrderHandlers) GetOrder(c *fiber.Ctx) error {
 		return middleware.Forbidden(c, "access denied")
 	}
 
-	return middleware.Success(c, order.ToResponse())
+	resp := order.ToResponse()
+	resolveOrderImages(c, resp)
+
+	return middleware.Success(c, resp)
 }
 
 // GetUserOrders handles GET /api/orders
@@ -125,7 +138,9 @@ func (h *OrderHandlers) GetUserOrders(c *fiber.Ctx) error {
 	// Convert to response format
 	var orderResponses []*models.OrderResponse
 	for _, order := range orders {
-		orderResponses = append(orderResponses, order.ToResponse())
+		resp := order.ToResponse()
+		resolveOrderImages(c, resp)
+		orderResponses = append(orderResponses, resp)
 	}
 
 	totalCount := len(orderResponses) // In a real implementation, you'd get total count from service
@@ -263,7 +278,9 @@ func (h *OrderHandlers) GetOrdersAdmin(c *fiber.Ctx) error {
 
 	var orderResponses []*models.OrderResponse
 	for _, order := range orders {
-		orderResponses = append(orderResponses, order.ToResponse())
+		resp := order.ToResponse()
+		resolveOrderImages(c, resp)
+		orderResponses = append(orderResponses, resp)
 	}
 
 	return middleware.SuccessPaginated(c, orderResponses, int(total), page, limit)

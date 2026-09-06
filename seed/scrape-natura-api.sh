@@ -9,31 +9,9 @@ BEARER_TOKEN="Bearer Ry16ldMKZYJbHEwN/YEvqXwMCOJtjhICbpKYlPAm+7kP9veQT+4CdhmhaBK
 TENANT_ID="mexico-natura-web"
 API_KEY="3e28babd-85e9-4557-bfdd-450edf372306"
 
-echo "🌿 Natura Real API Scraper with Cloudinary Upload"
+echo "🌿 Natura Real API Scraper with imgvault Upload"
 echo "📡 Backend API: $API_URL"
 echo "🔗 Natura API: $NATURA_API_BASE"
-echo ""
-
-# Load Cloudinary configuration
-CLOUDINARY_CONFIG_FILE="${CLOUDINARY_CONFIG_FILE:-../backend/.env}"
-if [ ! -f "$CLOUDINARY_CONFIG_FILE" ]; then
-    echo "❌ .env file not found at $CLOUDINARY_CONFIG_FILE"
-    echo "💡 Create backend/.env with Cloudinary configuration"
-    exit 1
-fi
-
-# Source the .env file
-set -a
-source "$CLOUDINARY_CONFIG_FILE"
-set +a
-
-if [ -z "${CLOUDINARY_CLOUD_NAME:-}" ] || [ -z "${CLOUDINARY_API_KEY:-}" ] || [ -z "${CLOUDINARY_API_SECRET:-}" ]; then
-    echo "❌ Missing Cloudinary configuration in $CLOUDINARY_CONFIG_FILE"
-    echo "💡 Required: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET"
-    exit 1
-fi
-
-echo "☁️  Cloudinary Cloud: $CLOUDINARY_CLOUD_NAME"
 echo ""
 
 # Parse command line arguments for category search
@@ -200,8 +178,11 @@ fetch_natura_products() {
         "$url" 2>/dev/null
 }
 
-# Function to upload image directly to Cloudinary from URL
-upload_to_cloudinary() {
+# General-purpose scrape function that fetches and processes a single Natura product
+# into our API, including uploading its image to imgvault.
+
+# Function to upload image to imgvault via the backend proxy
+upload_to_imgvault() {
     local image_url="$1"
     local product_id_natura="$2"
     local product_id="$3"
@@ -214,37 +195,45 @@ upload_to_cloudinary() {
     # Extract original filename from URL for display
     local original_filename=$(basename "$image_url" | cut -d'?' -f1)
 
-    echo "☁️  Uploading to Cloudinary: $original_filename" >&2
-    echo "   📸 Source URL: $image_url" >&2
+    echo "📸 Uploading to imgvault: $original_filename" >&2
+    echo "   🌐 Source URL: $image_url" >&2
 
-    # For unsigned uploads, we don't need timestamp or signature
-    echo "   🔓 Using unsigned upload (simpler approach)" >&2
-
-    # Upload to Cloudinary using upload preset (unsigned)
-    local response=$(curl -s -X POST \
-        "https://api.cloudinary.com/v1_1/$CLOUDINARY_CLOUD_NAME/image/upload" \
-        -F "file=$image_url" \
-        -F "upload_preset=ml-default" 2>/dev/null)
-
-    # Parse response
-    local secure_url=$(echo "$response" | jq -r '.secure_url // empty')
-    local error_message=$(echo "$response" | jq -r '.error.message // empty')
-
-    if [ -n "$error_message" ]; then
-        echo "   ❌ Cloudinary upload failed: $error_message" >&2
+    # Download the image to a temp file
+    local tmp_file=$(mktemp)
+    if ! curl -s -L -o "$tmp_file" "$image_url" 2>/dev/null; then
+        echo "   ❌ Failed to download source image" >&2
+        rm -f "$tmp_file"
         echo ""
         return 1
     fi
 
-    if [ -z "$secure_url" ]; then
-        echo "   ❌ No secure_url in Cloudinary response" >&2
+    # Upload to imgvault through the backend proxy
+    local response=$(curl -s -X POST \
+        -F "file=@$tmp_file" \
+        "$API_URL/api/imgvault/upload" 2>/dev/null)
+
+    rm -f "$tmp_file"
+
+    # Parse response
+    local image_id=$(echo "$response" | jq -r '.id // empty')
+    local error_message=$(echo "$response" | jq -r '.error.message // empty')
+
+    if [ -n "$error_message" ]; then
+        echo "   ❌ imgvault upload failed: $error_message" >&2
+        echo ""
+        return 1
+    fi
+
+    if [ -z "$image_id" ] || [ "$image_id" = "null" ]; then
+        echo "   ❌ No id in imgvault upload response" >&2
+        echo "   📄 Response: $response" >&2
         echo ""
         return 1
     fi
 
     echo "   ✅ Uploaded successfully" >&2
-    echo "   🔗 URL: $secure_url" >&2
-    echo "$secure_url"
+    echo "   🆔 Image ID: $image_id" >&2
+    echo "$image_id"
     return 0
 }
 
@@ -310,8 +299,8 @@ create_product() {
         fi
     fi
 
-    # Upload image to Cloudinary and get Cloudinary URL
-    local image_url=$(upload_to_cloudinary "$original_image_url" "$product_id_natura" "$product_id")
+    # Upload image to imgvault and get the image UUID
+    local image_url=$(upload_to_imgvault "$original_image_url" "$product_id_natura" "$product_id")
     if [ -z "$image_url" ]; then
         echo "⚠️  No image uploaded for: $name" >&2
         image_url=""  # Will use placeholder or no image
@@ -382,7 +371,7 @@ EOF
     if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
         echo "✅ Created: $name (\$${price} MXN)"
         if [ -n "$image_url" ]; then
-            echo "☁️  Cloudinary Image: $image_url"
+            echo "🖼️  imgvault Image: $image_url"
         else
             echo "🖼️  No image uploaded"
         fi
@@ -654,10 +643,10 @@ main() {
     echo ""
     echo "🎯 This script will fetch REAL products from Natura's official API"
     echo "   • Authentic product names, prices, and descriptions"
-    echo "   • Real product images uploaded directly to Cloudinary"
+    echo "   • Real product images uploaded to imgvault"
     echo "   • Official product ratings and details"
     echo "   • Multiple categories: hair care, perfumes, makeup, etc."
-    echo "   • Images preserved with original filenames in Cloudinary"
+    echo "   • Images stored as imgvault object IDs"
     echo ""
     echo "🔥 Starting fully automated scraping (no confirmations required)..."
     echo ""

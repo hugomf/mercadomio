@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"mercadomio-backend/imageurl"
 	"mercadomio-backend/middleware"
 	"mercadomio-backend/services"
 
@@ -110,6 +111,15 @@ func productsOf(products []services.Product) []*services.Product {
 	return ptrs
 }
 
+// resolveProductImages rewrites stored imgvault UUIDs into servable image
+// URLs on the current request's base URL.
+func resolveProductImages(c *fiber.Ctx, products []*services.Product) {
+	base := c.BaseURL()
+	for _, p := range products {
+		p.ImageURL = imageurl.Resolve(p.ImageURL, base)
+	}
+}
+
 // GetProducts handles GET /api/products
 func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 	// Parse query parameters
@@ -147,6 +157,7 @@ func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 			return middleware.InternalError("Failed to search products")
 		}
 		h.enrichCatalogPrices(c.Context(), productsOf(result.Data))
+		resolveProductImages(c, productsOf(result.Data))
 
 		return c.JSON(fiber.Map{
 			"data":  result.Data,
@@ -163,6 +174,7 @@ func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 		return middleware.InternalError("Failed to fetch products")
 	}
 	h.enrichCatalogPrices(c.Context(), productsOf(products))
+	resolveProductImages(c, productsOf(products))
 
 	return c.JSON(fiber.Map{
 		"data":  products,
@@ -181,6 +193,7 @@ func (h *ProductHandlers) GetProduct(c *fiber.Ctx) error {
 		return middleware.NotFound("Product not found")
 	}
 	h.enrichCatalogPrices(c.Context(), []*services.Product{product})
+	resolveProductImages(c, []*services.Product{product})
 
 	return c.JSON(product)
 }

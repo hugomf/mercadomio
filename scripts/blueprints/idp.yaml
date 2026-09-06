@@ -5,8 +5,13 @@
 #   2. The `mercadomio-admin` role, assigned to the admin user
 #   3. The OAuth clients used by storefront and admin console
 #
-# Applied by userbrew's apply-blueprint.py via scripts/setup-userbrew.sh.
-# Env vars overridable per environment (see the wrapper script).
+# LEGACY reference kept for its OAuth-client intent only. The original applier
+# (apply-blueprint.py) was removed from userbrew and the native blueprint engine
+# (/admin/blueprints/apply) CANNOT manage OAuth clients, so scripts/
+# setup-userbrew.sh no longer consumes this file — it reconciles the same
+# clients directly through the userbrew admin API. Retained for audibility of
+# the original design; do not feed it to apply-native.sh (its schema will not
+# parse). Env vars overridable per environment (see the wrapper script).
 
 name: mercadomio
 launch_url: ${APP_ORIGIN:-http://localhost:3000}
