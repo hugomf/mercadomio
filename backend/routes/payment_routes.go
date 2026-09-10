@@ -11,14 +11,14 @@ func SetupPaymentRoutes(app *fiber.App, handlers *PaymentHandlers) {
 	// Payment routes group with authentication (except stripe-config endpoint)
 	v1 := app.Group("/api")
 
-	// Public endpoint - no auth required for Stripe config
-	v1.Get("/payments/stripe-config", handlers.GetStripeConfig)
-
-	// Authenticated payment endpoints
-	// Note: Auth middleware is applied per-route through the AuthWindowHandler pattern
-	// The specific auth logic is handled in the handlers themselves
+	// Public status endpoints for provider redirects
+	app.Get("/payments/confirmation", handlers.Confirmation)
+	app.Get("/payments/cancelled", handlers.Cancelled)
 
 	payments := v1.Group("/payments")
+
+	// Public endpoint - no auth required for Stripe config
+	v1.Get("/payments/stripe-config", handlers.GetStripeConfig)
 
 	// Payment intent management
 	payments.Post("/create-payment-intent", handlers.CreatePaymentIntent)
@@ -34,6 +34,9 @@ func SetupPaymentRoutes(app *fiber.App, handlers *PaymentHandlers) {
 
 	// Conekta webhook endpoint (unauthenticated; signature verified in handler)
 	payments.Post("/webhook", handlers.WebhookHandler)
+
+	// Stripe webhook endpoint (signature verified in handler)
+	payments.Post("/stripe-webhook", handlers.StripeWebhook)
 }
 
 // PaymentHandlers holds all payment-related handlers
@@ -83,7 +86,22 @@ func (h *PaymentHandlers) WebhookHandler(c *fiber.Ctx) error {
 	return h.handlers.WebhookHandler(c)
 }
 
+// StripeWebhook handles POST /api/payments/stripe-webhook
+func (h *PaymentHandlers) StripeWebhook(c *fiber.Ctx) error {
+	return h.handlers.StripeWebhook(c)
+}
+
 // CreateCheckout handles POST /api/payments/checkout
 func (h *PaymentHandlers) CreateCheckout(c *fiber.Ctx) error {
 	return h.handlers.CreateCheckout(c)
+}
+
+// Confirmation handles GET /payments/confirmation
+func (h *PaymentHandlers) Confirmation(c *fiber.Ctx) error {
+	return h.handlers.Confirmation(c)
+}
+
+// Cancelled handles GET /payments/cancelled
+func (h *PaymentHandlers) Cancelled(c *fiber.Ctx) error {
+	return h.handlers.Cancelled(c)
 }

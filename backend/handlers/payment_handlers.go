@@ -220,13 +220,31 @@ func (h *PaymentHandlers) WebhookHandler(c *fiber.Ctx) error {
 	if err != nil {
 		log.Printf("Webhook processing error (%s): %v", eventType, err)
 		return middleware.Success(c, fiber.Map{
-			"processed":  false,
+			"processed": false,
 			"event_type": eventType,
 		})
 	}
 
 	return middleware.Success(c, fiber.Map{
-		"processed":  true,
+		"processed": true,
+		"event_type": eventType,
+	})
+}
+
+// StripeWebhook handles Stripe webhooks
+// POST /api/payments/stripe-webhook
+func (h *PaymentHandlers) StripeWebhook(c *fiber.Ctx) error {
+	payload := c.Body()
+	signature := c.Get("Stripe-Signature")
+
+	eventType, err := h.paymentService.HandleStripeWebhook(c.Context(), payload, signature)
+	if err != nil {
+		log.Printf("[stripe-webhook] verification failed: %v", err)
+		return middleware.BadRequestResponse(c, "invalid webhook signature")
+	}
+
+	return middleware.Success(c, fiber.Map{
+		"processed": true,
 		"event_type": eventType,
 	})
 }
@@ -262,4 +280,68 @@ func (h *PaymentHandlers) CreateCheckout(c *fiber.Ctx) error {
 		"conektaOrderId": session.ConektaOrderID,
 		"demo":           !h.paymentService.IsConektaConfigured(),
 	})
+}
+
+// Confirmation renders a minimal confirmation page after redirect from payment provider.
+// GET /payments/confirmation
+func (h *PaymentHandlers) Confirmation(c *fiber.Ctx) error {
+	orderID := c.Query("order_id", "")
+	if orderID == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("missing order_id")
+	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Status(fiber.StatusOK).SendString(confirmationHTML(orderID, true))
+}
+
+// Cancelled renders a minimal cancellation page after redirect from payment provider.
+// GET /payments/cancelled
+func (h *PaymentHandlers) Cancelled(c *fiber.Ctx) error {
+	orderID := c.Query("order_id", "")
+	if orderID == "" {
+		return c.Status(fiber.StatusBadRequest).SendString("missing order_id")
+	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.Status(fiber.StatusOK).SendString(confirmationHTML(orderID, false))
+}
+
+func confirmationHTML(orderID string, success bool) string {
+	title := "Pago confirmado"
+	message := "Tu pago fue procesado."
+	badge := "Éxito"
+	badgeColor := "#166534"
+	if !success {
+		title = "Pago cancelado"
+		message = "Tu pago no fue completado; puedes reintentar."
+		badge = "Cancelado"
+		badgeColor = "#991b1b"
+	}
+	return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>` + title + `</title>
+<style>
+  :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #f6f7f6; color: #1b1b1b; }
+  .card { width: min(420px, 92vw); padding: 24px; border-radius: 16px; background: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+  .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #e5e7eb; color: ` + badgeColor + `; font-weight: 600; font-size: 12px; letter-spacing: .2px; }
+  h1 { margin: 14px 0 8px; font-size: 22px; }
+  p { margin: 0 0 18px; color: #4b5563; }
+  .muted { font-size: 12px; color: #6b7280; }
+  a.button { display: inline-block; padding: 12px 14px; border-radius: 12px; background: #166534; color: white; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <span class="badge">` + badge + `</span>
+    <h1>` + title + `</h1>
+    <p>` + message + `</p>
+    <div class="muted">Pedido: ` + orderID + `</div>
+    <br>
+    <a class="button" href="/">Volver a la tienda</a>
+  </main>
+</body>
+</html>`
 }

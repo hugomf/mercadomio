@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"mercadomio-backend/models"
@@ -353,6 +354,50 @@ func (s *productService) GetProductReviews(ctx context.Context, productID string
 	}
 
 	return product.Reviews, nil
+}
+
+func (s *productService) AddProductReview(ctx context.Context, productID string, review *models.Review) error {
+	objID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return err
+	}
+
+	if review.Rating < 1 || review.Rating > 5 {
+		return fmt.Errorf("rating must be between 1 and 5")
+	}
+
+	review.ID = primitive.NewObjectID()
+	review.CreatedAt = time.Now()
+
+	// Push review and update average/count atomically
+	update := bson.M{
+		"$push": bson.M{"reviews": review},
+		"$inc":  bson.M{"reviewCount": 1},
+	}
+	if _, err := s.collection.UpdateOne(ctx, bson.M{"_id": objID}, update); err != nil {
+		return err
+	}
+
+	// Recompute average rating
+	var product models.Product
+	if err := s.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&product); err != nil {
+		return err
+	}
+	if len(product.Reviews) > 0 {
+		var sum float64
+		for _, r := range product.Reviews {
+			sum += float64(r.Rating)
+		}
+		product.AverageRating = sum / float64(len(product.Reviews))
+		product.ReviewCount = len(product.Reviews)
+		if _, err := s.collection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{
+			"$set": bson.M{"averageRating": product.AverageRating, "reviewCount": product.ReviewCount},
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *productService) GetRelatedProducts(ctx context.Context, productID string) ([]Product, error) {

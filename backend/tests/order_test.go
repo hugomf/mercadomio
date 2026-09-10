@@ -1,3 +1,6 @@
+//go:build integration
+// +build integration
+
 // NOTE: Full service tests will be added after OrderService is implemented.
 // For now, we test the Order model validation and status transitions.
 

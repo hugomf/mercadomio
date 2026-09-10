@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/category.dart';
+import '../services/admin_inventory_service.dart';
 import '../widgets/navigation_drawer.dart' as custom;
 
 class CategoryManagementScreen extends StatefulWidget {
@@ -281,9 +282,21 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     );
   }
 
-  void _deleteCategory(String id) {
-    setState(() {
-      _categories.removeWhere((cat) => cat.id == id);
-    });
+  void _deleteCategory(String id) async {
+    try {
+      final service = AdminCategoryService();
+      await service.deleteCategory(id);
+      if (mounted) {
+        setState(() {
+          _categories.removeWhere((cat) => cat.id == id);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting category: $e')),
+        );
+      }
+    }
   }
 }

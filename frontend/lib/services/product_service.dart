@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import '../models/product.dart';
 import 'config_service.dart';
+import 'auth_service.dart';
 
 class ProductService extends GetxService {
   static ProductService get to => Get.find();
@@ -26,6 +27,25 @@ class ProductService extends GetxService {
       }
     } catch (e) {
       throw Exception('Error fetching product reviews: $e');
+    }
+  }
+
+  Future<bool> addProductReview(String productId, int rating, String comment) async {
+    try {
+      final apiUrl = await configService.getApiUrl();
+
+      final response = await http.post(
+        Uri.parse('$apiUrl/api/products/$productId/reviews'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${Get.find<AuthService>().token ?? ''}',
+        },
+        body: jsonEncode({'rating': rating, 'comment': comment}),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      return false;
     }
   }
 

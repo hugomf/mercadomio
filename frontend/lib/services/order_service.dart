@@ -188,6 +188,7 @@ class OrderService {
       throw Exception('Failed to create checkout: ${response.statusCode}');
     }
   }
+
 }
 
 // Conekta hosted checkout session details

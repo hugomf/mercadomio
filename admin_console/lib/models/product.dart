@@ -26,6 +26,15 @@ class ProductVariant {
         barcode: json['barcode'] as String? ?? '',
         stock: (json['stock'] as num?)?.toInt() ?? 0,
       );
+
+  Map<String, dynamic> toJson() => {
+        'variantId': variantId,
+        'attributes': attributes,
+        'priceAdjustment': priceAdjustment,
+        'sku': sku,
+        'barcode': barcode,
+        'stock': stock,
+      };
 }
 
 class Product {

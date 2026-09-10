@@ -33,6 +33,7 @@ type (
 		AddCategoryFilter(ctx context.Context, params *SearchParams, categoryIDs []primitive.ObjectID) error
 		AddCategoryNameFilter(ctx context.Context, params *SearchParams, categoryNames []string) error
 		GetProductReviews(ctx context.Context, productID string) ([]models.Review, error)
+		AddProductReview(ctx context.Context, productID string, review *models.Review) error
 		GetRelatedProducts(ctx context.Context, productID string) ([]Product, error)
 		DecrementStock(ctx context.Context, productID, variantID string, qty int) error
 		IncrementStock(ctx context.Context, productID, variantID string, qty int) error

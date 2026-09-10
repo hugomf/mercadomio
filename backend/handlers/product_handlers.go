@@ -9,9 +9,11 @@ import (
 
 	"mercadomio-backend/imageurl"
 	"mercadomio-backend/middleware"
+	"mercadomio-backend/models"
 	"mercadomio-backend/services"
 
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProductHandlers struct {
@@ -254,6 +256,40 @@ func (h *ProductHandlers) GetProductReviews(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(reviews)
+}
+
+// CreateProductReview handles POST /api/products/:id/reviews
+func (h *ProductHandlers) CreateProductReview(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	userID, _ := c.Locals("userID").(string)
+	userEmail, _ := c.Locals("userEmail").(string)
+
+	var req struct {
+		Rating  int    `json:"rating"`
+		Comment string `json:"comment"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return middleware.BadRequestResponse(c, "invalid request body")
+	}
+
+	review := &models.Review{
+		UserID:   primitive.ObjectID{},
+		UserName: userEmail,
+		Rating:   req.Rating,
+		Comment:  req.Comment,
+	}
+	if userID != "" {
+		if objID, err := primitive.ObjectIDFromHex(userID); err == nil {
+			review.UserID = objID
+		}
+	}
+
+	if err := h.ProductService.AddProductReview(c.Context(), id, review); err != nil {
+		return middleware.BadRequestResponse(c, "failed to add review: "+err.Error())
+	}
+
+	return middleware.Created(c, review, "review added successfully")
 }
 
 // GetRelatedProducts handles GET /api/products/:id/related
