@@ -23,6 +23,7 @@ func SetupProductRoutes(app *fiber.App, productHandlers *handlers.ProductHandler
 
 	// Product reviews endpoint
 	app.Get("/api/products/:id/reviews", productHandlers.GetProductReviews)
+	app.Post("/api/products/:id/reviews", productHandlers.CreateProductReview)
 
 	// Related products endpoint
 	app.Get("/api/products/:id/related", productHandlers.GetRelatedProducts)

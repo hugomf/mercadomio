@@ -28,6 +28,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final RxInt _quantity = 1.obs;
   final RxList<Product> _relatedProducts = <Product>[].obs;
   final RxBool _relatedLoading = false.obs;
+  final RxBool _showReviewForm = false.obs;
+  final RxInt _reviewRating = 5.obs;
+  final TextEditingController _reviewController = TextEditingController();
+  final RxBool _isSubmittingReview = false.obs;
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
 
   Product? get product => _product.value;
   bool get isLoading => _isLoading.value;
@@ -1285,13 +1295,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to full reviews page
+                _showReviewForm.value = true;
               },
               child: const Text('Ver todas'),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                _showReviewForm.value = true;
+              },
+              icon: const Icon(Icons.rate_review, size: 18),
+              label: const Text('Escribir'),
             ),
           ],
         ),
         const SizedBox(height: 12),
+
+        // Review form
+        Obx(() {
+          if (!_showReviewForm.value) return const SizedBox.shrink();
+          return _buildReviewForm();
+        }),
 
         // Rating Breakdown
         Container(
@@ -1430,6 +1453,171 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(review.comment),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewForm() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Escribir una reseña',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  _showReviewForm.value = false;
+                },
+                icon: const Icon(Icons.close),
+                tooltip: 'Cerrar',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Calificación',
+            style: TextStyle(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Obx(() {
+            return Row(
+              children: List.generate(5, (index) {
+                return IconButton(
+                  onPressed: () {
+                    _reviewRating.value = index + 1;
+                  },
+                  icon: Icon(
+                    index < _reviewRating.value ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                    size: 32,
+                  ),
+                );
+              }),
+            );
+          }),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reviewController,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: 'Escribe tu opinión sobre este producto...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Obx(() {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    _showReviewForm.value = false;
+                    _reviewController.clear();
+                    _reviewRating.value = 5;
+                  },
+                  child: const Text('Cancelar'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _isSubmittingReview.value
+                      ? null
+                      : () async {
+                          if (_reviewController.text.trim().isEmpty) {
+                            Get.snackbar(
+                              'Escribe algo',
+                              'Por favor escribe un comentario para tu reseña',
+                              backgroundColor: colorScheme.tertiary,
+                              colorText: colorScheme.onTertiary,
+                              margin: const EdgeInsets.all(20),
+                              borderRadius: 8,
+                            );
+                            return;
+                          }
+
+                          if (!authService.isAuthenticated) {
+                            Get.snackbar(
+                              'Inicia sesión',
+                              'Debes iniciar sesión para escribir una reseña',
+                              backgroundColor: colorScheme.tertiary,
+                              colorText: colorScheme.onTertiary,
+                              margin: const EdgeInsets.all(20),
+                              borderRadius: 8,
+                            );
+                            return;
+                          }
+
+                          _isSubmittingReview.value = true;
+                          try {
+                            final success = await productService.addProductReview(
+                              widget.productId,
+                              _reviewRating.value,
+                              _reviewController.text.trim(),
+                            );
+
+                            if (success) {
+                              Get.snackbar(
+                                'Reseña enviada',
+                                'Gracias por tu opinión',
+                                backgroundColor: colorScheme.primary,
+                                colorText: colorScheme.onPrimary,
+                                margin: const EdgeInsets.all(20),
+                                borderRadius: 8,
+                              );
+                              _showReviewForm.value = false;
+                              _reviewController.clear();
+                              _reviewRating.value = 5;
+                              // Reload product to show new review
+                              _loadProductDetails();
+                            } else {
+                              Get.snackbar(
+                                'Error',
+                                'No se pudo enviar la reseña',
+                                backgroundColor: colorScheme.error,
+                                colorText: colorScheme.onError,
+                                margin: const EdgeInsets.all(20),
+                                borderRadius: 8,
+                              );
+                            }
+                          } finally {
+                            _isSubmittingReview.value = false;
+                          }
+                        },
+                  child: _isSubmittingReview.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Enviar'),
+                ),
+              ],
+            );
+          }),
         ],
       ),
     );

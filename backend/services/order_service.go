@@ -433,8 +433,17 @@ func (s *OrderService) UpdateOrderPayment(ctx context.Context, orderID string, p
 		return errors.New("order not updated")
 	}
 
-	// Auto-transition to paid status if payment info is provided
-	return s.UpdateOrderStatus(ctx, orderID, models.OrderStatusPaid)
+	// Only auto-transition to paid if not already in a paid/completed/cancelled
+	// state. Webhooks also call this path, so we guard against double transitions
+	// by relying on UpdateOrderStatus's CanTransitionTo validation.
+	order, err := s.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	if order.Status == models.OrderStatusPending {
+		return s.UpdateOrderStatus(ctx, orderID, models.OrderStatusPaid)
+	}
+	return nil
 }
 
 // GetOrderStats returns basic order statistics

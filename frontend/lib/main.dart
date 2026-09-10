@@ -15,6 +15,7 @@ import 'widgets/cart_icon.dart';
 import 'widgets/auth_guard.dart';
 import 'widgets/auth_callback_screen.dart';
 import 'widgets/order_history_screen.dart';
+import 'widgets/wishlist_screen.dart';
 import 'widgets/storefront_widget.dart';
 import 'widgets/footer.dart';
 import 'services/order_service.dart';
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
       home: const MainScreen(),
       getPages: [
         GetPage(name: '/auth/callback', page: () => const AuthCallbackScreen()),
+        GetPage(name: '/wishlist', page: () => const WishlistScreen()),
       ],
     );
   }
@@ -213,6 +215,13 @@ class _MainScreenState extends State<MainScreen> {
           onPressed: () {
             _onItemTapped(0);
           },
+        ),
+        IconButton(
+          icon: Icon(Icons.favorite_border, color: colorScheme.onSurfaceVariant),
+          onPressed: () {
+            Get.toNamed('/wishlist');
+          },
+          tooltip: 'Lista de deseos',
         ),
         const CartIcon(),
         const SizedBox(width: 4),

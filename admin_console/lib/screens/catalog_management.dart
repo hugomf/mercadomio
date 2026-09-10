@@ -131,6 +131,71 @@ class _CatalogManagementScreenState extends State<CatalogManagementScreen> {
     }
   }
 
+  Future<void> _showAddProductDialog(BuildContext context) async {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController(text: '0.00');
+    final skuCtrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Product'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: priceCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Base Price'),
+              ),
+              TextField(
+                controller: skuCtrl,
+                decoration: const InputDecoration(labelText: 'SKU'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              final price = double.tryParse(priceCtrl.text);
+              final sku = skuCtrl.text.trim();
+              if (name.isEmpty || price == null || sku.isEmpty) {
+                return;
+              }
+              try {
+                await _service.createProduct(
+                  name: name,
+                  basePrice: price,
+                  sku: sku,
+                );
+                if (!mounted) return;
+                Navigator.pop(context);
+                _load();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditDialog(Product product) {
     showDialog(
       context: context,
@@ -441,6 +506,13 @@ errorBuilder: (context, error, stackTrace) =>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Catalog Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _showAddProductDialog(context),
+            tooltip: 'Add Product',
+          ),
+        ],
       ),
       drawer: const custom.NavigationDrawer(),
       body: Column(

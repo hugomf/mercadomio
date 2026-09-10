@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto"
+	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -15,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"mercadomio-backend/models"
@@ -208,18 +210,141 @@ func (s *PaymentService) GetPaymentIntent(paymentIntentID string) (*stripe.Payme
 	return pi, nil
 }
 
-// ValidateWebhookSignature validates Stripe webhook signatures
+// ValidateWebhookSignature validates Stripe webhook signatures using HMAC-SHA256.
+// Requires STRIPE_WEBHOOK_SECRET in the environment.
+// Returns an error when the secret is missing or the signature is invalid.
 func (s *PaymentService) ValidateWebhookSignature(payload []byte, signature string) error {
-	// Webhook signature validation
 	endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
 	if endpointSecret == "" {
-		return fmt.Errorf("webhook secret not configured")
+		return fmt.Errorf("STRIPE_WEBHOOK_SECRET not configured")
+	}
+	if err := verifyStripeSignature(payload, signature, endpointSecret); err != nil {
+		return fmt.Errorf("failed to verify webhook signature: %w", err)
+	}
+	ev, err := stripeEventFromPayload(payload)
+	if err != nil {
+		return fmt.Errorf("failed to parse stripe event: %w", err)
+	}
+	log.Printf("[stripe-webhook] verified event %s type=%s", ev.ID, ev.Type)
+	return nil
+}
+
+// HandleStripeWebhook processes a Stripe webhook event. Returns the event type
+// and true if the event was handled (order.paid / payment_intent.succeeded).
+func (s *PaymentService) HandleStripeWebhook(ctx context.Context, payload []byte, signature string) (string, error) {
+	endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	if endpointSecret == "" {
+		return "", fmt.Errorf("STRIPE_WEBHOOK_SECRET not configured")
 	}
 
-	// In a real implementation, you'd validate the signature here
-	// For demo purposes, we'll just log it
-	log.Printf("Webhook signature validation: %s", signature)
+	if err := verifyStripeSignature(payload, signature, endpointSecret); err != nil {
+		return "", fmt.Errorf("failed to verify webhook signature: %w", err)
+	}
+
+	ev, err := stripeEventFromPayload(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse stripe event: %w", err)
+	}
+
+	switch ev.Type {
+	case stripe.EventType("payment_intent.succeeded"), stripe.EventType("charge.succeeded"):
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(ev.Data.Raw, &pi); err != nil {
+			return string(ev.Type), fmt.Errorf("failed to parse payment intent: %w", err)
+		}
+		orderID := pi.Metadata["order_id"]
+		if orderID == "" {
+			return string(ev.Type), fmt.Errorf("webhook missing order_id metadata")
+		}
+
+		order, err := s.orderService.GetOrderByID(ctx, orderID)
+		if err != nil {
+			return string(ev.Type), fmt.Errorf("failed to resolve order: %w", err)
+		}
+
+		// Deduplicate: already paid → acknowledge without reprocessing
+		if order.Status == models.OrderStatusPaid || order.Status == models.OrderStatusCompleted {
+			log.Printf("[stripe-webhook] order %s already %s; skipping duplicate (event %s)", order.ID.Hex(), order.Status, ev.ID)
+			return string(ev.Type), nil
+		}
+
+		chargeID := ""
+		if pi.LatestCharge != nil {
+			chargeID = pi.LatestCharge.ID
+		}
+
+		paymentInfo := map[string]interface{}{
+			"provider":          "stripe",
+			"payment_intent_id": pi.ID,
+			"charge_id":         chargeID,
+			"amount":            pi.Amount / 100,
+			"currency":          pi.Currency,
+			"status":            "completed",
+			"processed_at":      time.Now().Format(time.RFC3339),
+			"webhook_event_id":  ev.ID,
+		}
+		if err := s.orderService.UpdateOrderPayment(ctx, orderID, paymentInfo); err != nil {
+			return string(ev.Type), fmt.Errorf("failed to mark order paid: %w", err)
+		}
+		log.Printf("[stripe-webhook] order %s marked paid via stripe (event %s)", orderID, ev.ID)
+		return string(ev.Type), nil
+
+	case stripe.EventType("payment_intent.payment_failed"), stripe.EventType("charge.failed"):
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(ev.Data.Raw, &pi); err != nil {
+			return string(ev.Type), fmt.Errorf("failed to parse payment intent: %w", err)
+		}
+		orderID := pi.Metadata["order_id"]
+		if err := s.orderService.UpdateOrderStatus(ctx, orderID, models.OrderStatusCancelled); err != nil {
+			log.Printf("[stripe-webhook] failed to cancel order %s: %v", orderID, err)
+		}
+		return string(ev.Type), nil
+	}
+
+	return string(ev.Type), nil
+}
+
+// verifyStripeSignature verifies the Stripe webhook signature using HMAC-SHA256.
+// Stripe signs the raw payload body concatenated with the version prefix "v1=".
+func verifyStripeSignature(payload []byte, signatureHeader string, secret string) error {
+	if secret == "" {
+		return fmt.Errorf("webhook secret not configured")
+	}
+	if signatureHeader == "" {
+		return fmt.Errorf("missing Stripe-Signature header")
+	}
+	// Stripe sends signature as "v1=<hex_hmac>"
+	parts := strings.Split(signatureHeader, ",")
+	var sigValue string
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if strings.HasPrefix(part, "v1=") {
+			sigValue = strings.TrimPrefix(part, "v1=")
+			break
+		}
+	}
+	if sigValue == "" {
+		return fmt.Errorf("no v1 signature found in Stripe-Signature header")
+	}
+	expectedMAC, err := base64.StdEncoding.DecodeString(sigValue)
+	if err != nil {
+		return fmt.Errorf("failed to decode signature: %w", err)
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(payload)
+	if !hmac.Equal(mac.Sum(nil), expectedMAC) {
+		return fmt.Errorf("stripe webhook signature verification failed")
+	}
 	return nil
+}
+
+// stripeEventFromPayload parses the raw event after signature verification.
+func stripeEventFromPayload(payload []byte) (*stripe.Event, error) {
+	var ev stripe.Event
+	if err := json.Unmarshal(payload, &ev); err != nil {
+		return nil, fmt.Errorf("failed to parse stripe event: %w", err)
+	}
+	return &ev, nil
 }
 
 // GetPublicKey returns the Stripe public key for client-side use
