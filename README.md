@@ -1,312 +1,108 @@
 # MercadoMío 🏪
 
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
-![Tests](https://img.shields.io/badge/unit%20tests-19%20PASSING-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 ## Complete E-commerce Platform 🌟
 
-A professional **Order Management System** with **Payment Processing** built using modern technologies:
+A Mexican grocery e-commerce platform with a Go backend, two Flutter clients
+(storefront + admin console), and a federated identity provider.
 
-- **🛠️ Backend**: Go + MongoDB + Redis + Stripe Payments
-- **📱 Frontend**: Flutter + Material You Design + Professional UI
-- **🔐 Security**: JWT Authentication + Payment Security
-- **🧪 Testing**: 100% Test Coverage + TDD Development
-- **🚀 Production**: Docker + Containerized + Scalable
+- **Backend**: Go + Fiber + MongoDB + Redis
+- **Storefront**: Flutter (web/native), Material-based UI, Spanish
+- **Admin console**: Flutter app for staff (catalog, inventory, orders, pricing)
+- **Auth**: OIDC via [userbrew](https://github.com/sonnora-mx/userbrew) (PKCE)
+- **Payments**: Conekta hosted checkout, with Stripe webhooks retained
+- **Images**: imgvault service for product image storage/transformation
 
-### ✨ Features
+## Components
 
-#### 🎨 Order Management (v0.0.2)
-- ✅ **Complete Order Lifecycle**: Cart → Order → Payment → Tracking → Delivery
-- ✅ **Professional UI**: Material You design with gradients & animations
-- ✅ **Real-time Tracking**: Status updates with timeline visualization
-- ✅ **Mobile-First**: Touch-optimized e-commerce experience
+| Service | Tech | Notes |
+|---|---|---|
+| `backend/` | Go / Fiber | Resource server, port 8080 |
+| `frontend/` | Flutter | Customer storefront |
+| `admin_console/` | Flutter | Admin / staff console |
+| userbrew | Rust / Axum | External IdP (OIDC) |
+| imgvault | — | External image service |
+| MongoDB + Redis | — | Data + cache/eventing |
 
-#### 💳 Payment Processing
-- ✅ **Stripe Integration**: Secure PaymentIntent processing
-- ✅ **Production Ready**: Webhooks + status synchronization
-- ✅ **Demo Mode**: Payment simulation for testing
-- ✅ **Error Handling**: Comprehensive payment validation
+## Run it
 
-#### 🔐 Security & Auth
-- ✅ **JWT Authentication**: Secure login/registration
-- ✅ **User Ownership**: Protected order access
-- ✅ **Payment Security**: PCI-compliant payment processing
+Local dev uses the scripts in `scripts/` (which load `backend/local.env`):
 
-#### 🧪 Quality Assurance
-- ✅ Backend unit test suite passing (currently 19)
-- ✅ TDD Development: Tests-first professional workflow
-- ✅ Clean Builds: No warnings, production-ready
-
-## Architecture Overview
-
-```mermaid
-flowchart TD
-    A[Frontend\nFlutter App:3000] --> B[Backend\nGo Service:8080]
-    B --> C[(MongoDB:27017)]
-    B --> D[Redis:6379]
-    E[Directus CMS:8055] --> F[(PostgreSQL:5432)]
-    style A fill:#90EE90
-    style B fill:#ADD8E6
-    style C fill:#FFA07A
-    style D fill:#FF6347
-    style E fill:#9370DB
-    style F fill:#20B2AA
-```
-
-### Components
-- **Frontend**: Flutter application (port 3000)
-- **Backend**: Go service using MongoDB (port 8080)
-- **Directus**: CMS using PostgreSQL (port 8055)
-- **Redis**: Caching service (port 6379)
-
-## Services
-
-```mermaid
-classDiagram
-    class MongoDB {
-        +Port: 27017
-        +Type: Document
-        +Usage: Backend data
-    }
-    class PostgreSQL {
-        +Port: 5432
-        +Type: Relational
-        +Usage: Directus CMS
-    }
-    class Redis {
-        +Port: 6379
-        +Type: Key-Value
-        +Usage: Caching
-    }
-```
-
-### Database Services
-- **MongoDB**: Document database for backend (port 27017)
-- **PostgreSQL**: Relational database for Directus (port 5432)
-
-### Application Services
-- `backend`: Go service (MongoDB)
-- `frontend`: Flutter web app
-- `directus`: Headless CMS (PostgreSQL)
-
-## 🚀 How to Run the Application
-
-### Method A: Docker (Recommended) 🐳
-
-**Prerequisites:**
-- Docker & Docker Compose installed
-- Ports 3000, 8080, 8055 available
-
-**Start Everything:**
 ```bash
-# Clone the repository
-git clone https://github.com/hugomf/mercadomio.git
-cd mercadomio
+# Full dependent stack (Mongo, Redis, platform services) + backend
+./scripts/start.sh
 
-# Start all services (MongoDB, Redis, Backend, Frontend, CMS)
-docker-compose up -d --build
+# Storefront (Flutter web)
+./scripts/frontend.sh
 
-# Check status
-docker-compose ps
+# Admin console (Flutter web)
+./scripts/admin-console.sh
 
-# View logs
-docker-compose logs -f
+# Everything in one terminal layout
+zellij ... # see scripts/layout.kdl
 ```
 
-**Access Applications:**
-- 🌐 **Frontend (Order Management UI)**: http://localhost:3000
-  - Tap "Orders" tab to see professional order interface
-  - Login/Register to view order history & details
-- 🚀 **Backend API Health**: http://localhost:8080/health
-- 🎨 **Directus CMS**: http://localhost:8055
+Seeds are in `seed/` (e.g. `seed/seed_grocery.sh`); `seed/scrape-natura-api.sh`
+imports the product catalog.
 
-### Method B: Local Development 💻
+Multi-environment deployment (dev/qa/prod) lives in `platform/` and is driven by
+`deploy.sh` + `scripts/publish-images.sh` + `scripts/setup-userbrew.sh`.
+See `docs/setup.md` and `docs/SESSION_LOG.md`.
 
-**Prerequisites:**
-- Go 1.24+, MongoDB, Redis running locally
-- Flutter SDK for mobile development
-- Node.js for CMS (if needed)
+## Backend
 
-**1. Backend (Go):**
 ```bash
 cd backend
-
-# Copy environment
-cp .env.example .env
-# Edit .env with your MongoDB/Redis URLs
-
-# Install dependencies
-go mod tidy
-
-# Run tests
-go test ./services/ ./tests/ -v
-
-# Start server
-go run main.go
-```
-Backend runs on: http://localhost:8080
-
-**2. Frontend (Flutter):**
-```bash
-cd frontend
-
-# Get dependencies
-flutter pub get
-
-# Run on web (Chrome)
-flutter run -d chrome
-
-# Or run on iOS simulator
-flutter run -d <device_id>
-```
-Frontend runs on: http://localhost:3000
-
-**3. Demo Flow:**
-1. Open Flutter app at http://localhost:3000
-2. Register/Login with any credentials (will create account)
-3. Go to "Orders" tab
-4. Click "View Order History" to see empty state
-5. Click "View Order Details" to see mock data with UI components
-6. Try Payment Integration features (simulation mode)
-
-## 🧪 Testing & Development
-
-**Run Backend Tests:**
-```bash
-cd backend
-go test ./services/ -v       # unit tests (no external services required)
-go test ./tests/ -v          # integration tests (requires local MongoDB)
+cp .env.example .env   # or backend/local.env via scripts/start.sh
+GOROOT= go build ./...          # builds against the repo Go toolchain
+GOROOT= go vet ./...
+go test ./...
+go run main.go                   # serves on :8080, /health
 ```
 
-**Run Frontend Tests:**
-```bash
-cd frontend
-flutter test
-```
+> Note: AGENTS.md documents that the checked-out `go` may point at an older
+> gvm toolchain. Build with `GOROOT=` unset to use the updated one, or verify
+> `go version` first.
 
-**Development Workflow:**
-- Feature branch → write tests → implement → test → commit
-- All tests must pass before commits
-- Update CHANGELOG.md for releases
-- Use descriptive commit messages
+## API
 
-## 🔗 API Endpoints
+Public/paginated endpoints under `/api`:
 
-**Core APIs:**
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - JWT authentication
-- `GET /api/auth/profile` - User profile (protected)
-- `POST /api/orders` - Create order from cart (protected)
-- `GET /api/orders` - User order history (protected)
-- `GET /api/orders/:id` - Order details (protected)
-- `POST /api/payments/create-payment-intent` - Create Stripe PaymentIntent (protected)
-- `POST /api/payments/confirm` - Confirm payment (protected)
-- `POST /api/payments/simulate-success` - Demo payment simulation (protected)
+- `GET /api/products` — product listing w/ search (`q`, `category`, `minPrice`,
+  `maxPrice`, `type`, `sort`, `order`)
+- `GET /api/products/:id` — product detail
+- `GET /api/categories` — category tree (nested, image-resolved)
+- `GET /api/cart/:cartId` and cart mutation endpoints (optional auth)
+- `GET /api/orders`, `GET /api/orders/:id`, `POST /api/orders`
+- `GET /payments/confirmation`, `/payments/cancelled` — provider redirect pages
 
-**API Documentation:** See `docs/api-documentation.md` for complete specs.
+Customer-identity endpoints under `/api/auth` (userbrew-token protected) cover
+profile, addresses, payment methods, and wishlist.
 
-## ⚙️ Configuration
+Admin-only endpoints (require the `mercadomio-admin` OIDC audience/role):
 
-**Backend (.env):**
-```bash
-MONGO_URI=mongodb://localhost:27017
-REDIS_ADDR=localhost:6379
-JWT_SECRET=your_secret_key
-# Payment provider keys — see backend/.env.example for the full list
-```
+- `PUT /api/orders/:id/status`, `GET /api/orders/admin`, `GET /api/orders/admin/stats`
+- `POST/PUT/DELETE /api/products*`, `/api/categories*`
+- `/api/pricing/*` price sets / schedules / history / resolve
+- `/api/analytics/*` cart, conversion, product-view, and search analytics
 
-**Stripe Setup:**
-1. Get API keys from [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
-2. Add to backend `.env` file
-3. For testing, use [Stripe Test Cards](https://docs.stripe.com/testing#cards)
-
-**Quick Docker Setup:**
-```bash
-git clone https://github.com/hugomf/mercadomio.git
-cd mercadomio
-docker-compose up -d --build
-# Access: http://localhost:3000
-```
+Payments use Conekta hosted checkout (`POST /api/payments/checkout`) with
+webhook + signature verification; Stripe PaymentIntent endpoints and webhooks
+are retained.
 
 ## Testing
 
-To run backend tests and see coverage:
-
 ```bash
-cd backend
-go test -coverprofile=coverage.out ./...
-go tool cover -func=coverage.out
+cd backend && go test ./...
+cd frontend && flutter test
+cd admin_console && flutter analyze
 ```
 
-## Contributing
+## More docs
 
-1. Fork the repo and create your branch from `main`.
-2. Make your changes and add tests.
-3. Run tests and ensure coverage is high.
-4. Submit a pull request!
-
-## License
-
-This project is licensed under the MIT License.
-
-## Links
-
-- [GitHub Repo](https://github.com/hugomf/mercadomio-copilot)
-- [Issues](https://github.com/hugomf/mercadomio-copilot/issues)
-- [Directus](https://directus.io/)
-- [Flutter](https://flutter.dev/)
-
-## Volumes
-- `mongo_data`: MongoDB data persistence
-- `postgres_data`: PostgreSQL data persistence
-- `redis_data`: Redis data persistence
-
-## Data Synchronization
-
-```mermaid
-sequenceDiagram
-    participant MongoDB
-    participant SyncService
-    participant Redis
-    participant PostgreSQL
-    MongoDB->>SyncService: Change Stream Events
-    SyncService->>Redis: Publish Changes
-    Redis->>PostgreSQL: Subscribe and Apply
-    PostgreSQL-->>SyncService: Ack
-```
-
-### Synchronization Strategy
-
-1. **MongoDB Change Streams**:
-   - Monitor product collection changes
-   - Capture create/update/delete events
-
-2. **Redis Pub/Sub**:
-   - Acts as message broker
-   - Decouples MongoDB and PostgreSQL
-
-3. **Sync Service**:
-   - Processes change events
-   - Maintains data consistency
-   - Handles conflicts and retries
-
-### Implementation Notes
-
-- Critical operations use transactions
-- Eventual consistency model
-- Monitoring for drift detection
-
-## Maintenance
-
-To completely reset the system:
-
-```bash
-docker-compose down -v
-```
-
-To view logs:
-
-```bash
-docker-compose logs -f [service_name]
-```
+- `docs/api-documentation.md` — API reference
+- `docs/AUTH-ARCHITECTURE.md` — OIDC/userbrew auth design
+- `docs/ROADMAP.md` — development roadmap
+- `docs/CHANGELOG.md`, `docs/SESSION_LOG.md` — change history

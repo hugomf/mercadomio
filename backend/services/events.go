@@ -112,3 +112,16 @@ type ProductViewed struct {
 func (e ProductViewed) EventType() string     { return "product.viewed" }
 func (e ProductViewed) AggregateID() string   { return e.ProductID }
 func (e ProductViewed) OccurredAt() time.Time { return e.Timestamp }
+
+// SearchPerformed represents when a user searches the product catalog
+type SearchPerformed struct {
+	Query       string                 `json:"query"`
+	UserID      string                 `json:"userId,omitempty"`
+	ResultCount int                    `json:"resultCount"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (e SearchPerformed) EventType() string     { return "search.performed" }
+func (e SearchPerformed) AggregateID() string   { return e.Query }
+func (e SearchPerformed) OccurredAt() time.Time { return e.Timestamp }

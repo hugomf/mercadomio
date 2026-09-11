@@ -52,11 +52,11 @@ func (h *AnalyticsHandlers) GetProductViews(c *fiber.Ctx) error {
 
 // GetSearchAnalytics handles GET /api/analytics/search
 func (h *AnalyticsHandlers) GetSearchAnalytics(c *fiber.Ctx) error {
-	return c.JSON(fiber.Map{
-		"message": "Search analytics implemented",
-		"data": []map[string]interface{}{
-			{"query": "example query", "count": 10},
-			{"query": "another query", "count": 5},
-		},
-	})
+	start := c.Query("start")
+	end := c.Query("end")
+	results, err := h.AnalyticsService.GetSearchAnalytics(c.Context(), start, end)
+	if err != nil {
+		return middleware.InternalError(err.Error())
+	}
+	return c.JSON(results)
 }

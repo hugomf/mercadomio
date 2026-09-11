@@ -88,6 +88,17 @@ class CategoryService extends GetxController {
     return categories.where((c) => c.parentId == null).toList();
   }
 
+  /// Flattened list of every category in the tree (roots + one level of
+  /// children) so pills and sidebars can offer subcategory navigation.
+  List<models.Category> get allCategories {
+    final result = <models.Category>[];
+    for (final root in categories) {
+      result.add(root);
+      result.addAll(root.children);
+    }
+    return result;
+  }
+
   Future<List<models.Category>> getCategories() async {
     try {
       final apiUrl = await getApiUrl();
@@ -120,7 +131,10 @@ class CategoryService extends GetxController {
 
   Future<List<models.Category>> getChildCategories(String parentId) async {
     await getCategories();
-    return categories.where((c) => c.parentId == parentId).toList();
+    for (final root in categories) {
+      if (root.id == parentId) return root.children;
+    }
+    return [];
   }
 
   void addSelectedCategory(String id, String name) {
@@ -174,8 +188,13 @@ class CategoryService extends GetxController {
 
   void removeSelectedCategory(String id) {
     selectedCategories.remove(id);
-    selectedCategoryNames.removeWhere((name) =>
-      categories.firstWhere((c) => c.id == id).name == name);
+    final found = allCategories.cast<models.Category?>().firstWhere(
+      (c) => c?.id == id,
+      orElse: () => null,
+    );
+    if (found != null) {
+      selectedCategoryNames.remove(found.name);
+    }
     // Backward compatibility
     if (selectedCategories.isEmpty) {
       selectedCategoryName.value = '';
@@ -260,7 +279,7 @@ class CategoryService extends GetxController {
       }
 
       if (!isAllSelected() && selectedCategories.isNotEmpty) {
-        queryParams['category'] = selectedCategoryNames.join(',');
+        queryParams['category'] = selectedCategories.join(',');
       }
 
       if (minPrice != null) {

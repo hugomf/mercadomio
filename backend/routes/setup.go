@@ -34,7 +34,7 @@ func SetupRoutes(app *fiber.App, deps *RouteDependencies) {
 	})
 
 	// Initialize handlers
-	productHandlers := handlers.NewProductHandlers(deps.ProductService, deps.SearchService, deps.AnalyticsService, deps.PricingService)
+	productHandlers := handlers.NewProductHandlers(deps.ProductService, deps.SearchService, deps.AnalyticsService, deps.PricingService, deps.EventBus)
 	cartHandlers := handlers.NewCartHandlers(deps.CartService)
 	analyticsHandlers := handlers.NewAnalyticsHandlers(deps.AnalyticsService)
 
@@ -92,4 +92,5 @@ type RouteDependencies struct {
 	OrderService     *services.OrderService
 	PaymentService   *services.PaymentService
 	PricingService   *services.PricingService
+	EventBus         services.EventBus
 }

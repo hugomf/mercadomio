@@ -47,6 +47,7 @@ type CartAnalyticsConfig struct {
 	TrackAbandonedCarts bool          `json:"trackAbandonedCarts" bson:"trackAbandonedCarts"`
 	TrackConversions    bool          `json:"trackConversions" bson:"trackConversions"`
 	TrackItemViews      bool          `json:"trackItemViews" bson:"trackItemViews"`
+	TrackSearches       bool          `json:"trackSearches" bson:"trackSearches"`
 	RetentionPeriod     time.Duration `json:"retentionPeriod" bson:"retentionPeriod" validate:"required"`
 }
 
@@ -56,6 +57,7 @@ func NewCartAnalyticsConfig() *CartAnalyticsConfig {
 		TrackAbandonedCarts: true,
 		TrackConversions:    true,
 		TrackItemViews:      true,
+		TrackSearches:       true,
 		RetentionPeriod:     90 * 24 * time.Hour, // 90 days
 	}
 }

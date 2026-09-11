@@ -108,3 +108,9 @@ type CartAnalyticsResult struct {
 	Count int     `json:"count" bson:"count"`
 	Value float64 `json:"value,omitempty" bson:"value,omitempty"`
 }
+
+// SearchAnalyticsResult represents top search query analytics
+type SearchAnalyticsResult struct {
+	Query string `json:"query" bson:"_id"`
+	Count int    `json:"count" bson:"count"`
+}

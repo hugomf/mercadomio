@@ -17,7 +17,7 @@ type (
 		GetChildCategories(ctx context.Context, parentID primitive.ObjectID) ([]Category, error)
 		UpdateCategory(ctx context.Context, id primitive.ObjectID, updates bson.M) error
 		DeleteCategory(ctx context.Context, id primitive.ObjectID) error
-		GetCategoryTree(ctx context.Context) ([]Category, error)
+		GetCategoryTree(ctx context.Context) ([]*CategoryNode, error)
 	}
 
 	ProductService interface {
@@ -50,5 +50,6 @@ type (
 		UpdateCartItem(ctx context.Context, cartID, productID, variantID string, quantity int) error
 		RemoveFromCart(ctx context.Context, cartID, productID, variantID string) error
 		MergeCarts(ctx context.Context, guestCartID, userCartID string) error
+		ClearCart(ctx context.Context, cartID string) error
 	}
 )

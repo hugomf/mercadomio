@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 )
@@ -13,35 +14,75 @@ type EventHandler func(ctx context.Context, event DomainEvent) error
 // EventBus defines the interface for publishing and subscribing to domain events
 type EventBus interface {
 	Publish(ctx context.Context, event DomainEvent) error
-	Subscribe(eventPattern string, handler EventHandler)
+	Subscribe(eventPattern string, handler EventHandler) func()
 	Unsubscribe(eventPattern string, handler EventHandler)
+}
+
+type handlerEntry struct {
+	id      uint64
+	handler EventHandler
 }
 
 // InMemoryEventBus is a simple in-memory implementation of EventBus
 type InMemoryEventBus struct {
-	handlers map[string][]EventHandler
+	handlers map[string][]handlerEntry
 	mu       sync.RWMutex
+	nextID   uint64
 }
 
 // NewInMemoryEventBus creates a new in-memory event bus
 func NewInMemoryEventBus() *InMemoryEventBus {
 	return &InMemoryEventBus{
-		handlers: make(map[string][]EventHandler),
+		handlers: make(map[string][]handlerEntry),
 	}
 }
 
 // Subscribe registers an event handler for a specific event pattern
 // Patterns support wildcards: "cart.*" matches all cart events, "*" matches all events
-func (bus *InMemoryEventBus) Subscribe(eventPattern string, handler EventHandler) {
+// Returns an unsubscribe function that removes exactly this registration.
+func (bus *InMemoryEventBus) Subscribe(eventPattern string, handler EventHandler) func() {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
-	bus.handlers[eventPattern] = append(bus.handlers[eventPattern], handler)
+	id := bus.nextID
+	bus.nextID++
+	bus.handlers[eventPattern] = append(bus.handlers[eventPattern], handlerEntry{id: id, handler: handler})
+	return func() {
+		bus.mu.Lock()
+		defer bus.mu.Unlock()
+		entries := bus.handlers[eventPattern]
+		for i, e := range entries {
+			if e.id == id {
+				bus.handlers[eventPattern] = append(entries[:i], entries[i+1:]...)
+				if len(bus.handlers[eventPattern]) == 0 {
+					delete(bus.handlers, eventPattern)
+				}
+				break
+			}
+		}
+	}
 }
 
-// Unsubscribe removes an event handler (not implemented for simplicity)
+// Unsubscribe removes an event handler by function pointer comparison.
+// This is kept for backward compatibility; prefer the func() returned by Subscribe
+// for precise removal (pointer comparison cannot distinguish different receivers
+// that share the same method).
 func (bus *InMemoryEventBus) Unsubscribe(eventPattern string, handler EventHandler) {
-	// Implementation would require comparing function pointers, which is complex
-	// For now, we'll keep this simple and not implement unsubscribe
+	bus.mu.Lock()
+	defer bus.mu.Unlock()
+	entries := bus.handlers[eventPattern]
+	if len(entries) == 0 {
+		return
+	}
+	targetPtr := reflect.ValueOf(handler).Pointer()
+	for i, e := range entries {
+		if reflect.ValueOf(e.handler).Pointer() == targetPtr {
+			bus.handlers[eventPattern] = append(entries[:i], entries[i+1:]...)
+			if len(bus.handlers[eventPattern]) == 0 {
+				delete(bus.handlers, eventPattern)
+			}
+			break
+		}
+	}
 }
 
 // Publish publishes an event to all matching subscribers
@@ -50,9 +91,11 @@ func (bus *InMemoryEventBus) Publish(ctx context.Context, event DomainEvent) err
 	var matchingHandlers []EventHandler
 	// Find all handlers that match the event type
 	eventType := event.EventType()
-	for pattern, handlers := range bus.handlers {
+	for pattern, entries := range bus.handlers {
 		if bus.matchesPattern(eventType, pattern) {
-			matchingHandlers = append(matchingHandlers, handlers...)
+			for _, e := range entries {
+				matchingHandlers = append(matchingHandlers, e.handler)
+			}
 		}
 	}
 	bus.mu.RUnlock()
@@ -174,6 +217,32 @@ func NewMetricsEventBus(eventBus EventBus) *MetricsEventBus {
 			EventsByType: make(map[string]int64),
 		},
 	}
+}
+
+// Subscribe tracks handler count and delegates to the wrapped bus.
+func (bus *MetricsEventBus) Subscribe(eventPattern string, handler EventHandler) func() {
+	bus.mu.Lock()
+	bus.metrics.ActiveHandlers++
+	bus.mu.Unlock()
+	unsub := bus.EventBus.Subscribe(eventPattern, handler)
+	return func() {
+		unsub()
+		bus.mu.Lock()
+		if bus.metrics.ActiveHandlers > 0 {
+			bus.metrics.ActiveHandlers--
+		}
+		bus.mu.Unlock()
+	}
+}
+
+// Unsubscribe delegates and decrements the handler metric.
+func (bus *MetricsEventBus) Unsubscribe(eventPattern string, handler EventHandler) {
+	bus.EventBus.Unsubscribe(eventPattern, handler)
+	bus.mu.Lock()
+	if bus.metrics.ActiveHandlers > 0 {
+		bus.metrics.ActiveHandlers--
+	}
+	bus.mu.Unlock()
 }
 
 // Publish publishes an event and updates metrics

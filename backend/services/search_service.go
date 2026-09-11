@@ -37,8 +37,12 @@ func (ss *searchServiceImpl) SearchProducts(ctx context.Context, params SearchPa
 		// filter["$text"] = bson.M{"$search": params.Query}
 	}
 
-	// Category filter (case-insensitive)
-	if len(params.Categories) > 0 {
+	// Category filter: prefer hierarchical ObjectID filtering (includes child
+	// categories) when category IDs are provided, falling back to the legacy
+	// name-based regex match.
+	if len(params.CategoryIDs) > 0 {
+		filter["categories"] = bson.M{"$in": params.CategoryIDs}
+	} else if len(params.Categories) > 0 {
 		// Filter by category name (case-insensitive)
 		if len(params.Categories) == 1 {
 			// Single category

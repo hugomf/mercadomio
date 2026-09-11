@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -70,6 +71,7 @@ type AnalyticsService interface {
 	GetAbandonedCartAnalytics(ctx context.Context, start, end string) ([]CartAnalyticsResult, error)
 	GetConversionAnalytics(ctx context.Context, start, end string) ([]CartAnalyticsResult, error)
 	GetProductViewAnalytics(ctx context.Context, start, end string) ([]CartAnalyticsResult, error)
+	GetSearchAnalytics(ctx context.Context, start, end string) ([]SearchAnalyticsResult, error)
 
 	// Infrastructure
 	EnsureIndexes(ctx context.Context) error
@@ -80,6 +82,9 @@ type AnalyticsServiceImpl struct {
 	db       *mongo.Database
 	config   *CartAnalyticsConfig
 	eventBus EventBus
+	mu       sync.Mutex
+	started  bool
+	unsubs   []func()
 }
 
 // NewAnalyticsService creates a new analytics service
@@ -91,23 +96,52 @@ func NewAnalyticsService(db *mongo.Database, config *CartAnalyticsConfig, eventB
 	}
 }
 
-// Start begins listening for domain events
+// Start begins listening for domain events. It is idempotent –
+ // calling it twice does not create duplicate subscriptions.
 func (as *AnalyticsServiceImpl) Start() error {
-	// Subscribe to all cart-related events
-	as.eventBus.Subscribe("cart.*", as.handleCartEvent)
-	as.eventBus.Subscribe("product.viewed", as.handleProductViewed)
+	as.mu.Lock()
+	defer as.mu.Unlock()
+	if as.started {
+		return nil
+	}
+	if as.eventBus == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		return as.EnsureIndexes(ctx)
+	}
 
-	// Ensure indexes are created
+	// Ensure indexes first so a DB error does not leave leaked subscriptions.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	if err := as.EnsureIndexes(ctx); err != nil {
+		return err
+	}
 
-	return as.EnsureIndexes(ctx)
+	// Subscribe and keep unsubscribe handles for Stop.
+	as.unsubs = []func(){
+		as.eventBus.Subscribe("cart.*", as.handleCartEvent),
+		as.eventBus.Subscribe("product.viewed", as.handleProductViewed),
+		as.eventBus.Subscribe("search.performed", as.handleSearchPerformed),
+	}
+	as.started = true
+	return nil
 }
 
-// Stop stops the analytics service (cleanup if needed)
+// Stop unsubscribes from all domain events. It is safe to call
+// multiple times and after a failed Start.
 func (as *AnalyticsServiceImpl) Stop() error {
-	// In a more sophisticated implementation, we would unsubscribe from events
-	// For now, this is a no-op
+	as.mu.Lock()
+	defer as.mu.Unlock()
+	if !as.started {
+		return nil
+	}
+	for _, unsub := range as.unsubs {
+		if unsub != nil {
+			unsub()
+		}
+	}
+	as.unsubs = nil
+	as.started = false
 	return nil
 }
 
@@ -286,6 +320,30 @@ func (as *AnalyticsServiceImpl) handleProductViewed(ctx context.Context, event D
 	return as.trackEvent(ctx, analyticsEvent)
 }
 
+// handleSearchPerformed processes search performed events
+func (as *AnalyticsServiceImpl) handleSearchPerformed(ctx context.Context, event DomainEvent) error {
+	searchEvent, ok := event.(SearchPerformed)
+	if !ok {
+		return fmt.Errorf("expected SearchPerformed event, got %T", event)
+	}
+
+	if !as.config.TrackSearches || searchEvent.Query == "" {
+		return nil
+	}
+
+	analyticsEvent := AnalyticsEvent{
+		Type:      "search",
+		UserID:    searchEvent.UserID,
+		Timestamp: searchEvent.Timestamp,
+		Metadata: map[string]interface{}{
+			"query":       searchEvent.Query,
+			"resultCount": searchEvent.ResultCount,
+		},
+	}
+
+	return as.trackEvent(ctx, analyticsEvent)
+}
+
 // trackEvent stores an analytics event in the database
 func (as *AnalyticsServiceImpl) trackEvent(ctx context.Context, event AnalyticsEvent) error {
 	if as.db == nil {
@@ -417,6 +475,70 @@ func (as *AnalyticsServiceImpl) GetProductViewAnalytics(ctx context.Context, sta
 	}
 
 	return as.runAnalyticsQuery(ctx, pipeline)
+}
+
+// GetSearchAnalytics returns the top search queries for a time range
+func (as *AnalyticsServiceImpl) GetSearchAnalytics(ctx context.Context, start, end string) ([]SearchAnalyticsResult, error) {
+	if !as.config.TrackSearches {
+		return []SearchAnalyticsResult{}, nil
+	}
+
+	startTime, endTime, err := parseTimeRange(start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"type": "search",
+				"timestamp": bson.M{
+					"$gte": startTime,
+					"$lte": endTime,
+				},
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id": bson.M{
+					"$toLower": bson.M{
+						"$trim": bson.M{"input": "$metadata.query"},
+					},
+				},
+				"count": bson.M{"$sum": 1},
+			},
+		},
+		{
+			"$sort": bson.M{"count": -1},
+		},
+		{
+			"$limit": 20,
+		},
+	}
+
+	if as.db == nil {
+		return nil, errors.New("database connection not initialized")
+	}
+
+	collection := as.db.Collection("cart_analytics")
+	opts := options.Aggregate().SetMaxTime(30 * time.Second)
+
+	cursor, err := collection.Aggregate(ctx, pipeline, opts)
+	if err != nil {
+		return nil, errors.New("analytics query failed: " + err.Error())
+	}
+	defer cursor.Close(ctx)
+
+	var results []SearchAnalyticsResult
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, errors.New("failed to decode analytics results: " + err.Error())
+	}
+
+	if results == nil {
+		results = []SearchAnalyticsResult{}
+	}
+
+	return results, nil
 }
 
 // runAnalyticsQuery executes an analytics aggregation query
