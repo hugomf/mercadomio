@@ -1199,45 +1199,45 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _cityController,
-                decoration: const InputDecoration(labelText: 'Ciudad'),
-                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _stateController,
-                decoration: const InputDecoration(labelText: 'Estado'),
-                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+            final cityField = TextFormField(
+              controller: _cityController,
+              decoration: const InputDecoration(labelText: 'Ciudad'),
+              validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+            );
+            final stateField = TextFormField(
+              controller: _stateController,
+              decoration: const InputDecoration(labelText: 'Estado'),
+              validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+            );
+            if (isNarrow) {
+              return Column(children: [cityField, const SizedBox(height: 12), stateField]);
+            }
+            return Row(children: [Expanded(child: cityField), const SizedBox(width: 12), Expanded(child: stateField)]);
+          },
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _zipCodeController,
-                decoration: const InputDecoration(labelText: 'Código postal'),
-                keyboardType: TextInputType.number,
-                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _countryController,
-                decoration: const InputDecoration(labelText: 'País'),
-                validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 360;
+            final zipField = TextFormField(
+              controller: _zipCodeController,
+              decoration: const InputDecoration(labelText: 'Código postal'),
+              keyboardType: TextInputType.number,
+              validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+            );
+            final countryField = TextFormField(
+              controller: _countryController,
+              decoration: const InputDecoration(labelText: 'País'),
+              validator: (value) => value?.isEmpty == true ? 'Requerido' : null,
+            );
+            if (isNarrow) {
+              return Column(children: [zipField, const SizedBox(height: 12), countryField]);
+            }
+            return Row(children: [Expanded(child: zipField), const SizedBox(width: 12), Expanded(child: countryField)]);
+          },
         ),
       ],
     );

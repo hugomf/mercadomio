@@ -444,60 +444,72 @@ int _currentPage = 1;
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Title + search
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Historial de Pedidos',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            color: colorScheme.onSurface,
-                          ),
+                  // Title + search — stacks at <700 (tablet narrow)
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 700;
+                      final title = Text(
+                        'Historial de Pedidos',
+                        style: TextStyle(
+                          fontSize: isNarrow ? 28 : 32,
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 280,
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            prefixIcon: Icon(
-                              Icons.search,
-                              size: 20,
-                              color: colorScheme.outline,
-                            ),
-                            hintText: 'Buscar pedido...',
-                            isDense: true,
-                            filled: true,
-                            fillColor: colorScheme.surface,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  BorderSide(color: colorScheme.outlineVariant),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  BorderSide(color: colorScheme.outlineVariant),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 2,
-                              ),
+                      );
+                      final search = TextField(
+                        controller: _searchController,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.search,
+                            size: 20,
+                            color: colorScheme.outline,
+                          ),
+                          hintText: 'Buscar pedido...',
+                          isDense: true,
+                          filled: true,
+                          fillColor: colorScheme.surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                BorderSide(color: colorScheme.outlineVariant),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                BorderSide(color: colorScheme.outlineVariant),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: colorScheme.primary,
+                              width: 2,
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      );
+                      if (isNarrow) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            title,
+                            const SizedBox(height: 12),
+                            search,
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: title),
+                          const SizedBox(width: 16),
+                          SizedBox(width: 280, child: search),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
