@@ -7,6 +7,7 @@ import '../services/cart_controller.dart';
 import '../services/order_service.dart';
 import '../services/config_service.dart';
 import '../services/auth_service.dart';
+import 'terms_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final String cartId;
@@ -1022,18 +1023,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: CheckboxListTile(
-        value: _acceptTerms,
-        onChanged: (value) => setState(() => _acceptTerms = value ?? false),
-        title: const Text('Acepto los términos y condiciones'),
-        subtitle: const Text('Consulta los términos de servicio y la política de privacidad'),
-        controlAffinity: ListTileControlAffinity.leading,
+      child: Column(
+        children: [
+          CheckboxListTile(
+            value: _acceptTerms,
+            onChanged: (value) => setState(() => _acceptTerms = value ?? false),
+            title: const Text('Acepto los términos y condiciones'),
+            subtitle: const Text('Consulta los términos de servicio y la política de privacidad'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 56),
+              child: TextButton(
+                onPressed: () => Get.to(() => const TermsScreen()),
+                child: const Text('Ver Términos y Condiciones'),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1514,9 +1530,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               controlAffinity: ListTileControlAffinity.leading,
             ),
             TextButton(
-              onPressed: () {
-                // TODO: Navigate to terms & conditions
-              },
+              onPressed: () => Get.to(() => const TermsScreen()),
               child: const Text('Ver Términos y Condiciones'),
             ),
           ],
