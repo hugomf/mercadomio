@@ -5,9 +5,15 @@
 
 API_URL="${API_URL:-http://localhost:8080}"
 NATURA_API_BASE="https://ncf-apigw.natura-mx-jcf-prd.naturacloud.com/bff-app-natura-mexico-v2"
-BEARER_TOKEN="REDACTED"
-TENANT_ID="mexico-natura-web"
-API_KEY="REDACTED"
+# Credentials are injected via env — never hard-code them.
+#   export NATURA_BEARER_TOKEN="Bearer <token>"
+#   export NATURA_API_KEY="<uuid>"
+#   export NATURA_TENANT_ID="mexico-natura-web"  # optional, defaults as below
+: "${NATURA_BEARER_TOKEN:?Missing NATURA_BEARER_TOKEN — export NATURA_BEARER_TOKEN='Bearer <token>' (see Natura developer docs)}"
+: "${NATURA_API_KEY:?Missing NATURA_API_KEY — export NATURA_API_KEY='<api-key>'}"
+BEARER_TOKEN="$NATURA_BEARER_TOKEN"
+API_KEY="$NATURA_API_KEY"
+TENANT_ID="${NATURA_TENANT_ID:-mexico-natura-web}"
 
 echo "🌿 Natura Real API Scraper with imgvault Upload"
 echo "📡 Backend API: $API_URL"
