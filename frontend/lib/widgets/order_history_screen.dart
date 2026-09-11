@@ -37,6 +37,17 @@ int _currentPage = 1;
   final TextEditingController _searchController = TextEditingController();
   String _activeFilter = 'Todos';
 
+  void _fetchOrders() {
+    if (widget.seedOrders != null) return;
+    setState(() {
+      _ordersFuture = widget.orderService.getOrderHistory(
+        page: _currentPage,
+        limit: _limit,
+        status: _activeFilter,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +56,7 @@ int _currentPage = 1;
         : widget.orderService.getOrderHistory(
             page: _currentPage,
             limit: _limit,
+            status: _activeFilter,
           );
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
@@ -66,24 +78,9 @@ int _currentPage = 1;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Historial de Pedidos'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filter dialog
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Filtros próximamente!'),
-                  backgroundColor: colorScheme.tertiary,
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: FutureBuilder<OrderHistoryResponse>(
           future: _ordersFuture,
@@ -110,41 +107,80 @@ int _currentPage = 1;
 
             return FadeTransition(
               opacity: _fadeAnimation,
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  setState(() {
-                    _currentPage = 1;
-                    _ordersFuture = widget.orderService.getOrderHistory(
-                      page: _currentPage,
-                      limit: _limit,
-                    );
-                  });
-                },
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: orders.length + (_isLoadingMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= orders.length) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-
-                    final order = orders[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: OrderCard(
-                        order: order,
-                        onTap: () => _navigateToOrderDetails(order),
-                        animationDelay: index * 100,
-                      ),
-                    );
-
-                    // Note: Load more logic would go here for pagination
-                  },
-                ),
+              child: Column(
+                children: [
+                  _buildMobileFilters(),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        List<OrderResponse> displayed = orders;
+                        if (widget.seedOrders != null) {
+                          displayed = displayed.where((o) {
+                            final matchesStatus = switch (_activeFilter) {
+                              'En camino' =>
+                                o.status != OrderStatus.completed &&
+                                    o.status != OrderStatus.cancelled,
+                              'Entregados' =>
+                                o.status == OrderStatus.completed,
+                              'Cancelados' =>
+                                o.status == OrderStatus.cancelled,
+                              _ => true,
+                            };
+                            return matchesStatus;
+                          }).toList();
+                        }
+                        final query =
+                            _searchController.text.trim().toLowerCase();
+                        if (query.isNotEmpty) {
+                          displayed = displayed
+                              .where((o) =>
+                                  o.id.toLowerCase().contains(query))
+                              .toList();
+                        }
+                        if (displayed.isEmpty) {
+                          if (_activeFilter != 'Todos' ||
+                              query.isNotEmpty) {
+                            return _buildFilteredEmptyView();
+                          }
+                          return _buildEmptyView();
+                        }
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            _currentPage = 1;
+                            _fetchOrders();
+                          },
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount:
+                                displayed.length + (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= displayed.length) {
+                                return const Padding(
+                                  padding:
+                                      EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
+                                );
+                              }
+                              final order = displayed[index];
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.only(bottom: 16),
+                                child: OrderCard(
+                                  order: order,
+                                  onTap: () =>
+                                      _navigateToOrderDetails(order),
+                                  animationDelay: index * 100,
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -184,12 +220,8 @@ int _currentPage = 1;
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _ordersFuture = widget.orderService.getOrderHistory(
-                  page: _currentPage,
-                  limit: _limit,
-                );
-              });
+              _currentPage = 1;
+              _fetchOrders();
             },
             child: const Text('Reintentar'),
           ),
@@ -225,6 +257,113 @@ int _currentPage = 1;
               Navigator.of(context).pushNamed('/products');
             },
             child: const Text('Empezar a comprar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilteredEmptyView() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inventory_2_outlined,
+                size: 64, color: colorScheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              'Sin pedidos en esta sección',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Prueba con otro filtro',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                setState(() => _activeFilter = 'Todos');
+                _currentPage = 1;
+                _fetchOrders();
+              },
+              child: const Text('Ver todos'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileFilters() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outlineVariant),
+        ),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.search,
+                  size: 20, color: colorScheme.outline),
+              hintText: 'Buscar pedido...',
+              isDense: true,
+              filled: true,
+              fillColor: colorScheme.surfaceContainerLowest,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.outlineVariant),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.primary, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final filter
+                    in const ['Todos', 'En camino', 'Entregados', 'Cancelados'])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(filter),
+                      selected: _activeFilter == filter,
+                      onSelected: (_) {
+                        setState(() => _activeFilter = filter);
+                        _currentPage = 1;
+                        _fetchOrders();
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -445,7 +584,11 @@ int _currentPage = 1;
     final colorScheme = Theme.of(context).colorScheme;
     final selected = _activeFilter == label;
     return InkWell(
-      onTap: () => setState(() => _activeFilter = label),
+      onTap: () {
+        setState(() => _activeFilter = label);
+        _currentPage = 1;
+        _fetchOrders();
+      },
       child: Container(
         padding: const EdgeInsets.only(right: 28),
         decoration: BoxDecoration(

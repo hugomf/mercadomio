@@ -240,8 +240,29 @@ func (s *OrderService) AttachPaymentInfo(ctx context.Context, orderID string, pa
 	return nil
 }
 
-// GetOrdersByUserID retrieves orders for a user with pagination
-func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, page, limit int) ([]*models.Order, error) {
+// buildOrderFilter maps the 4-bucket UI filter to a mongo filter.
+// Todos / "" → no status filter. En camino → pending|paid|shipped.
+func buildOrderFilter(userID primitive.ObjectID, bucket string) bson.M {
+	filter := bson.M{"userId": userID}
+	switch bucket {
+	case "En camino":
+		filter["status"] = bson.M{"$in": []models.OrderStatus{
+			models.OrderStatusPending, models.OrderStatusPaid, models.OrderStatusShipped,
+		}}
+	case "Entregados":
+		filter["status"] = bson.M{"$in": []models.OrderStatus{models.OrderStatusCompleted}}
+	case "Cancelados":
+		filter["status"] = bson.M{"$in": []models.OrderStatus{models.OrderStatusCancelled}}
+	case "Todos", "":
+		// no status filter
+	default:
+		// unknown bucket → treat as Todos (no filter) for backward compat
+	}
+	return filter
+}
+
+// GetOrdersByUserID retrieves orders for a user with pagination and optional status bucket.
+func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, page, limit int, statusBucket string) ([]*models.Order, error) {
 	userObjID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user ID")
@@ -261,7 +282,8 @@ func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, pag
 		SetLimit(int64(limit)).
 		SetSort(bson.M{"createdAt": -1}) // Most recent first
 
-	cursor, err := s.collection.Find(ctx, bson.M{"userId": userObjID}, opts)
+	filter := buildOrderFilter(userObjID, statusBucket)
+	cursor, err := s.collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +299,16 @@ func (s *OrderService) GetOrdersByUserID(ctx context.Context, userID string, pag
 	}
 
 	return orders, cursor.Err()
+}
+
+// CountOrdersByUserID returns the total number of orders for a user, optionally filtered by bucket.
+func (s *OrderService) CountOrdersByUserID(ctx context.Context, userID string, statusBucket string) (int64, error) {
+	userObjID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return 0, errors.New("invalid user ID")
+	}
+	filter := buildOrderFilter(userObjID, statusBucket)
+	return s.collection.CountDocuments(ctx, filter)
 }
 
 // GetAllOrders retrieves all orders with pagination and optional status filter (admin)
