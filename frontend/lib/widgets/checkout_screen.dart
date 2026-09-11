@@ -39,6 +39,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _showCouponField = false;
   int _selectedPayment = 0;
 
+  List<Map<String, dynamic>> _savedAddresses = [];
+  List<Map<String, dynamic>> _savedPaymentMethods = [];
+  int _selectedAddressIndex = -1;
+  bool _saveAddress = false;
+  bool _isLoadingSavedData = true;
+
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -65,6 +71,65 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _fullNameController.text = user.name;
       _emailController.text = user.email;
     }
+    _loadSavedData();
+  }
+
+  Future<void> _loadSavedData() async {
+    try {
+      final authService = Get.find<AuthService>();
+      if (!authService.isAuthenticated) {
+        setState(() => _isLoadingSavedData = false);
+        return;
+      }
+      final addresses = await authService.getUserAddresses();
+      final methods = await authService.getUserPaymentMethods();
+      if (!mounted) return;
+      setState(() {
+        _savedAddresses = addresses;
+        _savedPaymentMethods = methods;
+        _isLoadingSavedData = false;
+        // Auto-select default address if exists
+        final defaultIdx = addresses.indexWhere((a) => a['isDefault'] == true);
+        if (defaultIdx != -1) {
+          _selectedAddressIndex = defaultIdx;
+          _applySavedAddress(addresses[defaultIdx]);
+        }
+        final defaultMethodIdx = methods.indexWhere((m) => m['isDefault'] == true);
+        if (defaultMethodIdx != -1) {
+          _selectedPayment = defaultMethodIdx;
+        }
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingSavedData = false);
+    }
+  }
+
+  void _applySavedAddress(Map<String, dynamic> addr) {
+    final firstName = addr['firstName'] ?? '';
+    final lastName = addr['lastName'] ?? '';
+    _fullNameController.text = [firstName, lastName].where((s) => s.toString().isNotEmpty).join(' ');
+    _addressLine1Controller.text = addr['addressLine1'] ?? '';
+    _addressLine2Controller.text = addr['addressLine2'] ?? '';
+    _cityController.text = addr['city'] ?? '';
+    _stateController.text = addr['state'] ?? '';
+    _zipCodeController.text = addr['postalCode'] ?? addr['zipCode'] ?? '';
+    _countryController.text = addr['country'] ?? 'Mexico';
+    _phoneController.text = addr['phone'] ?? _phoneController.text;
+  }
+
+  void _clearAddressFields() {
+    _fullNameController.clear();
+    final authService = Get.find<AuthService>();
+    if (authService.currentUser != null) {
+      _fullNameController.text = authService.currentUser!.name;
+      _emailController.text = authService.currentUser!.email;
+    }
+    _addressLine1Controller.clear();
+    _addressLine2Controller.clear();
+    _cityController.clear();
+    _stateController.clear();
+    _zipCodeController.clear();
+    _countryController.text = 'Mexico';
   }
 
   Future<void> _processOrder() async {
@@ -94,6 +159,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         baseUrl: apiUrl,
         authToken: authService.token,
       );
+
+      // Optionally save new address
+      if (_saveAddress && _selectedAddressIndex == -1) {
+        final parts = _fullNameController.text.trim().split(' ');
+        final firstName = parts.isNotEmpty ? parts.first : '';
+        final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+        try {
+          await authService.addUserAddress({
+            'firstName': firstName,
+            'lastName': lastName,
+            'addressLine1': _addressLine1Controller.text,
+            'addressLine2': _addressLine2Controller.text,
+            'city': _cityController.text,
+            'state': _stateController.text,
+            'postalCode': _zipCodeController.text,
+            'country': _countryController.text,
+            'phone': _phoneController.text,
+            'isDefault': _savedAddresses.isEmpty,
+            'type': 'shipping',
+          });
+        } catch (_) {}
+      }
 
       // Shipping address data
       final shippingAddress = {
@@ -411,7 +498,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          _buildSavedAddressSelector(),
+          const SizedBox(height: 16),
           _buildShippingFields(),
+          if (_selectedAddressIndex == -1) ...[
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              value: _saveAddress,
+              onChanged: (v) => setState(() => _saveAddress = v ?? false),
+              title: const Text('Guardar como dirección predeterminada'),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
         ],
       ),
     );
@@ -438,6 +537,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          _buildSavedPaymentSelector(),
           _buildDesktopPaymentOptions(),
           const SizedBox(height: 24),
           Text(
@@ -1039,7 +1139,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               title: 'Entrega a domicilio',
             ),
             const SizedBox(height: 16),
+            _buildSavedAddressSelector(),
+            const SizedBox(height: 16),
             _buildShippingFields(),
+            if (_selectedAddressIndex == -1) ...[
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                value: _saveAddress,
+                onChanged: (v) => setState(() => _saveAddress = v ?? false),
+                title: const Text('Guardar como dirección predeterminada'),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
           ],
         ),
       ),
@@ -1131,6 +1243,126 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Widget _buildSavedAddressSelector() {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (_isLoadingSavedData) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    if (_savedAddresses.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 18, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No tienes direcciones guardadas — completa el formulario',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return DropdownButtonFormField<int>(
+      value: _selectedAddressIndex,
+      decoration: InputDecoration(
+        labelText: 'Usar dirección guardada',
+        prefixIcon: const Icon(Icons.home_outlined),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      items: [
+        const DropdownMenuItem(value: -1, child: Text('Nueva dirección')),
+        for (int i = 0; i < _savedAddresses.length; i++)
+          DropdownMenuItem(
+            value: i,
+            child: Text(
+              _formatAddressShort(_savedAddresses[i]),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+      onChanged: (v) {
+        setState(() => _selectedAddressIndex = v ?? -1);
+        if (v != null && v != -1) {
+          _applySavedAddress(_savedAddresses[v]);
+          setState(() => _saveAddress = false);
+        } else {
+          _clearAddressFields();
+        }
+      },
+    );
+  }
+
+  String _formatAddressShort(Map<String, dynamic> addr) {
+    final line1 = addr['addressLine1'] ?? '';
+    final city = addr['city'] ?? '';
+    final isDefault = addr['isDefault'] == true ? ' • Predeterminada' : '';
+    if (line1.toString().isNotEmpty && city.toString().isNotEmpty) {
+      return '$line1, $city$isDefault';
+    }
+    return line1.toString().isNotEmpty ? '$line1$isDefault' : 'Dirección ${addr['id'] ?? ''}';
+  }
+
+  Widget _buildSavedPaymentSelector() {
+    if (_isLoadingSavedData) return const SizedBox.shrink();
+    if (_savedPaymentMethods.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<int>(
+          value: -1,
+          decoration: InputDecoration(
+            labelText: 'Usar método guardado',
+            prefixIcon: const Icon(Icons.credit_card_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          items: [
+            const DropdownMenuItem(value: -1, child: Text('Nuevo método')),
+            for (int i = 0; i < _savedPaymentMethods.length; i++)
+              DropdownMenuItem(
+                value: i,
+                child: Text(
+                  _formatPaymentShort(_savedPaymentMethods[i]),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: (v) {
+            if (v != null && v != -1) {
+              final m = _savedPaymentMethods[v];
+              Get.snackbar(
+                'Método seleccionado',
+                _formatPaymentShort(m),
+                backgroundColor: Get.theme.colorScheme.primaryContainer,
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  String _formatPaymentShort(Map<String, dynamic> m) {
+    final brand = m['brand'] ?? m['type'] ?? 'Método';
+    final last4 = m['last4'] ?? '';
+    final isDefault = m['isDefault'] == true ? ' • Predeterminado' : '';
+    if (last4.toString().isNotEmpty) return '$brand •••• $last4$isDefault';
+    return '$brand$isDefault';
+  }
+
   Widget _buildDesktopSectionHeader({required IconData icon, required String title}) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
@@ -1213,6 +1445,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            _buildSavedPaymentSelector(),
+            if (_savedPaymentMethods.isNotEmpty) const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
