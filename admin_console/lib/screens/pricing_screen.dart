@@ -640,7 +640,7 @@ class _PricingScreenState extends State<PricingScreen> {
                       controller: desc,
                       decoration: const InputDecoration(labelText: 'Description')),
                   DropdownButtonFormField<ScheduleScope>(
-                    initialValue: scope,
+                    value: scope,
                     decoration: const InputDecoration(labelText: 'Scope'),
                     items: ScheduleScope.values
                         .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
@@ -648,7 +648,7 @@ class _PricingScreenState extends State<PricingScreen> {
                     onChanged: (v) => setDialogState(() => scope = v!),
                   ),
                   DropdownButtonFormField<ScheduleMode>(
-                    initialValue: mode,
+                    value: mode,
                     decoration: const InputDecoration(labelText: 'Mode'),
                     items: ScheduleMode.values
                         .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
@@ -809,7 +809,7 @@ class _PricingScreenState extends State<PricingScreen> {
                       decoration: const InputDecoration(
                           labelText: 'Min subtotal (0 = none)')),
                   DropdownButtonFormField<PriceRuleKind>(
-                    initialValue: kind,
+                    value: kind,
                     decoration: const InputDecoration(labelText: 'Discount kind'),
                     items: PriceRuleKind.values
                         .map((e) => DropdownMenuItem(
