@@ -26,7 +26,7 @@ if [[ -f local.env ]]; then
   set +a
   echo "Loaded local.env"
 else
-  echo "Warning: backend/local.env not found, using defaults (localhost:27017 / 6379 / 8080)"
+  echo "Warning: backend/local.env not found, using defaults (localhost:27017 / 6379 / 5200)"
 fi
 
 if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
@@ -43,6 +43,6 @@ fi
 echo "Building backend..."
 go build ./...
 
-PORT="${PORT:-8080}"
+PORT="${PORT:-5200}"
 echo "Starting backend on port $PORT..."
 exec go run .

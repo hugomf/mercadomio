@@ -15,21 +15,21 @@
 global:
   app:
     name: "mercadomio"
-    launch_url: "${APP_ORIGIN:-http://localhost:3000}"
+    launch_url: "${APP_ORIGIN:-http://localhost:5201}"
     provider_type: "password"
     visibility: "assigned"
     registration_enabled: true
 
   oauth_clients:
     - name: "mercadomio-storefront"
-      redirect_uris: ["${STOREFRONT_REDIRECT:-http://localhost:3000/auth/callback}"]
-      allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+      redirect_uris: ["${STOREFRONT_REDIRECT:-http://localhost:5201/auth/callback}"]
+      allowed_origins: ["${APP_ORIGIN:-http://localhost:5201}"]
       require_pkce: true
       is_public: true
       scopes: [openid, profile, email, offline_access]
     - name: "mercadomio-admin"
-      redirect_uris: ["${ADMIN_REDIRECT:-http://localhost:3100/auth/callback}"]
-      allowed_origins: ["${APP_ORIGIN:-http://localhost:3000}"]
+      redirect_uris: ["${ADMIN_REDIRECT:-http://localhost:5202/auth/callback}"]
+      allowed_origins: ["${APP_ORIGIN:-http://localhost:5201}"]
       require_pkce: true
       is_public: true
       scopes: [openid, profile, email, offline_access]

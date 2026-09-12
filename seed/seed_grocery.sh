@@ -11,9 +11,9 @@
 # `category` STRING (the category name), so every product must carry both the
 # `category` name and the `categories` array of ObjectIDs.
 #
-# Usage: ./seed_grocery.sh [api_url]   (default http://localhost:8080/api)
+# Usage: ./seed_grocery.sh [api_url]   (default http://localhost:5200/api)
 
-API_URL="${1:-http://localhost:8080/api}"
+API_URL="${1:-http://localhost:5200/api}"
 
 create_category() {
   local name="$1"

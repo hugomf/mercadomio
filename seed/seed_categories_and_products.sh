@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Base API URL
-API_URL="http://localhost:8080/api"
+API_URL="http://localhost:5200/api"
 
 # Function to create a category
 create_category() {

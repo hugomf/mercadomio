@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-PORT="${1:-3100}"
+PORT="${1:-5202}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$SCRIPT_DIR/../admin_console"
 SENTINEL="/tmp/mercadomio-docker-ready"

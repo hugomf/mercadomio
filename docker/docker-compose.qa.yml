@@ -4,7 +4,7 @@ services:
   backend:
     build: ../backend
     ports:
-      - "8083:8080"
+      - "5220:8080"
     environment:
       - MONGO_URI=mongodb://mongo:27017/mercadomio
       - REDIS_URI=redis://redis:6379
@@ -20,14 +20,14 @@ services:
   frontend:
     build: ../frontend
     ports:
-      - "8084:80"
+      - "5221:80"
     depends_on:
       - backend
 
   mongo:
     image: mongo:7
     ports:
-      - "27017:27017"
+      - "5211:27017"
     volumes:
       - qa_mongo_data:/data/db
     healthcheck:
@@ -39,8 +39,8 @@ services:
   redis:
     image: redis/redis-stack:latest
     ports:
-      - "6380:6379"
-      - "8001:8001" # RedisInsight
+      - "5212:6379"
+      - "5213:8001" # RedisInsight
     volumes:
       - qa_redis_data:/data
     healthcheck:

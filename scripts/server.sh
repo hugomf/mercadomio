@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR/.."
 BACKEND_DIR="$REPO_ROOT/backend"
 
-BACKEND_PORT="${BACKEND_PORT:-8080}"
+BACKEND_PORT="${BACKEND_PORT:-5200}"
 SENTINEL="/tmp/mercadomio-docker-ready"
 
 set -a

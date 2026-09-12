@@ -31,11 +31,11 @@ if [[ -n "$BACKEND_PIDS" ]]; then
   fi
 fi
 
-# Confirm nothing is bound to :8080 anymore.
-if lsof -nP -iTCP:8080 -sTCP:LISTEN >/dev/null 2>&1; then
-  echo "Warning: something is still listening on :8080"
+# Confirm nothing is bound to :5200 anymore.
+if lsof -nP -iTCP:5200 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "Warning: something is still listening on :5200"
 else
-  echo "Backend stopped. Port 8080 is free."
+  echo "Backend stopped. Port 5200 is free."
 fi
 
 if $STOP_INFRA; then

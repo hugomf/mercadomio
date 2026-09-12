@@ -3,7 +3,7 @@
 # Database Cleanup Script
 # Safely removes products, categories, carts, and other test data
 
-API_URL="${API_URL:-http://localhost:8080}"
+API_URL="${API_URL:-http://localhost:5200}"
 
 echo "🧹 Database Cleanup Script (API Only)"
 echo "📡 API URL: $API_URL"

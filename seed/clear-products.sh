@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-API_URL="${API_URL:-http://localhost:8080}"
+API_URL="${API_URL:-http://localhost:5200}"
 
 echo "🧹 Product Cleanup Tool"
 echo "📡 API URL: $API_URL"

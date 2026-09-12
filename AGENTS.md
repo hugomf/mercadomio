@@ -17,9 +17,31 @@ Varios agentes pueden operar sobre este repo. Respeta los cambios de los demás:
 
 ## Puertos de servicio
 
-- **No uses puertos bien conocidos** (`80`, `443`, `8080` para servicios de app, etc.) para arrancar servicios de aplicación.
-- **Prefiere puertos altos** (`3000`, `4000`, `5000`, `8000+`, etc.) para development, QA y servicios internos.
-- Reserva `80`/`443` solo para proxies reversos o TLS termination (nginx, Caddy, etc.), nunca para la app directamente.
+**REGLA ABSOLUTA:** Este host tiene muchas aplicaciones corriendo. NUNCA uses puertos comunes.
+
+### Puertos PROHIBIDOS (jamás usar como default)
+
+`80`, `443`, `3000`, `3001`, `3100`, `4000`, `5000`, `5173`, `5432`, `6379`, `8000`, `8001`, `8080`, `8081`, `8083`, `8084`, `8085`, `8090`, `9000`, `9090`, `27017`
+
+### Asignación de puertos MercadoMío (rango 5200+)
+
+| Servicio              | Puerto | Notas                                       |
+|-----------------------|--------|---------------------------------------------|
+| Backend (Go/Fiber)    | `5200` | host port en docker-compose; `PORT` en .env  |
+| Storefront (Flutter)  | `5201` | `--web-port` en scripts/frontend.sh          |
+| Admin Console         | `5202` | `--web-port` en scripts/admin-console.sh     |
+| Nginx (proxy)         | `5203` | Solo para reverse proxy, nunca app directa   |
+| Postgres              | `5210` | Host-mapped; container interno sigue en 5432 |
+| MongoDB               | `5211` | Host-mapped; container interno sigue en 27017|
+| Redis                 | `5212` | Host-mapped; container interno sigue en 6379 |
+| RedisInsight          | `5213` | RedisInsight UI                              |
+
+### Reglas
+
+- **Nunca** uses un puerto de la lista "PROHIBIDOS" como default para nuevos servicios.
+- Si necesitas un servicio nuevo, asigna el siguiente puerto libre en la secuencia 5216, 5217...
+- Reserva `80`/`443` solo para proxies reversos o TLS termination (nginx, Caddy, etc.).
+- Los puertos internos de containers (mongo:27017, redis:6379, etc.) se mantienen — solo cambia el **host-mapping**.
 
 ## Verificación
 
