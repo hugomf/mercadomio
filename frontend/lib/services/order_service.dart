@@ -49,17 +49,22 @@ class OrderService {
     }
   }
 
-  // Get user's order history with pagination
-  Future<OrderHistoryResponse> getOrderHistory({
-    int page = 1,
-    int limit = 20,
-  }) async {
+  Uri buildOrderHistoryUri({int page = 1, int limit = 20, String status = 'Todos'}) {
     final queryParams = {
       'page': page.toString(),
       'limit': limit.toString(),
+      'status': status,
     };
+    return Uri.parse('$baseUrl/api/orders').replace(queryParameters: queryParams);
+  }
 
-    final uri = Uri.parse('$baseUrl/api/orders').replace(queryParameters: queryParams);
+  // Get user's order history with pagination and optional status filter
+  Future<OrderHistoryResponse> getOrderHistory({
+    int page = 1,
+    int limit = 20,
+    String status = 'Todos',
+  }) async {
+    final uri = buildOrderHistoryUri(page: page, limit: limit, status: status);
 
     final response = await http.get(uri, headers: _headers);
 

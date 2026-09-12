@@ -85,7 +85,7 @@ class _CategorySelectorState extends State<CategorySelector> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12.0),
-        itemCount: categoryService.categories.length + 1,
+        itemCount: categoryService.allCategories.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
             final isAllSelected = _currentSelection.value.isAllSelected;
@@ -111,7 +111,7 @@ class _CategorySelectorState extends State<CategorySelector> {
           }
 
           final categoryIndex = index - 1;
-          final category = categoryService.categories[categoryIndex];
+          final category = categoryService.allCategories[categoryIndex];
           final isSelected = _currentSelection.value.selectedIds
                   .contains(category.id) &&
               !_currentSelection.value.isAllSelected;

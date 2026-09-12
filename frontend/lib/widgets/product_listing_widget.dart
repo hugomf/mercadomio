@@ -1172,7 +1172,7 @@ class ProductListingWidgetState extends State<ProductListingWidget> {
                         ),
                         const SizedBox(height: 8),
                         // Individual category checkboxes
-                        ...categoryService.categories.map((category) {
+                        ...categoryService.allCategories.map((category) {
                           final isSelected = categoryService.selectedCategories
                               .contains(category.id);
                           return Padding(

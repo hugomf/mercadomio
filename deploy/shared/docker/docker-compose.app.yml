@@ -19,7 +19,7 @@ services:
       - USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL}
       - DIRECTUS_URL=${DIRECTUS_URL:-http://127.0.0.1:8055}
       - IMGVAULT_URL=${IMGVAULT_URL:-http://127.0.0.1:8081}
-      - IMGVAULT_API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
+      - IMGVAULT_API_KEY="REDACTED"
       - CORS_ORIGINS=${CORS_ORIGINS}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

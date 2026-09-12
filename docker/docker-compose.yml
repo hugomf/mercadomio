@@ -11,7 +11,7 @@ services:
       - USERBREW_ISSUER=${USERBREW_ISSUER:-http://localhost:8090}
       - USERBREW_DISCOVERY_URL=${USERBREW_DISCOVERY_URL:-http://localhost:8090/.well-known/openid-configuration}
       - IMGVAULT_URL=http://imgvault-server:8081
-      - IMGVAULT_API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}
+      - IMGVAULT_API_KEY="REDACTED"
     env_file:
       - path: ../backend/.env
         required: false

@@ -249,7 +249,7 @@ SENTINEL_TOKEN=
 IMAGE_IMGVAULT=mercadomio/imgvault
 IMGVAULT_VERSION=qa
 IMGVAULT_PORT=28081
-IMGVAULT_API_KEY=dev_api_key_123
+IMGVAULT_API_KEY="REDACTED"
 MINIO_PORT=29000
 MINIO_CONSOLE_PORT=29001
 MINIO_ROOT_USER=minioadmin
@@ -959,7 +959,7 @@ Change:
 ```bash
 IMGVAULT_URL=http://imgvault-server:8081
 ```
-and keep `IMGVAULT_API_KEY=dev_api_key_123` matching `platform/env/qa.env` (Global Constraint 12: documented as a shared value; rotation follow-up). Verify no remaining `http://imgvault:` references in qa.env.
+and keep `IMGVAULT_API_KEY="REDACTED"
 
 - [ ] **Step 4: Validate composes + dry-run deploy**
 

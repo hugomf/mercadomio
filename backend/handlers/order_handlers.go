@@ -64,8 +64,9 @@ func (h *OrderHandlers) CreateOrder(c *fiber.Ctx) error {
 	}
 
 	// Clear the cart after successful order creation
-	// We'll need to modify cart service to clear cart by user ID
-	// For now, just create order and return success
+	if err := h.cartService.ClearCart(c.Context(), cartID); err != nil {
+		return middleware.InternalError("order created but failed to clear cart")
+	}
 
 	return middleware.Created(c, order.ToResponse(), "order created successfully")
 }
@@ -129,8 +130,10 @@ func (h *OrderHandlers) GetUserOrders(c *fiber.Ctx) error {
 		limit = 20
 	}
 
-	// Get user's orders
-	orders, err := h.orderService.GetOrdersByUserID(c.Context(), userID, page, limit)
+	statusBucket := c.Query("status", "Todos")
+
+	// Get user's orders (status-filtered)
+	orders, err := h.orderService.GetOrdersByUserID(c.Context(), userID, page, limit, statusBucket)
 	if err != nil {
 		return middleware.InternalError("failed to retrieve orders")
 	}
@@ -143,13 +146,16 @@ func (h *OrderHandlers) GetUserOrders(c *fiber.Ctx) error {
 		orderResponses = append(orderResponses, resp)
 	}
 
-	totalCount := len(orderResponses) // In a real implementation, you'd get total count from service
+	totalCount, err := h.orderService.CountOrdersByUserID(c.Context(), userID, statusBucket)
+	if err != nil {
+		totalCount = int64(len(orderResponses))
+	}
 
 	responseData := map[string]interface{}{
 		"orders": orderResponses,
 		"page":   page,
 		"limit":  limit,
-		"total":  totalCount, // This should come from service with separate count query
+		"total":  totalCount,
 	}
 
 	return middleware.Success(c, responseData)

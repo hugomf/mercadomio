@@ -1,6 +1,6 @@
 # Auth Architecture — Full Delegation to userbrew
 
-**Status:** Design decision locked (2026-08-14). Token wiring NOT yet implemented.
+**Status:** Design decision locked (2026-08-14). Token wiring implemented (backend OIDC validation + frontend `openid_client` flow; see `backend/services/oidc.go`, `backend/middleware/auth.go`, `frontend/lib/services/oidc_flow.dart`).
 
 ## Decision
 
@@ -72,23 +72,24 @@ introspection can be swapped in later.
   lookups. Wishlist etc. key off the token identity.
 - Removed mercadomio-side logging in where it exists (see Backend changes).
 
-## Backend changes (planned)
+## Backend changes (implemented)
 
-- Delete/deprecate vendored `AuthService` (register/login/validate) and
-  `JWT_SECRET` from mercadomio; credential-free users collection no longer
-  authoritative for auth.
-- `AuthMiddleware`: accept only userbrew bearer tokens; extract identity + roles
-  into request context (`userID`, `roles`).
-- Remove the hardcoded `userID` shortcut in admin handlers; rely on claims.
-- Guard admin group with role check.
-- Keep the public catalog/cart endpoints open or claim-resolved as today.
+- Vendored `AuthService` register/login removed; `JWT_SECRET` dropped from
+  mercadomio; local auth endpoints (`POST /api/auth/register|login`) no longer
+  exist.
+- `AuthMiddleware` accepts only userbrew bearer tokens; extracts identity +
+  roles into request context (`userID`, `isAdmin`). See
+  `backend/services/oidc.go` (discovery/JWKS, projected-role claims) and
+  `backend/middleware/auth.go`.
+- Admin group (`/api/orders/admin`, product/category/pricing/analytics writes)
+  guarded by `AdminMiddleware`.
+- Public catalog/cart endpoints remain open or claim-resolved as before.
 
-## Frontend changes (planned)
+## Frontend changes (implemented)
 
-- Shop app `AuthService` replaced by `openid_client` OIDC session (userbrew).
-- Admin console `AdminOrderService` gains a real login flow: OIDC → token →
-  `Authorization` header (currently sends none).
-- Token storage + refresh via `openid_client`/secure storage.
+- Shop app login via OIDC PKCE (`frontend/lib/services/oidc_flow.dart`,
+  `openid_client`); issues userbrew tokens used as bearer on API calls.
+- Admin console documents the `mercadomio-admin` audience/role for staff.
 
 ## Open items (not yet decided / deferred)
 
@@ -101,5 +102,5 @@ introspection can be swapped in later.
 
 ## Out of scope for this doc
 
-- Token wiring implementation (deferred by owner).
+- Fine-grained role/permission naming beyond the two audiences.
 - Any changes inside `~/Projects/userbrew` itself.

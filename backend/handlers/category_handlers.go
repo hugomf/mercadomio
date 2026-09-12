@@ -30,15 +30,24 @@ func (h *CategoryHandlers) GetCategories(c *fiber.Ctx) error {
 
 	// Return empty array instead of nil if no categories exist
 	if categories == nil {
-		return c.JSON([]services.Category{})
+		return c.JSON([]services.CategoryNode{})
 	}
 
 	base := c.BaseURL()
-	for i := range categories {
-		categories[i].ImageURL = imageurl.Resolve(categories[i].ImageURL, base)
+	for _, node := range categories {
+		resolveNodeImages(node, base)
 	}
 
 	return c.JSON(categories)
+}
+
+// resolveNodeImages resolves imgvault UUIDs into servable URLs recursively so
+// every node carries an absolute, fetchable image URL.
+func resolveNodeImages(node *services.CategoryNode, base string) {
+	node.ImageURL = imageurl.Resolve(node.ImageURL, base)
+	for _, child := range node.Children {
+		resolveNodeImages(child, base)
+	}
 }
 
 func (h *CategoryHandlers) CreateCategory(c *fiber.Ctx) error {

@@ -80,9 +80,9 @@ Follow-ups — 2026-09-05 imgvault API key auth enabled:
 - `~/Projects/imgvault/src/middleware.rs`: `require_api_key` now in use. Whitelists `/health` first (so healthchecks/readiness work even without a key), requires env `API_KEY`, validates `Authorization: Bearer <key>`; failure → 401 `AUTH_ERROR`.
 - `~/Projects/imgvault/src/main.rs`: router restructured into `api` routes (upload/me/images/images/:id/file/variant/transform/remove-background/remove-watermark/tags/jobs) then layered AFTER merge — `require_api_key` (outermost) covers all `/api/v1/*`; `/health` open via middleware whitelist; CORS + `DefaultBodyLimit(10MB)` kept. axum gotcha: `.merge()` after `.layer()` bypasses layers.
 - Rebuilt `imgvault:local` (also absorbed pre-existing `FitMode::Smart` exhaustiveness fixes in `image_service.rs`/`job_worker.rs`/`image_handler.rs` — repo is being edited concurrently by another actor, re-check before builds).
-- `backend/local.env` added `IMGVAULT_URL=http://localhost:8081` + `IMGVAULT_API_KEY=dev_api_key_123` (matches compose `API_KEY=${IMGVAULT_API_KEY:-dev_api_key_123}`). Without it backend sends no Bearer → imgvault 401s. NOTE: plain `source file` does NOT export vars into a `go run` child — use `set -a` before sourcing when launching the backend.
+- `backend/local.env` added `IMGVAULT_URL=http://localhost:8081` + `IMGVAULT_API_KEY="REDACTED"
 - Verified direct :8081: `/health` no-key 200; list no-key 401, good key 200, wrong key 401. Verified via backend proxy :8080: upload → 200 JSON `id`, variant/card → 200 `image/webp`, re-tested product resolution URL 200.
-- Deploy envs (dev/qa/prod `.env` + infra/app compose) already carry `IMGVAULT_API_KEY=dev_api_key_123` / `API_KEY` — consistent with middleware enabled.
+- Deploy envs (dev/qa/prod `.env` + infra/app compose) already carry `IMGVAULT_API_KEY="REDACTED"
 
 No git.
 
@@ -789,7 +789,7 @@ Files changed per repo:
 
 Verified: `bash -n` 7 files OK, `docker compose config --quiet` OK (mercadomio local/infra/app + platform 4 envs with SENTINEL_TOKEN=check + sourced env), `go vet ./...` OK, shellcheck unavailable noted (Task 7 gap), `infra` network exists. Git left unstaged per GC11 — no final commit.
 
-Open items: Gitea registry auth for `gitea.sonnora.mx/sonnora-mx/userbrew/userbrew:latest + sentinel` and `mercadomio/imgvault:qa` pulls; DNS entries for `userbrew/sentinel/imgvault.<env>.sonnora.mx` -> VPS_HOST before --register-vps cert issuance; `IMGVAULT_API_KEY=dev_api_key_123` shared-value rotation; credentialvault future; parked: prod APP_HOST_IP 10.0.0.5 assumes wg Pi vs VPS hub (defer, not fixed), prod secrets path mismatch, orphaned MINIO/IMGVAULT_PORT + stale comments in mercadomio qa.env, container_name suffix interpretation.
+Open items: Gitea registry auth for `gitea.sonnora.mx/sonnora-mx/userbrew/userbrew:latest + sentinel` and `mercadomio/imgvault:qa` pulls; DNS entries for `userbrew/sentinel/imgvault.<env>.sonnora.mx` -> VPS_HOST before --register-vps cert issuance; `IMGVAULT_API_KEY="REDACTED"
 
 ## 2026-08-14 — Fix hardcoded paths & stale tests
 

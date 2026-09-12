@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"mercadomio-backend/imageurl"
 	"mercadomio-backend/middleware"
@@ -21,14 +22,16 @@ type ProductHandlers struct {
 	SearchService    services.SearchService
 	AnalyticsService services.AnalyticsService
 	PricingService   *services.PricingService
+	EventBus         services.EventBus
 }
 
-func NewProductHandlers(productService services.ProductService, searchService services.SearchService, analyticsService services.AnalyticsService, pricingService *services.PricingService) *ProductHandlers {
+func NewProductHandlers(productService services.ProductService, searchService services.SearchService, analyticsService services.AnalyticsService, pricingService *services.PricingService, eventBus services.EventBus) *ProductHandlers {
 	return &ProductHandlers{
 		ProductService:   productService,
 		SearchService:    searchService,
 		AnalyticsService: analyticsService,
 		PricingService:   pricingService,
+		EventBus:         eventBus,
 	}
 }
 
@@ -103,6 +106,21 @@ func firstVariantUnit(product *services.Product) string {
 	return unit
 }
 
+// parseCategoryIDs attempts to parse every comma-separated token as an ObjectID.
+// It returns the parsed IDs and whether all tokens were valid IDs. When invalid,
+// the false result signals the caller to fall back to name-based filtering.
+func parseCategoryIDs(tokens []string) ([]primitive.ObjectID, bool) {
+	ids := make([]primitive.ObjectID, 0, len(tokens))
+	for _, token := range tokens {
+		objID, err := primitive.ObjectIDFromHex(token)
+		if err != nil {
+			return nil, false
+		}
+		ids = append(ids, objID)
+	}
+	return ids, len(ids) > 0
+}
+
 // productsOf converts a value slice into a pointer slice so enrichment can
 // mutate every product in place.
 func productsOf(products []services.Product) []*services.Product {
@@ -146,17 +164,39 @@ func (h *ProductHandlers) GetProducts(c *fiber.Ctx) error {
 			SortOrder: sortOrder,
 		}
 
-		// Handle comma-separated category parameters
+		// Handle comma-separated category parameters: ObjectID hex values are
+		// resolved through the hierarchical filter (includes child categories),
+		// while names fall back to the legacy regex match.
 		if categoryParams != "" {
 			categories := strings.Split(categoryParams, ",")
-			if err := h.ProductService.AddCategoryNameFilter(c.Context(), &searchParams, categories); err != nil {
-				return middleware.BadRequest("Invalid category filter")
+
+			categoryIDs, ok := parseCategoryIDs(categories)
+			if ok {
+				if err := h.ProductService.AddCategoryFilter(c.Context(), &searchParams, categoryIDs); err != nil {
+					return middleware.BadRequest("Invalid category filter")
+				}
+			} else {
+				if err := h.ProductService.AddCategoryNameFilter(c.Context(), &searchParams, categories); err != nil {
+					return middleware.BadRequest("Invalid category filter")
+				}
 			}
 		}
 
 		result, err := h.SearchService.SearchProducts(c.Context(), searchParams, page, limit)
 		if err != nil {
 			return middleware.InternalError("Failed to search products")
+		}
+
+		// Publish a search event so search analytics accumulate real data.
+		// Publishing is asynchronous and non-blocking.
+		if query != "" && h.EventBus != nil {
+			userID, _ := c.Locals("userID").(string)
+			h.EventBus.Publish(c.Context(), services.SearchPerformed{
+				Query:       query,
+				UserID:      userID,
+				ResultCount: result.TotalItems,
+				Timestamp:   time.Now(),
+			})
 		}
 		h.enrichCatalogPrices(c.Context(), productsOf(result.Data))
 		resolveProductImages(c, productsOf(result.Data))
@@ -196,6 +236,17 @@ func (h *ProductHandlers) GetProduct(c *fiber.Ctx) error {
 	}
 	h.enrichCatalogPrices(c.Context(), []*services.Product{product})
 	resolveProductImages(c, []*services.Product{product})
+
+	// Publish a product view event so view analytics accumulate real data.
+	if h.EventBus != nil {
+		userID, _ := c.Locals("userID").(string)
+		h.EventBus.Publish(c.Context(), services.ProductViewed{
+			ProductID: id,
+			UserID:    userID,
+			Source:    c.Query("source", "direct"),
+			Timestamp: time.Now(),
+		})
+	}
 
 	return c.JSON(product)
 }
@@ -238,12 +289,6 @@ func (h *ProductHandlers) DeleteProduct(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(204)
-}
-
-// GetVariants handles GET /api/variants
-func (h *ProductHandlers) GetVariants(c *fiber.Ctx) error {
-	// Demo endpoint: return a static list of variants
-	return c.JSON([]string{"Small", "Medium", "Large", "XL"})
 }
 
 // GetProductReviews handles GET /api/products/:id/reviews

@@ -3,14 +3,16 @@ class Category {
   String name;
   String? description;
   String? parentId;
-  List<String>? childrenIds;
+  List<Category> children;
+
+  bool get hasChildren => children.isNotEmpty;
 
   Category({
     required this.id,
     required this.name,
     this.description,
     this.parentId,
-    this.childrenIds,
+    this.children = const [],
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -19,9 +21,12 @@ class Category {
       name: json['name'],
       description: json['description'],
       parentId: json['parentId'],
-      childrenIds: json['childrenIds'] != null 
-        ? List<String>.from(json['childrenIds'])
-        : null,
+      children: json['children'] != null
+        ? List<dynamic>.from(json['children'])
+            .whereType<Map<String, dynamic>>()
+            .map((child) => Category.fromJson(child))
+            .toList()
+        : const [],
     );
   }
 
@@ -31,7 +36,7 @@ class Category {
       'name': name,
       'description': description,
       'parentId': parentId,
-      'childrenIds': childrenIds,
+      'children': children.map((child) => child.toJson()).toList(),
     };
   }
 }

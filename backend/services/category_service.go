@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type categoryService struct {
@@ -115,10 +116,31 @@ func (s *categoryService) DeleteCategory(ctx context.Context, id primitive.Objec
 	return err
 }
 
-// GetCategoryTree returns the full category hierarchy
-func (s *categoryService) GetCategoryTree(ctx context.Context) ([]Category, error) {
-	// Get all root categories (no parent)
-	cursor, err := s.collection.Find(ctx, bson.M{"parentId": nil})
+// CategoryNode is the hydrated category tree node returned by the API.
+// Unlike the stored Category (whose children are ObjectID references), a node
+// nests full child category objects so the storefront can render subcategories
+// without additional lookups.
+type CategoryNode struct {
+	ID          primitive.ObjectID `json:"id"`
+	Name        string             `json:"name"`
+	Slug        string             `json:"slug"`
+	Description string             `json:"description"`
+	ParentID    *primitive.ObjectID `json:"parentId"`
+	ImageURL    string             `json:"imageUrl"`
+	IsActive    bool               `json:"isActive"`
+	CreatedAt   time.Time          `json:"createdAt"`
+	UpdatedAt   time.Time          `json:"updatedAt"`
+	Children    []*CategoryNode    `json:"children"`
+}
+
+// GetCategoryTree returns the full category hierarchy with hydrated children.
+func (s *categoryService) GetCategoryTree(ctx context.Context) ([]*CategoryNode, error) {
+	// Get all root categories (no parent), ordered by name for a stable UI.
+	cursor, err := s.collection.Find(
+		ctx,
+		bson.M{"parentId": nil},
+		options.Find().SetSort(bson.D{{Key: "name", Value: 1}}),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -129,28 +151,45 @@ func (s *categoryService) GetCategoryTree(ctx context.Context) ([]Category, erro
 		return nil, err
 	}
 
-	// Recursively get children for each root category
+	nodes := make([]*CategoryNode, 0, len(rootCategories))
 	for i := range rootCategories {
-		if err := s.getChildrenRecursive(ctx, &rootCategories[i]); err != nil {
+		node, err := s.hydrateNode(ctx, &rootCategories[i])
+		if err != nil {
 			return nil, err
 		}
+		nodes = append(nodes, node)
 	}
 
-	return rootCategories, nil
+	return nodes, nil
 }
 
-func (s *categoryService) getChildrenRecursive(ctx context.Context, category *Category) error {
-	children, err := s.GetChildCategories(ctx, category.ID)
-	if err != nil {
-		return err
+// hydrateNode converts a stored category into a node with fully hydrated,
+// recursively nested children.
+func (s *categoryService) hydrateNode(ctx context.Context, category *Category) (*CategoryNode, error) {
+	node := &CategoryNode{
+		ID:          category.ID,
+		Name:        category.Name,
+		Slug:        category.Slug,
+		Description: category.Description,
+		ParentID:    category.ParentID,
+		ImageURL:    category.ImageURL,
+		IsActive:    category.IsActive,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
 	}
 
-	category.Children = make([]primitive.ObjectID, len(children))
-	for i, child := range children {
-		category.Children[i] = child.ID
-		if err := s.getChildrenRecursive(ctx, &children[i]); err != nil {
-			return err
-		}
+	children, err := s.GetChildCategories(ctx, category.ID)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	node.Children = make([]*CategoryNode, 0, len(children))
+	for i := range children {
+		childNode, err := s.hydrateNode(ctx, &children[i])
+		if err != nil {
+			return nil, err
+		}
+		node.Children = append(node.Children, childNode)
+	}
+
+	return node, nil
 }

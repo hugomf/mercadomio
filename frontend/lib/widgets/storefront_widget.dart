@@ -120,13 +120,19 @@ class _StorefrontWidgetState extends State<StorefrontWidget> {
         _buildSectionTitle(context, 'Categorías principales'),
         const SizedBox(height: 16),
         GetBuilder<CategoryService>(
-          builder: (service) => _CategoryTiles(
-            categories: service.categories,
-            onCategoryTap: widget.onCategoryTap ??
-                (category) =>
-                    service.addSelectedCategory(category.id, category.name),
-            isMobile: true,
-          ),
+          builder: (service) {
+            final roots = service.categories
+                .where((c) => c.parentId == null)
+                .toList();
+            return _CategoryTiles(
+              categories: roots,
+              selectedIds: service.selectedCategories.toSet(),
+              onCategoryTap: widget.onCategoryTap ??
+                  (category) => service.addSelectedCategory(
+                      category.id, category.name),
+              isMobile: true,
+            );
+          },
         ),
         const SizedBox(height: 24),
         _buildOffersHeader(context),
@@ -154,12 +160,18 @@ class _StorefrontWidgetState extends State<StorefrontWidget> {
         _buildSectionTitle(context, 'Categorías principales'),
         const SizedBox(height: 16),
         GetBuilder<CategoryService>(
-          builder: (service) => _CategoryGrid(
-            categories: service.categories,
-            onCategoryTap: widget.onCategoryTap ??
-                (category) =>
-                    service.addSelectedCategory(category.id, category.name),
-          ),
+          builder: (service) {
+            final roots = service.categories
+                .where((c) => c.parentId == null)
+                .toList();
+            return _CategoryGrid(
+              categories: roots,
+              selectedIds: service.selectedCategories.toSet(),
+              onCategoryTap: widget.onCategoryTap ??
+                  (category) => service.addSelectedCategory(
+                      category.id, category.name),
+            );
+          },
         ),
         const SizedBox(height: 40),
         // Offers Section (desktop grid of product cards)
@@ -498,15 +510,19 @@ class _HeroBanner extends StatelessWidget {
 
 /// Horizontal row of circular category tiles. Hover inverts the tile
 /// background/text to highlight interactivity, mirroring the Stitch design.
+/// Selected tiles render a primary-colored border and background with a
+/// small check badge.
 class _CategoryTiles extends StatefulWidget {
   const _CategoryTiles({
     required this.categories,
     required this.onCategoryTap,
+    this.selectedIds = const {},
     this.isMobile = false,
   });
 
   final List<Category> categories;
   final void Function(Category category) onCategoryTap;
+  final Set<String> selectedIds;
   final bool isMobile;
 
   @override
@@ -518,7 +534,7 @@ class _CategoryTilesState extends State<_CategoryTiles> {
 
   @override
   Widget build(BuildContext context) {
-    final visible = widget.categories.take(7).toList();
+    final visible = widget.categories; // show all, no arbitrary cap
     final tileWidth = widget.isMobile ? 92.0 : 112.0;
     final circleSize = widget.isMobile ? 56.0 : 64.0;
     final iconSize = widget.isMobile ? 24.0 : 28.0;
@@ -541,6 +557,31 @@ class _CategoryTilesState extends State<_CategoryTiles> {
       double tileWidth, double circleSize, double iconSize) {
     final colorScheme = Theme.of(context).colorScheme;
     final hovered = _hoveredIndex == index;
+    final selected = widget.selectedIds.contains(category.id);
+
+    final bg = selected
+        ? colorScheme.primaryContainer
+        : hovered
+            ? colorScheme.secondaryContainer
+            : colorScheme.surfaceContainerLow;
+
+    final borderColor = selected
+        ? colorScheme.primary
+        : hovered
+            ? colorScheme.secondaryContainer
+            : colorScheme.outlineVariant;
+
+    final iconColor = selected
+        ? colorScheme.onPrimaryContainer
+        : hovered
+            ? colorScheme.onSecondaryContainer
+            : colorScheme.secondary;
+
+    final textColor = selected
+        ? colorScheme.primary
+        : hovered
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredIndex = index),
@@ -554,27 +595,46 @@ class _CategoryTilesState extends State<_CategoryTiles> {
             width: tileWidth,
             child: Column(
               children: [
-                Container(
-                  width: circleSize,
-                  height: circleSize,
-                  decoration: BoxDecoration(
-                    color: hovered
-                        ? colorScheme.secondaryContainer
-                        : colorScheme.surfaceContainerLow,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: hovered
-                          ? colorScheme.secondaryContainer
-                          : colorScheme.outlineVariant,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: circleSize,
+                      height: circleSize,
+                      decoration: BoxDecoration(
+                        color: bg,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: borderColor, width: selected ? 2 : 1),
+                      ),
+                      child: Icon(
+                        StorefrontWidget._iconFor(category.name),
+                        size: iconSize,
+                        color: iconColor,
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    StorefrontWidget._iconFor(category.name),
-                    size: iconSize,
-                    color: hovered
-                        ? colorScheme.onSecondaryContainer
-                        : colorScheme.secondary,
-                  ),
+                    if (selected)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colorScheme.surface,
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.check,
+                            size: 12,
+                            color: colorScheme.onPrimary,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -585,9 +645,8 @@ class _CategoryTilesState extends State<_CategoryTiles> {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.2,
-                    color: hovered
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                    color: textColor,
                     fontFamily: 'Public Sans', // label font per Stitch DS
                   ),
                 ),
@@ -600,17 +659,19 @@ class _CategoryTilesState extends State<_CategoryTiles> {
   }
 }
 
-/// Desktop category grid matching Stitch desktop mock (7 items, circular tiles
-/// with hover that inverts the tile background like the mock's
-/// `group-hover:bg-secondary-container` behaviour).
+/// Desktop category grid matching Stitch desktop mock. Each circular tile
+/// shows a hover inversion and a filled-primary check badge when its ID
+/// is in [selectedIds].
 class _CategoryGrid extends StatefulWidget {
   const _CategoryGrid({
     required this.categories,
     required this.onCategoryTap,
+    this.selectedIds = const {},
   });
 
   final List<Category> categories;
   final void Function(Category category) onCategoryTap;
+  final Set<String> selectedIds;
 
   @override
   State<_CategoryGrid> createState() => _CategoryGridState();
@@ -622,7 +683,6 @@ class _CategoryGridState extends State<_CategoryGrid> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final visible = widget.categories.take(7).toList();
 
     return GridView.builder(
       shrinkWrap: true,
@@ -633,10 +693,36 @@ class _CategoryGridState extends State<_CategoryGrid> {
         crossAxisSpacing: 16,
         childAspectRatio: 1.0,
       ),
-      itemCount: visible.length,
+      itemCount: widget.categories.length,
       itemBuilder: (context, index) {
-        final category = visible[index];
+        final category = widget.categories[index];
         final hovered = _hoveredIndex == index;
+        final selected = widget.selectedIds.contains(category.id);
+
+        final bg = selected
+            ? colorScheme.primaryContainer
+            : hovered
+                ? colorScheme.secondaryContainer
+                : colorScheme.surfaceContainerLow;
+
+        final borderColor = selected
+            ? colorScheme.primary
+            : hovered
+                ? colorScheme.secondaryContainer
+                : colorScheme.outlineVariant;
+
+        final iconColor = selected
+            ? colorScheme.onPrimaryContainer
+            : hovered
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.secondary;
+
+        final textColor = selected
+            ? colorScheme.primary
+            : hovered
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant;
+
         return MouseRegion(
           onEnter: (_) => setState(() => _hoveredIndex = index),
           onExit: (_) => setState(() => _hoveredIndex = null),
@@ -647,27 +733,49 @@ class _CategoryGridState extends State<_CategoryGrid> {
               borderRadius: BorderRadius.circular(12),
               child: Column(
                 children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: hovered
-                          ? colorScheme.secondaryContainer
-                          : colorScheme.surfaceContainerLow,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: hovered
-                            ? colorScheme.secondaryContainer
-                            : colorScheme.outlineVariant,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: bg,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: borderColor,
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        child: Icon(
+                          StorefrontWidget._iconFor(category.name),
+                          size: 32,
+                          color: iconColor,
+                        ),
                       ),
-                    ),
-                    child: Icon(
-                      StorefrontWidget._iconFor(category.name),
-                      size: 32,
-                      color: hovered
-                          ? colorScheme.onSecondaryContainer
-                          : colorScheme.secondary,
-                    ),
+                      if (selected)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.surface,
+                                width: 2,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              size: 14,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -678,11 +786,10 @@ class _CategoryGridState extends State<_CategoryGrid> {
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.2,
-                      color: hovered
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.w500,
+                      color: textColor,
                       fontFamily: 'Public Sans',
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

@@ -1,10 +1,9 @@
 name: CI/CD
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
+  # CI/CD desactivado — deploys ahora son manuales (evita que GitHub tenga acceso a qa/prod).
+  # Para reactivar, restaurar: push: branches: [main, develop] + pull_request: branches: [main]
 
 env:
   MONGO_URI: mongodb://localhost:27017/mercadomio

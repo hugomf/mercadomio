@@ -15,9 +15,6 @@ func SetupProductRoutes(app *fiber.App, productHandlers *handlers.ProductHandler
 	app.Put("/api/products/:id", productHandlers.UpdateProduct)
 	app.Delete("/api/products/:id", productHandlers.DeleteProduct)
 
-	// Variants endpoint
-	app.Get("/api/variants", productHandlers.GetVariants)
-
 	// Variant stock endpoint
 	app.Put("/api/products/:id/variants/:variantId/stock", productHandlers.UpdateVariantStock)
 

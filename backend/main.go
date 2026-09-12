@@ -136,6 +136,7 @@ func main() {
 		OrderService:     orderService,
 		PaymentService:   paymentService,
 		PricingService:   pricingService,
+		EventBus:         eventBus,
 	}
 
 	routes.SetupRoutes(app, routeDeps)

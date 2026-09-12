@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:admin_console/screens/catalog_management.dart';
 import 'package:admin_console/screens/inventory_screen.dart';
 import 'package:admin_console/screens/pricing_screen.dart';
+import 'package:admin_console/screens/alerts_screen.dart';
+import 'package:admin_console/screens/product_management_screen.dart';
+import 'package:admin_console/screens/user_management_screen.dart';
+import 'package:admin_console/screens/settings_screen.dart';
 
 class NavigationDrawer extends StatefulWidget {
   const NavigationDrawer({super.key});
@@ -108,7 +112,10 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.notifications,
           label: 'Alerts',
           onTap: () {
-            // TODO: Implement alerts navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AlertsScreen()),
+            );
           },
         ),
       ],
@@ -163,7 +170,10 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.shopping_bag,
           label: 'Product Management',
           onTap: () {
-            // TODO: Implement product management navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProductManagementScreen()),
+            );
           },
         ),
         _buildMenuItem(
@@ -197,7 +207,10 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.people,
           label: 'User Management',
           onTap: () {
-            // TODO: Implement user management navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UserManagementScreen()),
+            );
           },
         ),
         _buildMenuItem(
@@ -205,7 +218,10 @@ class _NavigationDrawerState extends State<NavigationDrawer> {
           icon: Icons.settings,
           label: 'Settings',
           onTap: () {
-            // TODO: Implement settings navigation
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+            );
           },
         ),
       ],
