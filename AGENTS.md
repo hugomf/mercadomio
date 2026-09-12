@@ -15,6 +15,12 @@ Varios agentes pueden operar sobre este repo. Respeta los cambios de los demás:
   trabajo aislado es lo preferido.
 - Para trabajo de feature, usa ramas de trabajo o worktrees aislados.
 
+## Puertos de servicio
+
+- **No uses puertos bien conocidos** (`80`, `443`, `8080` para servicios de app, etc.) para arrancar servicios de aplicación.
+- **Prefiere puertos altos** (`3000`, `4000`, `5000`, `8000+`, etc.) para development, QA y servicios internos.
+- Reserva `80`/`443` solo para proxies reversos o TLS termination (nginx, Caddy, etc.), nunca para la app directamente.
+
 ## Verificación
 
 - Corre `flutter analyze` y `go vet`/`go build` y ejecuta los tests del área tocada
