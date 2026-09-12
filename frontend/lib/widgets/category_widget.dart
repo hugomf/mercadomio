@@ -42,7 +42,7 @@ class _CategoryItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasChildren = category.childrenIds?.isNotEmpty ?? false;
+    final hasChildren = category.hasChildren;
     
     return Column(
       children: [
@@ -55,22 +55,11 @@ class _CategoryItem extends StatelessWidget {
         if (hasChildren)
           Padding(
             padding: EdgeInsets.only(left: 16),
-            child: FutureBuilder<List<models.Category>>(
-              future: categoryService.getCategories(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return SizedBox.shrink();
-                }
-                final children = snapshot.data!
-                  .where((c) => category.childrenIds!.contains(c.id))
-                  .toList();
-                return Column(
-                  children: children.map((child) => _CategoryItem(
-                    category: child,
-                    categoryService: categoryService,
-                  )).toList(),
-                );
-              },
+            child: Column(
+              children: category.children.map((child) => _CategoryItem(
+                category: child,
+                categoryService: categoryService,
+              )).toList(),
             ),
           ),
       ],
